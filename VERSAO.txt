@@ -1,2 +1,3 @@
-Caseirinho Loja V8.4.1
-Correção: carrinho permanente/visível e preservado entre atualizações.
+Caseirinho Loja · E-commerce V8.4.2
+API recomendada: 1.9.3
+Carrinho persistente, catálogo atualizado em tempo quase real e retry de mídia.
