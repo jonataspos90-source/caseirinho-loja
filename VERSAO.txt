@@ -1,3 +1,2 @@
-Caseirinho Loja V8.4.4
-07/09/2026
-QR Code PIX automático por pedido, Copia e Cola, Meus Pedidos e PDF.
+Caseirinho Loja / E-commerce V8.6.0
+CEP automático, frete por regras ERP, LGPD, descrições/categorias e aviso de imagem ilustrativa.
