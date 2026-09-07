@@ -1,3 +1,3 @@
-Caseirinho Loja · E-commerce V8.4.2
-API recomendada: 1.9.3
-Carrinho persistente, catálogo atualizado em tempo quase real e retry de mídia.
+Caseirinho Loja V8.4.4
+07/09/2026
+QR Code PIX automático por pedido, Copia e Cola, Meus Pedidos e PDF.
