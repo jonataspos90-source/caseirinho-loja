@@ -1,2 +1,2 @@
-Caseirinho Loja / E-commerce V8.6.0
-CEP automático, frete por regras ERP, LGPD, descrições/categorias e aviso de imagem ilustrativa.
+Caseirinho Loja / E-commerce V8.6.1
+CEP automático robusto, pedido em chamada única, retry sem perder carrinho e catálogo por heartbeat leve.
