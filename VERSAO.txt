@@ -1,2 +1,2 @@
-Caseirinho Loja V8.7.0
-Mínimo por produto, frete pendente com alerta, WhatsApp válido e métricas de uso.
+Caseirinho Loja Online · V8.8.0
+Grades/variações + mínimo autoritativo + imagens publicadas
