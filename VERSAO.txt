@@ -1,4 +1,6 @@
-Caseirinho Loja/App V8.10.4
+Caseirinho Loja/App V9.0.0 CLEAN
 Build: 2026-09-09
-Correção: remoção dos caracteres \n/\ exibidos no rodapé; estado visual e funcional de produtos indisponíveis; botão Adicionar ao carrinho realmente bloqueado e visualmente desativado quando a variação não pode ser comprada; status indisponível em vermelho; texto "0 dia(s)" removido de produção sob encomenda; preservadas as correções móveis da V8.10.3.
-API compatível: 1.14.3
+Arquitetura: versão consolidada. Nenhum hotfix V8.x é carregado ou injetado.
+Disponibilidade: estado comercial recebido de uma única política da API.
+Cache: Service Worker sem injeção de scripts e sem interferir no cache do ERP.
+Compatibilidade API: 1.15.0+
