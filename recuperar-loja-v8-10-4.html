@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#711735">
+<title>Caseirinho · Recuperação V8.10.4</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;min-height:100dvh;display:grid;place-items:center;padding:22px;background:linear-gradient(145deg,#fff4f6,#f7e8ee);font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif;color:#24171d}
+.card{width:min(560px,100%);background:#fff;border:1px solid #eadde2;border-radius:28px;padding:28px;box-shadow:0 26px 80px #71173525}
+.badge{display:inline-flex;padding:7px 10px;border-radius:999px;background:#fff0f5;color:#8b1e46;font-size:12px;font-weight:900}
+h1{margin:16px 0 8px;font-size:30px}.muted{color:#76636b;line-height:1.55}
+.status{margin:18px 0;padding:14px;border-radius:14px;background:#fff7f9;border:1px solid #eadde2;font-weight:750}
+.ok{background:#ecfdf5;border-color:#86efac;color:#166534}.err{background:#fff1f2;border-color:#fda4af;color:#9f1239}
+button,a{display:block;width:100%;border:0;border-radius:14px;padding:13px 16px;text-align:center;text-decoration:none;font:inherit;font-weight:900;cursor:pointer}
+button{background:linear-gradient(135deg,#711735,#bd3b68);color:#fff}
+a{margin-top:9px;background:#fff0f5;color:#8b1e46}
+small{display:block;margin-top:16px;color:#76636b;line-height:1.45}
+</style>
+</head>
+<body>
+<div class="card">
+  <span class="badge">CORREÇÃO DO APP · V8.10.4</span>
+  <h1>Caseirinho Loja</h1>
+  <p class="muted">Atualiza o aplicativo sem apagar carrinho, pedidos salvos ou dados do aparelho.</p>
+  <div id="status" class="status">Preparando a atualização...</div>
+  <button id="run" type="button">Atualizar o app agora</button>
+  <a href="./?v=8104">Abrir a Loja</a>
+  <small>Não é necessário limpar armazenamento, localStorage ou dados do site.</small>
+</div>
+<script>
+(function(){
+'use strict';
+const status=document.getElementById('status');
+const btn=document.getElementById('run');
+let changing=false;
+function msg(text,kind){status.textContent=text;status.className='status'+(kind?' '+kind:'');}
+async function recover(){
+  btn.disabled=true;
+  msg('Buscando a V8.10.4...');
+  try{
+    if(!('serviceWorker' in navigator)){
+      msg('Este navegador não suporta atualização automática do app. Abra a Loja pelo Chrome.','err');
+      btn.disabled=false;
+      return;
+    }
+    navigator.serviceWorker.addEventListener('controllerchange',()=>{
+      if(changing)return;
+      changing=true;
+      msg('V8.10.4 ativada. Abrindo a Loja...','ok');
+      setTimeout(()=>location.replace('./?v=8104&t='+Date.now()),700);
+    });
+    const reg=await navigator.serviceWorker.register('./service-worker.js?v=8104',{
+      scope:'./',
+      updateViaCache:'none'
+    });
+    await reg.update();
+    if(reg.waiting){
+      reg.waiting.postMessage({type:'SKIP_WAITING'});
+      msg('Nova versão encontrada. Ativando...','ok');
+      return;
+    }
+    if(reg.installing){
+      msg('Instalando a V8.10.4...');
+      reg.installing.addEventListener('statechange',()=>{
+        if(reg.installing&&reg.installing.state==='installed'){
+          reg.installing.postMessage({type:'SKIP_WAITING'});
+        }
+      });
+      return;
+    }
+    msg('Atualização concluída. Abrindo a Loja...','ok');
+    setTimeout(()=>location.replace('./?v=8104&t='+Date.now()),900);
+  }catch(e){
+    console.error(e);
+    msg('Não foi possível concluir automaticamente: '+(e.message||e),'err');
+    btn.disabled=false;
+  }
+}
+btn.addEventListener('click',recover);
+setTimeout(recover,450);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,77 @@
+CASEIRINHO LOJA / APP — V8.10.4
+===================================
+
+O QUE FOI CORRIGIDO
+
+1. TEXTO \n\n\n\n NO RODAPÉ
+- O index atual possui separadores órfãos entre blocos antigos.
+- Em determinados caches/PWA eles aparecem visualmente como \n\n\n\n.
+- A V8.10.4 remove somente esses nós de texto técnicos.
+- Não altera descrição de produto, pedido, endereço, carrinho ou dados.
+
+2. PRODUTO "INDISPONÍVEL" COM BOTÃO PARECENDO ATIVO
+- Se a variação estiver indisponível:
+  * botão fica realmente disabled;
+  * muda para cinza;
+  * texto passa para "Indisponível no momento";
+  * quantidade também fica bloqueada;
+  * status fica vermelho.
+- O clique continua protegido pela regra original da Loja.
+
+3. "PRODUÇÃO SOB ENCOMENDA · 0 DIA(S)"
+- Quando a antecedência é zero, a interface mostra apenas
+  "Produção sob encomenda".
+
+4. V8.10.3 PRESERVADA
+- A V8.10.4 carrega a base storefront-hotfix-v8-10-3.js.
+- Portanto mantém modal móvel, imagem sem recorte e legendas corrigidas.
+
+ARQUIVOS PARA O GITHUB
+----------------------
+Repositório: jonataspos90-source/caseirinho-loja
+
+A) SUBSTITUIR:
+- service-worker.js
+- VERSAO.txt
+
+B) ADICIONAR:
+- storefront-hotfix-v8-10-4.js
+- recuperar-loja-v8-10-4.html
+
+C) NÃO EXCLUIR:
+- storefront-hotfix-v8-10-3.js
+
+D) NÃO ALTERAR:
+- index.html
+- manifest.webmanifest
+- icons
+- ERP
+- API
+
+DEPOIS DO COMMIT
+----------------
+1. Aguarde o GitHub Pages terminar.
+2. No Chrome do celular abra:
+   https://jonataspos90-source.github.io/caseirinho-loja/recuperar-loja-v8-10-4.html
+3. A página ativa a V8.10.4 e abre a Loja.
+
+NÃO FAZER
+---------
+- Não limpar dados do site.
+- Não apagar localStorage.
+- Não apagar IndexedDB.
+- Não desinstalar o PWA antes do teste.
+
+TESTES DE ACEITE
+----------------
+[ ] Não aparece \n\n\n\n nem barras no rodapé.
+[ ] Produto sem saldo e PRONTA_ENTREGA mostra "Indisponível no momento".
+[ ] Botão de produto indisponível fica cinza/desativado.
+[ ] Produto indisponível não entra no carrinho.
+[ ] Produto SOB_ENCOMENDA continua podendo ser comprado.
+[ ] Não aparece "0 dia(s)" quando antecedência for zero.
+[ ] Troca 500 g / 1 kg atualiza disponibilidade e botão.
+[ ] Carrinho existente permanece salvo.
+[ ] Pedidos salvos continuam disponíveis.
+[ ] Modal continua correto no celular.
+[ ] ERP não é afetado.

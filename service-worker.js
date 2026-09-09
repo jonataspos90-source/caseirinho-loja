@@ -1,6 +1,7 @@
-const CACHE='caseirinho-loja-v8.10.3-mobile-fix';
-const PATCH='./storefront-hotfix-v8-10-3.js';
-const PATCH_TAG='<script src="./storefront-hotfix-v8-10-3.js?v=20260909"></'+'script>';
+const CACHE='caseirinho-loja-v8.10.4-ui-cleanup';
+const BASE_PATCH='./storefront-hotfix-v8-10-3.js';
+const PATCH='./storefront-hotfix-v8-10-4.js';
+const PATCH_TAG='<script src="./storefront-hotfix-v8-10-4.js?v=20260909"></'+'script>';
 const SHELL=[
   './',
   './index.html',
@@ -9,6 +10,7 @@ const SHELL=[
   './icons/icon-512.png',
   './icons/icon-maskable-512.png',
   './icons/apple-touch-icon.png',
+  BASE_PATCH,
   PATCH
 ];
 
@@ -23,12 +25,11 @@ async function cacheShell(){
 }
 
 /*
- V8.10.3:
- A versão anterior procurava o PRIMEIRO </body> do index.
- O index possui um </body> dentro do HTML do PDF, em uma string JavaScript.
- Isso fazia o Service Worker inserir um <script> no meio dessa string e quebrava
- a página, exibindo JavaScript como texto.
- Agora a injeção ocorre somente antes do ÚLTIMO </body> real do documento.
+ V8.10.4:
+ - continua injetando somente antes do ÚLTIMO </body> real;
+ - injeta a V8.10.4, que carrega a base V8.10.3;
+ - mantém o cache da Loja isolado do ERP;
+ - não apaga localStorage, IndexedDB, pedidos ou carrinho.
 */
 async function injectPatch(response){
   if(!response) return response;
@@ -36,10 +37,10 @@ async function injectPatch(response){
   if(!ct.includes('text/html')) return response;
 
   let html=await response.text();
-  if(!html.includes('storefront-hotfix-v8-10-3.js')){
+  if(!html.includes('storefront-hotfix-v8-10-4.js')){
     const lower=html.toLowerCase();
     const pos=lower.lastIndexOf('</body>');
-    html = pos >= 0
+    html=pos>=0
       ? html.slice(0,pos)+PATCH_TAG+html.slice(pos)
       : html+PATCH_TAG;
   }
@@ -81,7 +82,6 @@ self.addEventListener('fetch',e=>{
   if(/john-cloud-api-production\.up\.railway\.app/.test(u.host)) return;
   if(e.request.method!=='GET') return;
 
-  /* Navegação: rede primeiro para nunca ficar presa em um index antigo. */
   if(e.request.mode==='navigate'){
     e.respondWith((async()=>{
       try{
@@ -99,10 +99,6 @@ self.addEventListener('fetch',e=>{
     return;
   }
 
-  /*
-   Arquivos estáticos: rede primeiro; cache é fallback.
-   Isso ajuda uma versão manual nova a aparecer sem limpar dados/localStorage.
-  */
   if(u.origin===self.location.origin){
     e.respondWith(
       fetch(e.request,{cache:'no-cache'})
