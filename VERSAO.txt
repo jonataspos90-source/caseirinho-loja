@@ -1,2 +1,4 @@
-Caseirinho Loja/App V8.10.0
-Build: 2026-09-08
+Caseirinho Loja/App V8.10.2
+Build: 2026-09-09
+Produção: persistência e recuperação segura de pedidos, redução de requisições concorrentes e cache resiliente.
+API compatível: 1.14.3
