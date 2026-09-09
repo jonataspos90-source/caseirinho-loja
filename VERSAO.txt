@@ -1,6 +1,10 @@
-Caseirinho Loja/App V9.0.0 CLEAN
+Caseirinho Loja/App V9.0.1 CLEAN
 Build: 2026-09-09
-Arquitetura: versão consolidada. Nenhum hotfix V8.x é carregado ou injetado.
-Disponibilidade: estado comercial recebido de uma única política da API.
-Cache: Service Worker sem injeção de scripts e sem interferir no cache do ERP.
-Compatibilidade API: 1.15.0+
+Correções:
+- LGPD marcado passa a ser enviado corretamente à API no pedido.
+- Entrega e Retirada usam o mesmo contrato autoritativo de checkout.
+- clientRequestId persistente evita duplicidade em retry/rede instável.
+- seleção de Entrega/Retirada e pagamento não é resetada por atualização do catálogo.
+- polling usa catalog/version e só baixa o catálogo completo quando houver mudança.
+- nenhuma camada/hotfix adicional foi criada.
+Compatibilidade API: 1.15.1+

@@ -6,6 +6,7 @@ const STORE=String(CFG.storeSlug||'caseirinho');
 const CATALOG_KEY='john_ecommerce_public_v1';
 const CART_KEY='caseirinho_cart_persistente_v1';
 const ORDERS_KEY='caseirinho_my_orders_v83';
+const PENDING_ORDER_KEY='caseirinho_pending_order_v901';
 const E=id=>document.getElementById(id);
 const S=v=>String(v??'');
 const N=v=>Number(v)||0;
@@ -25,6 +26,30 @@ let catalogBusy=false;
 
 function readJson(k,fallback){try{const x=JSON.parse(localStorage.getItem(k)||'null');return x??fallback}catch(_){return fallback}}
 function writeJson(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(_){}}
+function removeLocal(k){try{localStorage.removeItem(k)}catch(_){}}
+function newRequestId(){
+  try{if(crypto?.randomUUID)return crypto.randomUUID()}catch(_){}
+  return 'req-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,12);
+}
+function orderFingerprint(body){
+  return JSON.stringify({
+    telefone:normalizePhone(body?.cliente?.telefone),
+    modalidade:body?.modalidade,
+    dataAtendimento:body?.dataAtendimento,
+    horario:body?.horario,
+    formaPagamento:body?.formaPagamento,
+    entrega:body?.modalidade==='ENTREGA'?body?.entrega:{},
+    itens:A(body?.itens).map(x=>({produtoId:S(x.produtoId),quantidade:N(x.quantidade)})),
+    observacao:S(body?.observacao)
+  });
+}
+function clientRequestIdFor(body){
+  const signature=orderFingerprint(body),pending=readJson(PENDING_ORDER_KEY,{});
+  if(pending?.id&&pending?.signature===signature)return pending.id;
+  const id=newRequestId();
+  writeJson(PENDING_ORDER_KEY,{id,signature,createdAt:new Date().toISOString()});
+  return id;
+}
 function toast(msg){
   const el=E('toast');el.textContent=msg;el.classList.add('show');
   clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('show'),2300);
@@ -336,12 +361,18 @@ function updateDateMin(){
   E('deliveryDays').innerHTML=`<b>Dias disponíveis para ${mode==='ENTREGA'?'entrega':'retirada'}:</b> ${serviceDays(mode).map(x=>labels[x]).join(', ')}.`;
 }
 function renderCheckoutConfig(){
+  const currentMode=E('mode')?.value||'';
+  const currentPayment=E('payment')?.value||'';
   const modes=[];
   if(catalog.loja?.permitirRetirada!==false)modes.push(['RETIRADA','Retirada']);
   if(catalog.loja?.permitirEntrega)modes.push(['ENTREGA','Entrega']);
   E('mode').innerHTML=modes.map(([v,l])=>`<option value="${v}">${l}</option>`).join('')||'<option value="">Indisponível</option>';
+  if(currentMode&&modes.some(([v])=>v===currentMode))E('mode').value=currentMode;
+
   const payments=A(catalog.loja?.formasPagamento);
-  E('payment').innerHTML=(payments.length?payments:['A definir']).map(x=>`<option>${esc(x)}</option>`).join('');
+  const paymentOptions=payments.length?payments:['A definir'];
+  E('payment').innerHTML=paymentOptions.map(x=>`<option>${esc(x)}</option>`).join('');
+  if(currentPayment&&paymentOptions.includes(currentPayment))E('payment').value=currentPayment;
   modeChanged();
 }
 function modeChanged(){
@@ -415,17 +446,31 @@ async function lookupCep(){
 }
 
 async function submitOrder(ev){
-  ev.preventDefault();E('checkoutResult').innerHTML='';
+  ev.preventDefault();
+  E('checkoutResult').innerHTML='';
+
   if(!cart.length)return toast('Seu carrinho está vazio.');
-  if(!validPhone(E('cPhone').value)){E('cPhone').focus();return toast('Informe um WhatsApp válido com DDD.')}
-  if(!E('consent').checked)return toast('Marque o aceite de privacidade para continuar.');
-  const mode=E('mode').value;
-  if(!allowedDate(E('date').value,mode))return toast('A data escolhida não está disponível.');
-  if(mode==='ENTREGA'){
-    const a=address();
-    if(a.cep.length!==8||!cepResolved||!a.logradouro||!a.numero||!a.cidade)return toast('Consulte o CEP e informe o número.');
+  if(!validPhone(E('cPhone').value)){
+    E('cPhone').focus();
+    return toast('Informe um WhatsApp válido com DDD.');
+  }
+  if(!E('consent').checked){
+    E('consent').focus();
+    return toast('Aceite a Política de Privacidade / LGPD para continuar.');
   }
 
+  const mode=E('mode').value;
+  if(!mode)return toast('Selecione Retirada ou Entrega.');
+  if(!allowedDate(E('date').value,mode))return toast('A data escolhida não está disponível.');
+
+  if(mode==='ENTREGA'){
+    const a=address();
+    if(a.cep.length!==8||!cepResolved||!a.logradouro||!a.numero||!a.cidade){
+      return toast('Consulte o CEP e informe o número do endereço.');
+    }
+  }
+
+  const now=new Date().toISOString();
   const body={
     cliente:{
       nome:S(E('cName').value).trim(),
@@ -439,33 +484,78 @@ async function submitOrder(ev){
     formaPagamento:E('payment').value,
     entrega:mode==='ENTREGA'?address():{},
     itens:cart.map(x=>({produtoId:S(x.produtoId),quantidade:N(x.quantidade)})),
-    observacao:S(E('obs').value).trim()
+    observacao:S(E('obs').value).trim(),
+    lgpd:{
+      consent:true,
+      consentAt:now,
+      policyVersion:S(catalog.loja?.lgpd?.versao||catalog.loja?.lgpd?.policyVersion||'1.0'),
+      purpose:'CADASTRO_PEDIDO_ENTREGA_CONTATO'
+    }
   };
 
+  // O mesmo pedido/retry mantém o mesmo ID até receber confirmação do servidor.
+  body.clientRequestId=clientRequestIdFor(body);
+
   const btn=ev.submitter||E('checkout').querySelector('[type=submit]');
-  const old=btn.textContent;btn.disabled=true;btn.textContent='Enviando...';
+  const old=btn.textContent;
+  btn.disabled=true;
+  btn.textContent='Enviando...';
+
   try{
-    const result=await api('/api/v1/public/store/'+encodeURIComponent(STORE)+'/orders',{method:'POST',body:JSON.stringify(body)});
+    const result=await api(
+      '/api/v1/public/store/'+encodeURIComponent(STORE)+'/orders',
+      {method:'POST',body:JSON.stringify(body)}
+    );
+
     const saved={
-      ...body,...result,
+      ...body,
+      ...result,
       publicToken:result.publicToken,
       savedAt:new Date().toISOString(),
       itens:cart.map(x=>({...x,total:N(x.quantidade)*N(x.precoUnitario)}))
     };
+
     const orders=readJson(ORDERS_KEY,[]);
     const idx=orders.findIndex(x=>S(x.id)===S(saved.id));
-    if(idx>=0)orders[idx]={...orders[idx],...saved};else orders.push(saved);
+    if(idx>=0)orders[idx]={...orders[idx],...saved};
+    else orders.push(saved);
     writeJson(ORDERS_KEY,orders.slice(-100));
 
-    const freight=result.freteStatus==='COTACAO_PENDENTE'
-      ?'Frete pendente de cotação. A equipe informará o valor antes da confirmação.'
-      :'Frete: '+money(result.valorFrete||0);
-    E('checkoutResult').innerHTML=`<div class="result"><b>Pedido ${esc(result.codigo)} recebido! 🎉</b><br>${esc(freight)}<br>Total atual: <b>${money(result.total)}</b><br><button class="soft" type="button" id="openSavedOrders" style="margin-top:9px">Acompanhar pedido</button></div>`;
+    // Somente depois de uma resposta válida podemos liberar o requestId.
+    removeLocal(PENDING_ORDER_KEY);
+
+    let freightText='';
+    if(mode==='RETIRADA'){
+      freightText='Retirada selecionada · sem cobrança de frete.';
+    }else if(result.freteStatus==='COTACAO_PENDENTE'){
+      freightText=result.freteMensagem||'Frete pendente de cálculo. A equipe informará o valor antes da confirmação.';
+    }else{
+      freightText=`Frete: ${money(result.valorFrete||0)}`;
+      if(result.freteRegraNome)freightText+=` · ${result.freteRegraNome}`;
+    }
+
+    E('checkoutResult').innerHTML=
+      `<div class="result">
+        <b>Pedido ${esc(result.codigo)} recebido! 🎉</b><br>
+        ${esc(freightText)}<br>
+        Total atual: <b>${money(result.total)}</b><br>
+        <button class="soft" type="button" id="openSavedOrders" style="margin-top:9px">Acompanhar pedido</button>
+      </div>`;
+
     E('openSavedOrders').onclick=showOrders;
-    cart=[];renderCart();
+    cart=[];
+    renderCart();
   }catch(err){
-    E('checkoutResult').innerHTML=`<div class="result err"><b>Pedido não enviado.</b><br>${esc(err.message)}<br>Seu carrinho foi preservado.</div>`;
-  }finally{btn.disabled=false;btn.textContent=old}
+    E('checkoutResult').innerHTML=
+      `<div class="result err">
+        <b>Pedido não enviado.</b><br>
+        ${esc(err.message)}<br>
+        Seu carrinho foi preservado. Você pode corrigir e tentar novamente.
+      </div>`;
+  }finally{
+    btn.disabled=false;
+    btn.textContent=old;
+  }
 }
 
 function openOverlay(el){el.classList.add('open');el.setAttribute('aria-hidden','false');document.body.style.overflow='hidden'}
@@ -549,13 +639,35 @@ function installPwa(){
     window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js',{updateViaCache:'none'}).catch(console.warn));
   }
 }
+let lastCatalogMarker='';
+async function checkCatalogVersion(){
+  try{
+    const v=await api('/api/v1/public/store/'+encodeURIComponent(STORE)+'/catalog/version');
+    const marker=S(v.version)+'|'+S(v.publishedAt);
+    if(!lastCatalogMarker){
+      lastCatalogMarker=marker;
+      return;
+    }
+    if(marker!==lastCatalogMarker){
+      lastCatalogMarker=marker;
+      await loadCatalog(true);
+    }
+  }catch(_){}
+}
 function start(){
-  wire();renderCart();loadCatalog();
+  wire();
+  renderCart();
+  loadCatalog().then(()=>{
+    lastCatalogMarker=S(catalog?.publicadoEm||'');
+    checkCatalogVersion();
+  });
   installPwa();
-  setInterval(()=>{if(!document.hidden)loadCatalog(true)},30000);
-  window.addEventListener('focus',()=>loadCatalog(true));
-  window.addEventListener('online',()=>loadCatalog(true));
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden)loadCatalog(true)});
+
+  // Apenas heartbeat. Catálogo completo só recarrega quando a versão muda.
+  setInterval(()=>{if(!document.hidden)checkCatalogVersion()},30000);
+  window.addEventListener('focus',checkCatalogVersion);
+  window.addEventListener('online',checkCatalogVersion);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkCatalogVersion()});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 
