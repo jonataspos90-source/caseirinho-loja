@@ -1,0 +1,52 @@
+CASEIRINHO LOJA/APP — V8.10.3 — ATUALIZAÇÃO MANUAL
+==========================================================
+
+O QUE FOI CORRIGIDO
+- JavaScript aparecendo como texto no rodapé.
+- Tela/modal de “Escolher peso / recheio / sabor” estourando no Android.
+- Imagem enorme/cortada ao abrir uma opção.
+- Legenda “Imagem meramente ilustrativa” duplicada/sobreposta.
+- Cache da PWA segurando uma página quebrada.
+
+CAUSA ENCONTRADA
+O service-worker.js da V8.10.2 inseria um script antes do PRIMEIRO </body> encontrado.
+O index.html possui um </body> dentro do HTML usado para gerar o PDF do pedido.
+Com isso, o script era colocado dentro dessa string do PDF e o navegador encerrava
+o JavaScript no lugar errado. O restante do código aparecia na tela.
+
+ARQUIVOS DESTA VERSÃO
+1. service-worker.js                  -> SUBSTITUIR o atual na raiz.
+2. storefront-hotfix-v8-10-3.js      -> ADICIONAR na raiz.
+3. VERSAO.txt                         -> SUBSTITUIR o atual na raiz.
+
+NÃO PRECISA ALTERAR
+- index.html
+- manifest.webmanifest
+- pasta icons
+- dados do cliente
+- carrinho
+- histórico de pedidos
+
+PASSO A PASSO NO GITHUB
+1. Abra o repositório caseirinho-loja.
+2. Substitua service-worker.js pelo arquivo desta pasta.
+3. Adicione storefront-hotfix-v8-10-3.js na raiz.
+4. Substitua VERSAO.txt.
+5. Faça o commit dos 3 arquivos.
+6. Aguarde o GitHub Pages terminar a publicação.
+
+TESTE NO CELULAR SEM APAGAR PEDIDOS
+1. NÃO limpe dados do navegador e NÃO limpe o armazenamento do site.
+2. Feche completamente o Caseirinho.
+3. Abra a loja uma vez pelo Chrome.
+4. Aguarde aproximadamente 10 segundos.
+5. Feche a aba.
+6. Abra novamente o App/PWA.
+7. Entre em Nhoque e toque em “Escolher peso”.
+8. Teste também Panqueca > “Escolher recheio”.
+9. O produto deverá abrir em tela cheia no celular, com a foto inteira,
+   opções visíveis e botão para adicionar ao carrinho.
+
+OBSERVAÇÃO
+A V8.10.3 mantém as mesmas chaves de localStorage. Portanto carrinho e pedidos
+salvos no aparelho não são apagados por esta atualização.

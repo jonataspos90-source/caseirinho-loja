@@ -1,4 +1,4 @@
-Caseirinho Loja/App V8.10.2
+Caseirinho Loja/App V8.10.3
 Build: 2026-09-09
-Produção: persistência e recuperação segura de pedidos, redução de requisições concorrentes e cache resiliente.
+Correção: Service Worker não quebra mais o index ao inserir o hotfix; modal de escolha de peso/recheio/sabor ajustado para celular; imagens sem recorte excessivo; removidas legendas duplicadas; atualização de cache sem apagar pedidos locais.
 API compatível: 1.14.3
