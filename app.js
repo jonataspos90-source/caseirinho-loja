@@ -7,6 +7,7 @@ const CATALOG_KEY='john_ecommerce_public_v1';
 const CART_KEY='caseirinho_cart_persistente_v1';
 const ORDERS_KEY='caseirinho_my_orders_v83';
 const PENDING_ORDER_KEY='caseirinho_pending_order_v901';
+const CUSTOMER_NOTICE_KEY='caseirinho_customer_notice_v910';
 const E=id=>document.getElementById(id);
 const S=v=>String(v??'');
 const N=v=>Number(v)||0;
@@ -379,6 +380,18 @@ function modeChanged(){
   const delivery=E('mode').value==='ENTREGA';
   E('deliveryBox').classList.toggle('hidden',!delivery);
   E('cep').required=delivery;E('number').required=delivery;
+  if(E('time')){
+    if(delivery){
+      E('time').type='text';
+      E('time').value='A combinar';
+      E('time').readOnly=true;
+      E('time').setAttribute('aria-label','Horário de entrega a combinar');
+    }else{
+      E('time').readOnly=false;
+      E('time').type='time';
+      if(E('time').value==='A combinar')E('time').value='';
+    }
+  }
   updateDateMin();renderCart();
 }
 function address(){
@@ -445,6 +458,200 @@ async function lookupCep(){
   }
 }
 
+
+function customerModal(){
+  let ov=E('customerExperienceOverlay');
+  if(ov)return ov;
+  ov=document.createElement('div');
+  ov.id='customerExperienceOverlay';
+  ov.className='customer-experience-overlay';
+  ov.setAttribute('aria-hidden','true');
+  ov.innerHTML=`<div class="customer-experience-card" role="dialog" aria-modal="true" aria-labelledby="customerExperienceTitle">
+    <div class="customer-experience-icon" id="customerExperienceIcon">✨</div>
+    <h3 id="customerExperienceTitle">Atualização do pedido</h3>
+    <div id="customerExperienceBody" class="customer-experience-body"></div>
+    <div id="customerExperienceActions" class="customer-experience-actions"></div>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.addEventListener('click',async e=>{
+    if(e.target===ov&&ov.dataset.locked!=='1')return closeCustomerModal();
+    const copy=e.target.closest?.('[data-copy-pix]');
+    if(copy){
+      const value=copy.getAttribute('data-copy-pix')||'';
+      try{await navigator.clipboard.writeText(value);toast('Chave PIX copiada.')}catch(_){toast('Não foi possível copiar. Selecione a chave manualmente.')}
+    }
+  });
+  return ov;
+}
+function closeCustomerModal(){
+  const ov=E('customerExperienceOverlay');if(!ov)return;
+  ov.classList.remove('open');ov.setAttribute('aria-hidden','true');ov.dataset.locked='0';
+}
+function customerDialog({title,html,icon='✨',actions=[{label:'OK',value:true,primary:true}],locked=false}={}){
+  return new Promise(resolve=>{
+    const ov=customerModal();
+    E('customerExperienceTitle').textContent=title||'Atualização do pedido';
+    E('customerExperienceIcon').textContent=icon;
+    E('customerExperienceBody').innerHTML=html||'';
+    const box=E('customerExperienceActions');box.innerHTML='';
+    ov.dataset.locked=locked?'1':'0';
+    for(const a of actions){
+      const b=document.createElement('button');
+      b.type='button';b.className=a.primary?'primary':'soft';b.textContent=a.label;
+      b.onclick=()=>{closeCustomerModal();resolve(a.value)};box.appendChild(b);
+    }
+    ov.classList.add('open');ov.setAttribute('aria-hidden','false');
+  });
+}
+function freightWarningHtml(info){
+  if(info.pending){
+    return `<div class="cx-highlight warn">🛵 <b>Este pedido terá valor de entrega.</b></div>
+      <p>Seu endereço precisa de cotação. A loja calculará o frete no ERP e o valor aparecerá aqui no app.</p>
+      <p>Você poderá responder <b>Sim</b> ou <b>Não</b> ao valor antes de o pedido ser aceito.</p>
+      <div class="cx-note">Horário de entrega: <b>A combinar</b>. A loja informará o horário depois do aceite.</div>`;
+  }
+  return `<div class="cx-highlight">🛵 <b>Valor de entrega: ${money(info.value)}</b></div>
+    <p>Este valor será somado ao pedido.</p>
+    <div class="cx-note">Horário de entrega: <b>A combinar</b>. A loja informará o horário depois do aceite.</div>`;
+}
+async function confirmDeliveryExperience(){
+  const info=freightInfo();
+  return customerDialog({
+    title:'Confirme sua entrega',icon:'🛵',html:freightWarningHtml(info),locked:true,
+    actions:[{label:'Voltar',value:false},{label:'Continuar pedido',value:true,primary:true}]
+  });
+}
+function pixCard(pix){
+  if(!pix?.chave)return'';
+  return `<div class="pix-card"><div class="pix-title">💠 PIX disponível</div>
+    <div><small>Chave PIX</small><b class="pix-key">${esc(pix.chave)}</b></div>
+    ${pix.nome?`<div><small>Recebedor</small><b>${esc(pix.nome)}</b></div>`:''}
+    ${pix.valor!==undefined?`<div><small>Valor</small><b>${money(pix.valor)}</b></div>`:''}
+    <button class="soft" type="button" data-copy-pix="${esc(pix.chave)}">Copiar chave PIX</button></div>`;
+}
+function orderTimeText(o){
+  if(norm(o.modalidade)!=='ENTREGA')return S(o.horario||'');
+  const h=S(o.horario||o.horarioEntrega||'').trim();
+  return /^([01]\\d|2[0-3]):[0-5]\\d$/.test(h)?h:'A combinar';
+}
+function customerStatusLabel(st){
+  const labels={
+    NOVO:'Recebido',PENDENTE:'Recebido',COTACAO_PENDENTE:'Frete a calcular',
+    AGUARDANDO_CLIENTE_FRETE:'Aguardando sua resposta',AGUARDANDO_ACEITE_ERP:'Frete aprovado · aguardando loja',
+    FRETE_RECUSADO_CLIENTE:'Pedido cancelado',CANCELADO:'Pedido cancelado',ACEITO:'Aceito',REJEITADO:'Rejeitado',
+    IMPORTADO:'Aceito',EM_PRODUCAO:'Em produção',PRONTO:'Pronto',ENTREGUE:'Entregue',RETIRADO:'Retirado'
+  };
+  return labels[norm(st)]||S(st||'Recebido').replaceAll('_',' ');
+}
+function saveOrderUpdate(updated){
+  const orders=readJson(ORDERS_KEY,[]);
+  const i=orders.findIndex(x=>S(x.id)===S(updated.id));
+  if(i>=0)orders[i]={...orders[i],...updated};else orders.push(updated);
+  writeJson(ORDERS_KEY,orders.slice(-100));
+  return orders[i>=0?i:orders.length-1];
+}
+async function shippingDecision(o,accept){
+  if(!o?.id||!o?.publicToken)return;
+  try{
+    const d=await api('/api/v1/public/store/'+encodeURIComponent(STORE)+'/orders/'+encodeURIComponent(o.id)+'/shipping-decision',{
+      method:'POST',body:JSON.stringify({token:o.publicToken,decision:accept?'ACCEPT':'REJECT'})
+    });
+    const saved=saveOrderUpdate({...o,...d});
+    if(accept){
+      await customerDialog({
+        title:'Frete aprovado',icon:'✅',
+        html:'<p>Obrigado! O pedido voltou para a loja e agora aguarda o aceite final.</p>'
+      });
+    }else{
+      const action=await customerDialog({
+        title:'Pedido cancelado',icon:'🛑',
+        html:'<div class="cx-highlight warn"><b>Pedido cancelado.</b></div><p>Você não aceitou o valor da entrega.</p><p>Se quiser continuar comprando, faça um <b>novo pedido</b>.</p>',
+        actions:[
+          {label:'Fechar',value:'CLOSE'},
+          {label:'Fazer novo pedido',value:'NEW_ORDER',primary:true}
+        ]
+      });
+      if(action==='NEW_ORDER'){
+        closeOverlay(E('simpleOverlay'));
+        E('catalogSection')?.scrollIntoView({behavior:'smooth'});
+      }
+    }
+    await showOrders();
+  }catch(err){toast(err.message)}
+}
+function bindCustomerExperienceActions(root=document){
+  root.querySelectorAll('[data-copy-pix]').forEach(b=>b.onclick=async()=>{
+    const value=b.getAttribute('data-copy-pix')||'';
+    try{await navigator.clipboard.writeText(value);toast('Chave PIX copiada.')}catch(_){toast('Não foi possível copiar. Selecione a chave manualmente.')}
+  });
+  root.querySelectorAll('[data-shipping-yes]').forEach(b=>b.onclick=()=>{
+    const orders=readJson(ORDERS_KEY,[]),o=orders.find(x=>S(x.id)===S(b.dataset.shippingYes));
+    if(o)shippingDecision(o,true);
+  });
+  root.querySelectorAll('[data-shipping-no]').forEach(b=>b.onclick=()=>{
+    const orders=readJson(ORDERS_KEY,[]),o=orders.find(x=>S(x.id)===S(b.dataset.shippingNo));
+    if(o)shippingDecision(o,false);
+  });
+}
+function seenNotices(){return readJson(CUSTOMER_NOTICE_KEY,{})}
+function markNotice(key){const x=seenNotices();x[key]=new Date().toISOString();writeJson(CUSTOMER_NOTICE_KEY,x)}
+async function notifyOrderChange(before,after){
+  if(!after?.id)return;
+  const seen=seenNotices(),st=norm(after.status),old=norm(before?.status);
+  const quoteKey=`${after.id}:quote:${after.freteCotadoEm||after.updatedAt||after.valorFrete}`;
+  if(st==='AGUARDANDO_CLIENTE_FRETE'&&norm(after.freteDecisaoCliente||'PENDENTE')==='PENDENTE'&&!seen[quoteKey]){
+    markNotice(quoteKey);
+    const yes=await customerDialog({title:'Valor da entrega disponível',icon:'🛵',locked:true,
+      html:`<div class="cx-highlight">Frete: <b>${money(after.valorFrete)}</b></div><p>Total do pedido: <b>${money(after.total)}</b></p><p>Você aceita esse valor de entrega?</p>`,
+      actions:[{label:'Não',value:false},{label:'Sim, aceito',value:true,primary:true}]});
+    await shippingDecision(after,yes);return;
+  }
+  const acceptKey=`${after.id}:accepted:${after.aceitoEm||after.updatedAt}`;
+  if(st==='ACEITO'&&old!=='ACEITO'&&!seen[acceptKey]){
+    markNotice(acceptKey);
+    await customerDialog({title:'Seu pedido foi aceito!',icon:'🎉',
+      html:`<p>Pedido <b>${esc(after.codigo||after.id)}</b> confirmado pela loja.</p>${pixCard(after.pix)}${norm(after.modalidade)==='ENTREGA'?`<div class="cx-note">Horário de entrega: <b>${esc(orderTimeText(after))}</b></div>`:''}`});
+    bindCustomerExperienceActions(customerModal());return;
+  }
+  const h=orderTimeText(after),oldH=orderTimeText(before||{});
+  const timeKey=`${after.id}:time:${h}`;
+  if(norm(after.modalidade)==='ENTREGA'&&/^([01]\\d|2[0-3]):[0-5]\\d$/.test(h)&&h!==oldH&&!seen[timeKey]){
+    markNotice(timeKey);
+    await customerDialog({title:'Horário de entrega confirmado',icon:'🕐',html:`<p>Sua entrega foi programada para <b>${esc(h)}</b>.</p>`});return;
+  }
+  const cancelKey=`${after.id}:cancelled:${after.canceladoEm||after.updatedAt}`;
+  if(st==='CANCELADO'&&old!=='CANCELADO'&&!seen[cancelKey]){
+    markNotice(cancelKey);
+    const action=await customerDialog({
+      title:'Pedido cancelado',icon:'🛑',
+      html:`<div class="cx-highlight warn"><b>Pedido cancelado.</b></div><p>${esc(after.mensagemCliente||'O pedido foi cancelado. Caso queira prosseguir, faça um novo pedido.')}</p>`,
+      actions:[
+        {label:'Fechar',value:'CLOSE'},
+        {label:'Fazer novo pedido',value:'NEW_ORDER',primary:true}
+      ]
+    });
+    if(action==='NEW_ORDER'){
+      closeOverlay(E('simpleOverlay'));
+      E('catalogSection')?.scrollIntoView({behavior:'smooth'});
+    }
+    return;
+  }
+  const rejectKey=`${after.id}:rejected:${after.rejeitadoEm||after.updatedAt}`;
+  if(st==='REJEITADO'&&old!=='REJEITADO'&&!seen[rejectKey]){
+    markNotice(rejectKey);
+    await customerDialog({title:'Atualização do pedido',icon:'❌',html:`<p>O pedido foi rejeitado pela loja.</p>${after.mensagemCliente?`<div class="cx-note">${esc(after.mensagemCliente)}</div>`:''}`});
+  }
+}
+async function pollCustomerOrders(){
+  if(document.hidden)return;
+  const orders=readJson(ORDERS_KEY,[]);
+  for(const before of orders.slice(-12)){
+    const after=await refreshOrder(before);
+    if(JSON.stringify(after)!==JSON.stringify(before))saveOrderUpdate(after);
+    await notifyOrderChange(before,after);
+  }
+}
+
 async function submitOrder(ev){
   ev.preventDefault();
   E('checkoutResult').innerHTML='';
@@ -468,6 +675,8 @@ async function submitOrder(ev){
     if(a.cep.length!==8||!cepResolved||!a.logradouro||!a.numero||!a.cidade){
       return toast('Consulte o CEP e informe o número do endereço.');
     }
+    const confirmed=await confirmDeliveryExperience();
+    if(!confirmed)return;
   }
 
   const now=new Date().toISOString();
@@ -480,7 +689,7 @@ async function submitOrder(ev){
     },
     modalidade:mode,
     dataAtendimento:E('date').value,
-    horario:E('time').value,
+    horario:mode==='ENTREGA'?'A combinar':E('time').value,
     formaPagamento:E('payment').value,
     entrega:mode==='ENTREGA'?address():{},
     itens:cart.map(x=>({produtoId:S(x.produtoId),quantidade:N(x.quantidade)})),
@@ -565,10 +774,16 @@ function openSimple(title,html){
 }
 async function refreshOrder(o){
   if(!o?.id||!o?.publicToken)return o;
+  const token=encodeURIComponent(o.publicToken);
   try{
-    const d=await api('/api/v1/public/store/'+encodeURIComponent(STORE)+'/orders/'+encodeURIComponent(o.id)+'?token='+encodeURIComponent(o.publicToken));
-    return{...o,...d};
-  }catch(_){return o}
+    const d=await api('/api/v1/public/store/'+encodeURIComponent(STORE)+'/orders/'+encodeURIComponent(o.id)+'/experience?token='+token);
+    return{...o,...d,publicToken:o.publicToken};
+  }catch(_){
+    try{
+      const d=await api('/api/v1/public/store/'+encodeURIComponent(STORE)+'/orders/'+encodeURIComponent(o.id)+'?token='+token);
+      return{...o,...d,publicToken:o.publicToken};
+    }catch(__){return o}
+  }
 }
 async function showOrders(){
   let orders=readJson(ORDERS_KEY,[]);
@@ -582,14 +797,26 @@ async function showOrders(){
     writeJson(ORDERS_KEY,orders);
   }
   const html=orders.slice().reverse().map(o=>{
-    const st=norm(o.status||'NOVO'),msg=o.mensagemCliente||'';
-    return `<div class="order-card"><div class="order-top"><div><b>${esc(o.codigo||o.id)}</b><br><small>${new Date(o.criadoEm||o.savedAt||Date.now()).toLocaleString('pt-BR')}</small></div><span class="status-badge ${esc(st)}">${esc(st.replaceAll('_',' '))}</span></div>
-      <p><b>Total:</b> ${money(o.total||o.subtotal)}${o.freteStatus==='COTACAO_PENDENTE'?'<br>🛵 Frete pendente de cotação':''}</p>
+    const st=norm(o.status||'NOVO'),msg=o.mensagemCliente||'',delivery=norm(o.modalidade)==='ENTREGA';
+    const awaiting=st==='AGUARDANDO_CLIENTE_FRETE'&&norm(o.freteDecisaoCliente||'PENDENTE')==='PENDENTE';
+    return `<div class="order-card"><div class="order-top"><div><b>${esc(o.codigo||o.id)}</b><br><small>${new Date(o.criadoEm||o.savedAt||Date.now()).toLocaleString('pt-BR')}</small></div><span class="status-badge ${esc(st)}">${esc(customerStatusLabel(st))}</span></div>
+      <div class="order-customer-grid"><div><small>Total</small><b>${money(o.total||o.subtotal)}</b></div>${delivery?`<div><small>Entrega</small><b>${esc(orderTimeText(o))}</b></div>`:''}${delivery?`<div><small>Frete</small><b>${o.freteStatus==='COTACAO_PENDENTE'?'A calcular':money(o.valorFrete||0)}</b></div>`:''}</div>
+      ${o.freteStatus==='COTACAO_PENDENTE'?'<div class="cx-note">🛵 A loja calculará a entrega e enviará o valor aqui para sua aprovação.</div>':''}
+      ${awaiting?`<div class="freight-decision"><b>🛵 A loja enviou o valor da entrega.</b><div>Frete: <strong>${money(o.valorFrete)}</strong> · Total: <strong>${money(o.total)}</strong></div><div class="order-actions"><button class="soft" data-shipping-no="${esc(o.id)}" type="button">Não</button><button class="primary" data-shipping-yes="${esc(o.id)}" type="button">Sim, aceito</button></div></div>`:''}
+      ${st==='AGUARDANDO_ACEITE_ERP'?'<div class="cx-note ok">✅ Frete aprovado por você. Aguardando o aceite final da loja.</div>':''}
+      ${st==='FRETE_RECUSADO_CLIENTE'||st==='CANCELADO'?`<div class="result err">🛑 <b>Pedido cancelado</b><br>${esc(msg||'Você não aceitou o valor da entrega. Caso queira prosseguir, faça um novo pedido.')}</div>`:''}
+      ${st==='ACEITO'?`<div class="result"><b>🎉 Seu pedido foi aceito!</b>${delivery?`<br>Horário de entrega: <b>${esc(orderTimeText(o))}</b>`:''}</div>${pixCard(o.pix)}`:''}
       ${st==='REJEITADO'?`<div class="result err">❌ <b>Pedido rejeitado</b><br>${esc(msg||'Seu pedido não pôde ser aceito. Entre em contato conosco se precisar de ajuda.')}</div>`:''}
-      <div class="order-actions"><button class="soft" data-refresh-order="${esc(o.id)}" type="button">Atualizar status</button></div></div>`;
+      ${msg&&!['REJEITADO','CANCELADO','FRETE_RECUSADO_CLIENTE'].includes(st)?`<div class="cx-note">${esc(msg)}</div>`:''}
+      <div class="order-actions">${['CANCELADO','FRETE_RECUSADO_CLIENTE'].includes(st)?`<button class="primary" data-new-order="${esc(o.id)}" type="button">Fazer novo pedido</button>`:''}<button class="soft" data-refresh-order="${esc(o.id)}" type="button">Atualizar status</button></div></div>`;
   }).join('')||'<div class="empty">Você ainda não possui pedidos salvos neste aparelho.</div>';
   openSimple('Meus pedidos',html);
   E('simpleBody').querySelectorAll('[data-refresh-order]').forEach(b=>b.onclick=showOrders);
+  E('simpleBody').querySelectorAll('[data-new-order]').forEach(b=>b.onclick=()=>{
+    closeOverlay(E('simpleOverlay'));
+    E('catalogSection')?.scrollIntoView({behavior:'smooth'});
+  });
+  bindCustomerExperienceActions(E('simpleBody'));
 }
 function showStore(){
   const l=catalog.loja||{},addr=[l.logradouro||l.endereco,l.numero,l.complemento,l.bairro,l.cidade,l.uf].filter(Boolean).join(', ');
@@ -663,11 +890,13 @@ function start(){
   });
   installPwa();
 
-  // Apenas heartbeat. Catálogo completo só recarrega quando a versão muda.
+  // Heartbeats leves: catálogo por versão e pedidos do próprio aparelho por token público.
   setInterval(()=>{if(!document.hidden)checkCatalogVersion()},30000);
-  window.addEventListener('focus',checkCatalogVersion);
-  window.addEventListener('online',checkCatalogVersion);
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkCatalogVersion()});
+  setInterval(()=>{if(!document.hidden)pollCustomerOrders()},20000);
+  setTimeout(()=>pollCustomerOrders(),2500);
+  window.addEventListener('focus',()=>{checkCatalogVersion();pollCustomerOrders()});
+  window.addEventListener('online',()=>{checkCatalogVersion();pollCustomerOrders()});
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden){checkCatalogVersion();pollCustomerOrders()}});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 

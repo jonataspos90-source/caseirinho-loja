@@ -1,4 +1,4 @@
-const CACHE='caseirinho-loja-v9.0.1-clean';
+const CACHE='caseirinho-loja-v9.1.0-customer-experience';
 const SHELL=[
   './',
   './index.html',

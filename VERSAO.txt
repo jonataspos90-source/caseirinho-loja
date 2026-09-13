@@ -1,10 +1,20 @@
-Caseirinho Loja/App V9.0.1 CLEAN
-Build: 2026-09-09
-Correções:
-- LGPD marcado passa a ser enviado corretamente à API no pedido.
-- Entrega e Retirada usam o mesmo contrato autoritativo de checkout.
-- clientRequestId persistente evita duplicidade em retry/rede instável.
-- seleção de Entrega/Retirada e pagamento não é resetada por atualização do catálogo.
-- polling usa catalog/version e só baixa o catálogo completo quando houver mudança.
-- nenhuma camada/hotfix adicional foi criada.
-Compatibilidade API: 1.15.1+
+Caseirinho Loja/App V9.1.0 — Experiência do Cliente
+Build: 2026-09-13
+
+Melhorias:
+- pedidos de entrega sempre exibem Horário: A combinar no checkout;
+- popup obrigatório informa que todo pedido de entrega terá frete;
+- frete conhecido mostra o valor antes do envio;
+- frete fora das regras informa que será cotado pelo ERP;
+- cotação enviada pelo ERP aparece no app com resposta Sim/Não;
+- se o cliente responder NÃO ao frete, o pedido é cancelado imediatamente;
+- o app mostra 'Pedido cancelado' e oferece 'Fazer novo pedido';
+- pedido aceito gera popup 'Seu pedido foi aceito!';
+- PIX aparece somente após o aceite, quando a forma de pagamento é PIX;
+- horário definido posteriormente pelo ERP retorna ao app e gera aviso;
+- Meus Pedidos ganhou cartões de status, frete, horário e PIX;
+- polling leve de pedidos a cada 20s somente para pedidos salvos neste aparelho;
+- rejeição também retorna ao cliente com mensagem.
+
+Compatibilidade API: 1.16.3+
+Sem alteração de schema/banco.
