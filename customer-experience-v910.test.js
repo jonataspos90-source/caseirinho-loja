@@ -9,8 +9,8 @@ test('todo pedido de entrega exige confirmação do frete',()=>{assert.match(app
 test('cotação do ERP aceita sim ou não no app',()=>{assert.match(app,/shipping-decision/);assert.match(app,/data-shipping-yes/);assert.match(app,/data-shipping-no/)});
 test('aceite mostra popup e pix',()=>{assert.match(app,/Seu pedido foi aceito!/);assert.match(app,/PIX disponível/);assert.match(app,/data-copy-pix/)});
 test('horário posterior gera aviso',()=>{assert.match(app,/Horário de entrega confirmado/);assert.match(app,/orderTimeText/)});
-test('polling de pedidos é leve e separado do catálogo',()=>{assert.match(app,/pollCustomerOrders/);assert.match(app,/6000/)});
-test('cache PWA foi versionado',()=>{assert.match(sw,/caseirinho-loja-v9\.1\.3-freight-actions/)});
+test('polling de pedidos é leve e separado do catálogo',()=>{assert.match(app,/pollCustomerOrders/);assert.match(app,/4000/)});
+test('cache PWA foi versionado',()=>{assert.match(sw,/caseirinho-loja-v9\.2\.0-multistore-performance/)});
 
 
 test('recusa do frete apresenta cancelamento e convite para novo pedido',()=>{
@@ -20,17 +20,17 @@ test('recusa do frete apresenta cancelamento e convite para novo pedido',()=>{
   assert.match(app,/data-new-order/);
 });
 
-test('V9.1.3 memoriza cliente e endereço no navegador',()=>{
+test('V9.2.0 memoriza cliente e endereço no navegador',()=>{
   assert.match(app,/CUSTOMER_PROFILE_KEY/);
   assert.match(app,/saveCustomerProfileFromBody/);
   assert.match(app,/applyCustomerProfile/);
   assert.match(app,/Você pode alterar o CEP ou o número/);
 });
 
-test('V9.1.3 cotação usa revisão e polling mais rápido',()=>{
+test('V9.2.0 cotação usa revisão e polling mais rápido',()=>{
   assert.match(app,/freteCotacaoVersao/);
   assert.match(app,/quoteRevision/);
-  assert.match(app,/6000/);
+  assert.match(app,/4000/);
   assert.match(app,/Novo valor de entrega/);
 });
 
@@ -62,7 +62,45 @@ test('Meus Pedidos mantém CTA explícito para aprovar ou cancelar frete',()=>{
   assert.match(app,/Novo valor de entrega aguardando sua resposta/);
 });
 
-test('app sincroniza histórico novamente ao voltar para a tela',()=>{
-  assert.match(app,/await ensureHistorySession\(\)/);
-  assert.match(app,/await syncCustomerHistory\(\)/);
+test('app usa histórico em uma única consulta por abertura de Pedidos',()=>{
+  assert.match(app,/async function showOrders/);
+  assert.match(app,/const orders=await syncCustomerHistory\(\)/);
+  assert.doesNotMatch(app,/const recent=orders\.slice\(-20\)/);
+});
+
+test('polling usa histórico em lote em vez de consultar 12 pedidos individualmente',()=>{
+  assert.match(app,/const hasHistory=await ensureHistorySession\(\)/);
+  assert.match(app,/const afterOrders=await syncCustomerHistory\(\)/);
+  assert.doesNotMatch(app,/orders\.slice\(-12\)/);
+});
+
+test('loja é multiempresa e storage é isolado por slug',()=>{
+  assert.match(app,/new URLSearchParams\(location\.search\)\.get\('empresa'\)/);
+  assert.match(app,/STORE_SCOPE='john_store_'/);
+  assert.match(app,/migrateLegacyCaseirinhoStorage/);
+});
+
+test('manifesto do PWA preserva a empresa no start_url',()=>{
+  assert.match(app,/function applyStoreManifest/);
+  assert.match(app,/start_url:`\.\/\?empresa=/);
+});
+
+
+test('Pedidos abre antes de aguardar rede e mostra atualização',()=>{
+  const block=app.slice(app.indexOf('async function showOrders'),app.indexOf('function showStore'));
+  assert.match(block,/openSimple\('Meus pedidos'/);
+  assert.match(block,/Atualizando pedidos/);
+  assert.ok(block.indexOf("openSimple('Meus pedidos'") < block.indexOf('await ensureHistorySession()'));
+});
+
+test('storage da loja é isolado antes de ler carrinho',()=>{
+  assert.match(app,/const STORE_SCOPE='john_store_'\+STORE\+'_'/);
+  assert.match(app,/migrateLegacyCaseirinhoStorage\(\);\s*cart=readJson\(CART_KEY,cart\)/);
+});
+
+test('sincronização de histórico evita chamadas concorrentes duplicadas',()=>{
+  assert.match(app,/let historySyncBusy=null/);
+  assert.match(app,/if\(historySyncBusy\)return historySyncBusy/);
+  assert.match(app,/historySyncBusy=\(async\(\)=>/);
+  assert.match(app,/finally\{\s*historySyncBusy=null/);
 });

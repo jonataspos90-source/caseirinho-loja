@@ -2,14 +2,23 @@
 
 const CFG=window.CASEIRINHO_CONFIG||{};
 const API=String(CFG.apiUrl||'').replace(/\/+$/,'');
-const STORE=String(CFG.storeSlug||'caseirinho');
-const CATALOG_KEY='john_ecommerce_public_v1';
-const CART_KEY='caseirinho_cart_persistente_v1';
-const ORDERS_KEY='caseirinho_my_orders_v83';
-const PENDING_ORDER_KEY='caseirinho_pending_order_v901';
-const CUSTOMER_NOTICE_KEY='caseirinho_customer_notice_v911';
-const CUSTOMER_PROFILE_KEY='caseirinho_customer_profile_v1';
-const CUSTOMER_HISTORY_KEY='caseirinho_customer_history_v1';
+const STORE=String(
+  new URLSearchParams(location.search).get('empresa')||
+  new URLSearchParams(location.search).get('loja')||
+  CFG.storeSlug||
+  'caseirinho'
+).trim().toLowerCase()
+ .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+ .replace(/[^a-z0-9-]/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'')||'caseirinho';
+
+const STORE_SCOPE='john_store_'+STORE+'_';
+const CATALOG_KEY=STORE_SCOPE+'catalog_v1';
+const CART_KEY=STORE_SCOPE+'cart_v1';
+const ORDERS_KEY=STORE_SCOPE+'orders_v1';
+const PENDING_ORDER_KEY=STORE_SCOPE+'pending_order_v1';
+const CUSTOMER_NOTICE_KEY=STORE_SCOPE+'customer_notice_v1';
+const CUSTOMER_PROFILE_KEY=STORE_SCOPE+'customer_profile_v1';
+const CUSTOMER_HISTORY_KEY=STORE_SCOPE+'customer_history_v1';
 const E=id=>document.getElementById(id);
 const S=v=>String(v??'');
 const N=v=>Number(v)||0;
@@ -28,11 +37,33 @@ let cepResolved=false;
 let catalogBusy=false;
 let profileHydrated=false;
 let pollBusy=false;
+let historySyncBusy=null;
 let activeQuoteNotice='';
 
 function readJson(k,fallback){try{const x=JSON.parse(localStorage.getItem(k)||'null');return x??fallback}catch(_){return fallback}}
 function writeJson(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(_){}}
 function removeLocal(k){try{localStorage.removeItem(k)}catch(_){}}
+function migrateLegacyCaseirinhoStorage(){
+  if(STORE!=='caseirinho')return;
+  const map={
+    john_ecommerce_public_v1:CATALOG_KEY,
+    caseirinho_cart_persistente_v1:CART_KEY,
+    caseirinho_my_orders_v83:ORDERS_KEY,
+    caseirinho_pending_order_v901:PENDING_ORDER_KEY,
+    caseirinho_customer_notice_v911:CUSTOMER_NOTICE_KEY,
+    caseirinho_customer_profile_v1:CUSTOMER_PROFILE_KEY,
+    caseirinho_customer_history_v1:CUSTOMER_HISTORY_KEY
+  };
+  for(const [oldKey,newKey] of Object.entries(map)){
+    try{
+      if(localStorage.getItem(newKey)!==null)continue;
+      const v=localStorage.getItem(oldKey);
+      if(v!==null)localStorage.setItem(newKey,v);
+    }catch(_){}
+  }
+}
+migrateLegacyCaseirinhoStorage();
+cart=readJson(CART_KEY,cart);
 function customerProfile(){return readJson(CUSTOMER_PROFILE_KEY,{})}
 function customerHistory(){return readJson(CUSTOMER_HISTORY_KEY,{})}
 function saveCustomerHistory(session,meta={}){
@@ -81,15 +112,21 @@ async function ensureHistorySession(){
 async function syncCustomerHistory(){
   const h=customerHistory();
   if(!S(h.session).trim())return readJson(ORDERS_KEY,[]);
-  try{
-    const r=await api(
-      '/api/v1/public/store/'+encodeURIComponent(STORE)+'/orders/history?session='+
-      encodeURIComponent(h.session)
-    );
-    return mergeHistoryOrders(r.orders||[]);
-  }catch(_){
-    return readJson(ORDERS_KEY,[]);
-  }
+  if(historySyncBusy)return historySyncBusy;
+  historySyncBusy=(async()=>{
+    try{
+      const r=await api(
+        '/api/v1/public/store/'+encodeURIComponent(STORE)+'/orders/history?session='+
+        encodeURIComponent(h.session)
+      );
+      return mergeHistoryOrders(r.orders||[]);
+    }catch(_){
+      return readJson(ORDERS_KEY,[]);
+    }finally{
+      historySyncBusy=null;
+    }
+  })();
+  return historySyncBusy;
 }
 function saveCustomerProfileFromBody(body){
   const c=body?.cliente||{},a=body?.entrega||{};
@@ -260,7 +297,7 @@ function cardHtml(entry){
     <div class="product-body">
       <div class="category-label">${esc(c.nome)}</div>
       <h3>${esc(title)}</h3>
-      <div class="description">${esc(desc||'Produto artesanal do Caseirinho.')}</div>
+      <div class="description">${esc(desc||'Produto selecionado da loja.')}</div>
       <div class="price">${grouped&&max>min+.001?'A partir de ':''}${money(min)}</div>
       ${grouped?`<div class="variant-summary">${gm.icon} ${esc(gm.plural)}: ${vars.map(v=>esc(v.variacaoLabel||v.nome)).join(' · ')}</div>`:''}
       <div class="availability ${ok?'':'no'}">${esc(availability)}</div>
@@ -307,10 +344,41 @@ function renderFeatured(){
   E('featured').innerHTML=entries.map(cardHtml).join('')||'<div class="empty">O cardápio está sendo atualizado.</div>';
   wireProductCards(E('featured'));
 }
+function applyStoreManifest(){
+  const link=document.querySelector('link[rel="manifest"]');
+  if(!link)return;
+  try{
+    if(window.__JOHN_STORE_MANIFEST_URL__)URL.revokeObjectURL(window.__JOHN_STORE_MANIFEST_URL__);
+    const name=S(catalog.loja?.nome||STORE||'Loja');
+    const manifest={
+      name:`${name} · Loja Online`,
+      short_name:name.slice(0,30),
+      start_url:`./?empresa=${encodeURIComponent(STORE)}`,
+      scope:'./',
+      display:'standalone',
+      background_color:'#fff7f7',
+      theme_color:'#7b1438',
+      orientation:'any',
+      icons:[
+        {src:'./icons/icon-192.png',sizes:'192x192',type:'image/png'},
+        {src:'./icons/icon-512.png',sizes:'512x512',type:'image/png'},
+        {src:'./icons/icon-maskable-512.png',sizes:'512x512',type:'image/png',purpose:'maskable any'}
+      ]
+    };
+    const blob=new Blob([JSON.stringify(manifest)],{type:'application/manifest+json'});
+    const url=URL.createObjectURL(blob);
+    window.__JOHN_STORE_MANIFEST_URL__=url;
+    link.href=url;
+  }catch(e){console.warn('[Loja] manifest dinâmico:',e)}
+}
+
 function mount(){
-  E('storeName').textContent=catalog.loja?.nome||'Caseirinho';
-  E('footerName').textContent=catalog.loja?.nome||'Caseirinho massas artesanais';
+  const storeName=catalog.loja?.nome||STORE||'Loja';
+  E('storeName').textContent=storeName;
+  E('footerName').textContent=storeName;
   E('storeSub').textContent=catalog.loja?.subtitulo||'Feito com carinho para você.';
+  document.title=storeName+' · Loja Online';
+  applyStoreManifest();
   renderCategories();renderFeatured();renderProducts();renderCart();renderCheckoutConfig();applyCustomerProfile();
 }
 async function loadCatalog(silent=false){
@@ -349,7 +417,7 @@ function showProduct(id){
 
   E('modalCategory').textContent=cat.nome;
   E('modalName').textContent=grouped?(p.gradeNome||p.nome):p.nome;
-  E('modalDescription').textContent=(grouped?(p.gradeDescricao||p.descricao):p.descricao)||'Produto artesanal do Caseirinho.';
+  E('modalDescription').textContent=(grouped?(p.gradeDescricao||p.descricao):p.descricao)||'Produto selecionado da loja.';
 
   if(grouped){
     E('variantBox').className='variant-box';
@@ -791,8 +859,22 @@ async function pollCustomerOrders(){
   if(document.hidden||pollBusy)return;
   pollBusy=true;
   try{
-    const orders=readJson(ORDERS_KEY,[]);
-    const recent=orders.slice(-12);
+    const beforeOrders=readJson(ORDERS_KEY,[]);
+    const beforeMap=new Map(beforeOrders.map(x=>[S(x.id),x]));
+    const hasHistory=await ensureHistorySession();
+
+    if(hasHistory){
+      const afterOrders=await syncCustomerHistory();
+      for(const after of afterOrders.slice(-20)){
+        const before=beforeMap.get(S(after.id))||{};
+        if(JSON.stringify(after)!==JSON.stringify(before)){
+          await notifyOrderChange(before,after);
+        }
+      }
+      return;
+    }
+
+    const recent=beforeOrders.slice(-3);
     const updated=await Promise.all(recent.map(async before=>({before,after:await refreshOrder(before)})));
     for(const {before,after} of updated){
       if(JSON.stringify(after)!==JSON.stringify(before))saveOrderUpdate(after);
@@ -975,20 +1057,7 @@ async function recoverOrdersForm(){
     }
   };
 }
-async function showOrders(){
-  await ensureHistorySession();
-  let orders=await syncCustomerHistory();
-
-  if(orders.length){
-    const recent=orders.slice(-20);
-    for(let i=0;i<recent.length;i++){
-      const updated=await refreshOrder(recent[i]);
-      const originalIndex=orders.findIndex(x=>S(x.id)===S(updated.id));
-      if(originalIndex>=0)orders[originalIndex]=updated;
-    }
-    writeJson(ORDERS_KEY,orders.slice(-100));
-  }
-
+function ordersCardsHtml(orders){
   const cards=orders.slice().reverse().map(o=>{
     const st=norm(o.status||'NOVO'),msg=o.mensagemCliente||'',delivery=norm(o.modalidade)==='ENTREGA';
     const awaiting=
@@ -998,6 +1067,7 @@ async function showOrders(){
       ) &&
       norm(o.freteDecisaoCliente||'PENDENTE')==='PENDENTE' &&
       !['ACEITO','REJEITADO','CANCELADO'].includes(st);
+
     return `<div class="order-card"><div class="order-top"><div><b>${esc(o.codigo||o.id)}</b><br><small>${new Date(o.criadoEm||o.createdAt||o.savedAt||Date.now()).toLocaleString('pt-BR')}</small></div><span class="status-badge ${esc(st)}">${esc(customerStatusLabel(st))}</span></div>
       <div class="order-customer-grid"><div><small>Total</small><b>${money(o.total||o.subtotal)}</b></div>${delivery?`<div><small>Entrega</small><b>${esc(orderTimeText(o))}</b></div>`:''}${delivery?`<div><small>Frete</small><b>${o.freteStatus==='COTACAO_PENDENTE'?'A calcular':money(o.valorFrete||0)}</b></div>`:''}</div>
       ${o.freteStatus==='COTACAO_PENDENTE'?'<div class="cx-note">🛵 A loja calculará a entrega e enviará o valor aqui para sua aprovação.</div>':''}
@@ -1007,31 +1077,59 @@ async function showOrders(){
       ${st==='ACEITO'?`<div class="result"><b>🎉 Seu pedido foi aceito!</b>${delivery?`<br>Horário de entrega: <b>${esc(orderTimeText(o))}</b>`:''}</div>${pixCard(o.pix)}`:''}
       ${st==='REJEITADO'?`<div class="result err">❌ <b>Pedido rejeitado</b><br>${esc(msg||'Seu pedido não pôde ser aceito. Entre em contato conosco se precisar de ajuda.')}</div>`:''}
       ${msg&&!['REJEITADO','CANCELADO','FRETE_RECUSADO_CLIENTE'].includes(st)?`<div class="cx-note">${esc(msg)}</div>`:''}
-      <div class="order-actions">${['CANCELADO','FRETE_RECUSADO_CLIENTE'].includes(st)?`<button class="primary" data-new-order="${esc(o.id)}" type="button">Fazer novo pedido</button>`:''}<button class="soft" data-refresh-order="${esc(o.id)}" type="button">Atualizar status</button></div></div>`;
+      <div class="order-actions">${['CANCELADO','FRETE_RECUSADO_CLIENTE'].includes(st)?`<button class="primary" data-new-order="${esc(o.id)}" type="button">Fazer novo pedido</button>`:''}<button class="soft" data-refresh-orders type="button">Atualizar status</button></div></div>`;
   }).join('');
 
-  const html=`
+  return `
     <div class="order-actions" style="margin-bottom:12px">
       <button class="soft" id="recoverOrdersBtn" type="button">🔐 Recuperar pedidos</button>
     </div>
     ${cards||'<div class="empty">Nenhum pedido foi encontrado neste aparelho. Se você já comprou antes, use “Recuperar pedidos”.</div>'}
   `;
-  openSimple('Meus pedidos',html);
-  E('recoverOrdersBtn').onclick=recoverOrdersForm;
-  E('simpleBody').querySelectorAll('[data-refresh-order]').forEach(b=>b.onclick=showOrders);
-  E('simpleBody').querySelectorAll('[data-new-order]').forEach(b=>b.onclick=()=>{
+}
+
+function wireOrdersView(){
+  const root=E('simpleBody');
+  if(!root)return;
+  E('recoverOrdersBtn')?.addEventListener('click',recoverOrdersForm);
+  root.querySelectorAll('[data-refresh-orders]').forEach(b=>b.onclick=showOrders);
+  root.querySelectorAll('[data-new-order]').forEach(b=>b.onclick=()=>{
     closeOverlay(E('simpleOverlay'));
     E('catalogSection')?.scrollIntoView({behavior:'smooth'});
   });
-  bindCustomerExperienceActions(E('simpleBody'));
+  bindCustomerExperienceActions(root);
+}
+
+async function showOrders(){
+  const cached=readJson(ORDERS_KEY,[]);
+  openSimple('Meus pedidos',`
+    <div class="cx-note" id="ordersSyncState">🔄 Atualizando pedidos…</div>
+    <div id="ordersCardsArea">${cached.length?ordersCardsHtml(cached):'<div class="empty">Carregando seu histórico…</div>'}</div>
+  `);
+  if(cached.length)wireOrdersView();
+
+  try{
+    await ensureHistorySession();
+    const orders=await syncCustomerHistory();
+    const area=E('ordersCardsArea');
+    if(area)area.innerHTML=ordersCardsHtml(orders);
+    E('ordersSyncState')?.remove();
+    wireOrdersView();
+  }catch(_){
+    const area=E('ordersCardsArea');
+    if(area&&!cached.length)area.innerHTML=ordersCardsHtml([]);
+    const st=E('ordersSyncState');
+    if(st)st.textContent='Não foi possível atualizar agora. Mostrando os dados disponíveis neste aparelho.';
+    wireOrdersView();
+  }
 }
 function showStore(){
   const l=catalog.loja||{},addr=[l.logradouro||l.endereco,l.numero,l.complemento,l.bairro,l.cidade,l.uf].filter(Boolean).join(', ');
-  openSimple('Sobre a loja',`<h3>${esc(l.nome||'Caseirinho')}</h3><p>${esc(l.apresentacao||l.subtitulo||'Massas artesanais preparadas com carinho.')}</p>${addr?`<p><b>📍 Endereço</b><br>${esc(addr)}</p>`:''}${l.horarioFuncionamento?`<p><b>🕐 Funcionamento</b><br>${esc(l.horarioFuncionamento)}</p>`:''}${l.whatsapp?`<p><b>📱 WhatsApp</b><br>${esc(l.whatsapp)}</p>`:''}`);
+  openSimple('Sobre a loja',`<h3>${esc(l.nome||STORE||'Loja')}</h3><p>${esc(l.apresentacao||l.subtitulo||'Conheça nossos produtos e faça seu pedido online.')}</p>${addr?`<p><b>📍 Endereço</b><br>${esc(addr)}</p>`:''}${l.horarioFuncionamento?`<p><b>🕐 Funcionamento</b><br>${esc(l.horarioFuncionamento)}</p>`:''}${l.whatsapp?`<p><b>📱 WhatsApp</b><br>${esc(l.whatsapp)}</p>`:''}`);
 }
 function showPrivacy(){
   const l=catalog.loja?.lgpd||{};
-  openSimple('Política de Privacidade / LGPD',`<p><b>Controlador:</b> ${esc(l.controlador||catalog.loja?.nome||'Caseirinho')}</p><p>${esc(l.politica||'Os dados informados são utilizados para atendimento, cadastro, processamento do pedido, entrega e contato relacionados à compra.')}</p><p><b>Retenção:</b> ${esc(l.retencao||'Os dados são mantidos pelo período necessário às finalidades informadas e às obrigações legais aplicáveis.')}</p>`);
+  openSimple('Política de Privacidade / LGPD',`<p><b>Controlador:</b> ${esc(l.controlador||catalog.loja?.nome||STORE||'Loja')}</p><p>${esc(l.politica||'Os dados informados são utilizados para atendimento, cadastro, processamento do pedido, entrega e contato relacionados à compra.')}</p><p><b>Retenção:</b> ${esc(l.retencao||'Os dados são mantidos pelo período necessário às finalidades informadas e às obrigações legais aplicáveis.')}</p>`);
 }
 function whatsapp(){
   const n=S(catalog.loja?.whatsapp).replace(/\D/g,'');
@@ -1099,14 +1197,9 @@ function start(){
 
   // Heartbeats leves: catálogo por versão e pedidos do próprio aparelho por token público.
   setInterval(()=>{if(!document.hidden)checkCatalogVersion()},30000);
-  setInterval(()=>{if(!document.hidden)pollCustomerOrders()},6000);
-  setTimeout(()=>pollCustomerOrders(),1800);
-  setTimeout(async()=>{
-    await ensureHistorySession();
-    await syncCustomerHistory();
-    await pollCustomerOrders();
-  },3200);
-  window.addEventListener('focus',async()=>{checkCatalogVersion();await ensureHistorySession();await syncCustomerHistory();pollCustomerOrders()});
+  setInterval(()=>{if(!document.hidden)pollCustomerOrders()},4000);
+  setTimeout(()=>pollCustomerOrders(),1200);
+  window.addEventListener('focus',()=>{checkCatalogVersion();pollCustomerOrders()});
   window.addEventListener('online',()=>{checkCatalogVersion();pollCustomerOrders()});
   document.addEventListener('visibilitychange',()=>{if(!document.hidden){checkCatalogVersion();pollCustomerOrders()}});
 }

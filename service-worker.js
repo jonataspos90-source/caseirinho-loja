@@ -1,4 +1,4 @@
-const CACHE='caseirinho-loja-v9.1.3-freight-actions';
+const CACHE='caseirinho-loja-v9.2.0-multistore-performance';
 const SHELL=[
   './',
   './index.html',

@@ -1,35 +1,39 @@
-Caseirinho Loja/App V9.1.3 — Experiência do Cliente
-Build: 2026-09-13
+Loja Online V9.2.0 — Multiempresa / Performance / Experiência do Cliente
+Build: 2026-09-14
+API esperada: 1.16.7
 
-Melhorias:
-- pedidos de entrega sempre exibem Horário: A combinar no checkout;
-- popup obrigatório informa que todo pedido de entrega terá frete;
-- frete conhecido mostra o valor antes do envio;
-- frete fora das regras informa que será cotado pelo ERP;
-- cotação enviada pelo ERP aparece no app com resposta Sim/Não;
-- se o cliente responder NÃO ao frete, o pedido é cancelado imediatamente;
-- o app mostra 'Pedido cancelado' e oferece 'Fazer novo pedido';
-- pedido aceito gera popup 'Seu pedido foi aceito!';
-- PIX aparece somente após o aceite, quando a forma de pagamento é PIX;
-- horário definido posteriormente pelo ERP retorna ao app e gera aviso;
-- Meus Pedidos ganhou cartões de status, frete, horário e PIX;
-- polling leve de pedidos a cada 20s somente para pedidos salvos neste aparelho;
-- rejeição também retorna ao cliente com mensagem.
+MULTILOJA
+- O parâmetro ?empresa=<slug> define a loja ativa.
+- Cada empresa recebe um link exclusivo no padrão:
+  .../caseirinho-loja/?empresa=john-nome-da-empresa
+- Carrinho, perfil, histórico, pedidos, avisos e cache são isolados por loja no navegador.
+- O Caseirinho migra os dados locais antigos para o namespace novo sem apagar a cópia anterior.
+- O PWA gera manifesto por empresa e mantém ?empresa=<slug> no start_url.
+- Antes de carregar a identidade da empresa, a interface usa textos neutros de "Loja Online".
 
-Compatibilidade API: 1.16.3+
-Sem alteração de schema/banco.
+MEUS PEDIDOS / PERFORMANCE
+- Clicar em Pedidos abre imediatamente usando o cache disponível.
+- A sincronização ocorre depois da abertura, com indicador de atualização.
+- Com sessão de histórico, uma única consulta atualiza todos os pedidos.
+- Foi removido o fluxo anterior que podia fazer até 20 consultas sequenciais ao abrir Pedidos.
+- Polling usa uma consulta em lote a cada 4 segundos enquanto o App está visível.
+- Sem sessão de histórico, o fallback consulta no máximo 3 pedidos.
+- Ao voltar para o App, o histórico é sincronizado novamente.
 
-- Cliente: dados do primeiro pedido ficam salvos somente neste navegador para preencher os próximos pedidos automaticamente; todos os campos continuam editáveis.
-- Cotação: revisão incremental e nova checagem a cada 6 segundos enquanto o app está aberto.
-- Cotação alterada pelo ERP gera novo aviso com o valor atualizado.
-- Uma resposta do cliente nunca confirma uma cotação antiga: o app envia a revisão exibida e o servidor exige que ela ainda seja a atual.
+FRETE / EXPERIÊNCIA
+- Entrega começa com horário "A combinar".
+- O cliente é avisado de que o pedido terá valor de entrega.
+- Cotação enviada pelo ERP aparece com valor atualizado e total atualizado.
+- Cliente responde "Sim, aprovar frete" ou "Não, cancelar pedido".
+- A decisão pode usar o token individual do pedido ou a sessão segura de histórico.
+- Se aprovar, o ERP recebe o estado "Cliente aceitou novo frete".
+- Se recusar, o pedido é cancelado e o App oferece fazer um novo pedido.
+- PIX aparece depois do aceite quando a forma de pagamento é PIX.
+- Horário definido posteriormente pelo ERP retorna ao App.
 
-- Meus Pedidos agora possui sessão segura de histórico do cliente, vinculada ao WhatsApp do pedido.
-- Pedidos e novas cotações podem ser restaurados do servidor mesmo quando o histórico local ficou incompleto.
-- Para recuperar histórico em outro aparelho/navegador: informar WhatsApp + código de um pedido anterior.
-- Mantido preenchimento automático dos dados do cliente e último endereço neste aparelho.
+DADOS DO CLIENTE
+- Nome, WhatsApp, e-mail, CPF e último endereço ficam preenchidos neste aparelho.
+- Todos os campos permanecem editáveis.
+- O histórico pode ser recuperado em outro aparelho usando WhatsApp + código de pedido.
 
-- Aprovação/rejeição de frete pode usar o token do pedido ou a sessão segura de histórico.
-- Se o token individual não estiver mais no navegador, a sessão de histórico mantém a ação funcional.
-- Meus Pedidos destaca de forma explícita cotações aguardando Sim/Não.
-- Ao abrir/voltar ao app, o histórico e as cotações são sincronizados antes do polling normal.
+- Sincronização do histórico usa single-flight: cliques, foco e polling simultâneos compartilham a mesma chamada em vez de duplicar requisições.
