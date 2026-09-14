@@ -9,6 +9,7 @@ const ORDERS_KEY='caseirinho_my_orders_v83';
 const PENDING_ORDER_KEY='caseirinho_pending_order_v901';
 const CUSTOMER_NOTICE_KEY='caseirinho_customer_notice_v911';
 const CUSTOMER_PROFILE_KEY='caseirinho_customer_profile_v1';
+const CUSTOMER_HISTORY_KEY='caseirinho_customer_history_v1';
 const E=id=>document.getElementById(id);
 const S=v=>String(v??'');
 const N=v=>Number(v)||0;
@@ -33,6 +34,63 @@ function readJson(k,fallback){try{const x=JSON.parse(localStorage.getItem(k)||'n
 function writeJson(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(_){}}
 function removeLocal(k){try{localStorage.removeItem(k)}catch(_){}}
 function customerProfile(){return readJson(CUSTOMER_PROFILE_KEY,{})}
+function customerHistory(){return readJson(CUSTOMER_HISTORY_KEY,{})}
+function saveCustomerHistory(session,meta={}){
+  if(!S(session).trim())return;
+  writeJson(CUSTOMER_HISTORY_KEY,{
+    session:S(session).trim(),
+    phoneSuffix:S(meta.phoneSuffix||''),
+    expiresInDays:N(meta.expiresInDays)||90,
+    savedAt:new Date().toISOString()
+  });
+}
+function mergeHistoryOrders(incoming=[]){
+  const current=readJson(ORDERS_KEY,[]);
+  const map=new Map(current.map(x=>[S(x.id),x]));
+  for(const x of A(incoming)){
+    if(!x?.id)continue;
+    map.set(S(x.id),{...(map.get(S(x.id))||{}),...x});
+  }
+  const merged=[...map.values()].sort((a,b)=>
+    S(a.criadoEm||a.createdAt||a.savedAt).localeCompare(S(b.criadoEm||b.createdAt||b.savedAt))
+  ).slice(-100);
+  writeJson(ORDERS_KEY,merged);
+  return merged;
+}
+async function bootstrapHistorySession(order){
+  if(!order?.id||!order?.publicToken)return false;
+  try{
+    const r=await api('/api/v1/public/store/'+encodeURIComponent(STORE)+'/orders/history-session',{
+      method:'POST',
+      body:JSON.stringify({orderId:S(order.id),token:S(order.publicToken)})
+    });
+    if(r?.session){
+      saveCustomerHistory(r.session,r);
+      return true;
+    }
+  }catch(_){}
+  return false;
+}
+async function ensureHistorySession(){
+  const h=customerHistory();
+  if(S(h.session).trim())return true;
+  const orders=readJson(ORDERS_KEY,[]);
+  const candidate=[...orders].reverse().find(x=>x?.id&&x?.publicToken);
+  return candidate?bootstrapHistorySession(candidate):false;
+}
+async function syncCustomerHistory(){
+  const h=customerHistory();
+  if(!S(h.session).trim())return readJson(ORDERS_KEY,[]);
+  try{
+    const r=await api(
+      '/api/v1/public/store/'+encodeURIComponent(STORE)+'/orders/history?session='+
+      encodeURIComponent(h.session)
+    );
+    return mergeHistoryOrders(r.orders||[]);
+  }catch(_){
+    return readJson(ORDERS_KEY,[]);
+  }
+}
 function saveCustomerProfileFromBody(body){
   const c=body?.cliente||{},a=body?.entrega||{};
   writeJson(CUSTOMER_PROFILE_KEY,{
@@ -804,6 +862,8 @@ async function submitOrder(ev){
     else orders.push(saved);
     writeJson(ORDERS_KEY,orders.slice(-100));
     saveCustomerProfileFromBody(body);
+    await bootstrapHistorySession(saved);
+    await syncCustomerHistory();
 
     // Somente depois de uma resposta válida podemos liberar o requestId.
     removeLocal(PENDING_ORDER_KEY);
@@ -860,32 +920,79 @@ async function refreshOrder(o){
     }catch(__){return o}
   }
 }
+async function recoverOrdersForm(){
+  const p=customerProfile();
+  openSimple('Recuperar meus pedidos',`
+    <div class="cx-note">Use o mesmo WhatsApp do pedido e o código de um pedido anterior. Isso é necessário para proteger seus dados.</div>
+    <form id="recoverOrdersForm" class="checkout" style="margin-top:12px">
+      <label>WhatsApp<input id="recoverPhone" required inputmode="tel" value="${esc(formatPhone(p.telefone||''))}" placeholder="(11) 99999-9999"></label>
+      <label>Código do pedido<input id="recoverCode" required autocomplete="off" placeholder="Ex.: WEB-20260913-ABC12345"></label>
+      <button class="primary" type="submit">Recuperar pedidos</button>
+      <div id="recoverOrdersResult"></div>
+    </form>
+  `);
+  const form=E('recoverOrdersForm');
+  if(!form)return;
+  E('recoverPhone').oninput=()=>E('recoverPhone').value=formatPhone(E('recoverPhone').value);
+  form.onsubmit=async ev=>{
+    ev.preventDefault();
+    const phone=S(E('recoverPhone').value).trim();
+    const code=S(E('recoverCode').value).trim();
+    const out=E('recoverOrdersResult');
+    out.innerHTML='<div class="cx-note">Buscando seus pedidos…</div>';
+    try{
+      const r=await api('/api/v1/public/store/'+encodeURIComponent(STORE)+'/orders/history-recover',{
+        method:'POST',
+        body:JSON.stringify({telefone:phone,codigoPedido:code})
+      });
+      saveCustomerHistory(r.session,r);
+      mergeHistoryOrders(r.orders||[]);
+      const old=customerProfile();
+      writeJson(CUSTOMER_PROFILE_KEY,{...old,telefone:phone,updatedAt:new Date().toISOString()});
+      toast('Pedidos recuperados com sucesso.');
+      await showOrders();
+    }catch(err){
+      out.innerHTML=`<div class="result err">${esc(err.message)}</div>`;
+    }
+  };
+}
 async function showOrders(){
-  let orders=readJson(ORDERS_KEY,[]);
+  await ensureHistorySession();
+  let orders=await syncCustomerHistory();
+
   if(orders.length){
-    const recent=orders.slice(-12);
+    const recent=orders.slice(-20);
     for(let i=0;i<recent.length;i++){
       const updated=await refreshOrder(recent[i]);
       const originalIndex=orders.findIndex(x=>S(x.id)===S(updated.id));
       if(originalIndex>=0)orders[originalIndex]=updated;
     }
-    writeJson(ORDERS_KEY,orders);
+    writeJson(ORDERS_KEY,orders.slice(-100));
   }
-  const html=orders.slice().reverse().map(o=>{
+
+  const cards=orders.slice().reverse().map(o=>{
     const st=norm(o.status||'NOVO'),msg=o.mensagemCliente||'',delivery=norm(o.modalidade)==='ENTREGA';
     const awaiting=st==='AGUARDANDO_CLIENTE_FRETE'&&norm(o.freteDecisaoCliente||'PENDENTE')==='PENDENTE';
-    return `<div class="order-card"><div class="order-top"><div><b>${esc(o.codigo||o.id)}</b><br><small>${new Date(o.criadoEm||o.savedAt||Date.now()).toLocaleString('pt-BR')}</small></div><span class="status-badge ${esc(st)}">${esc(customerStatusLabel(st))}</span></div>
+    return `<div class="order-card"><div class="order-top"><div><b>${esc(o.codigo||o.id)}</b><br><small>${new Date(o.criadoEm||o.createdAt||o.savedAt||Date.now()).toLocaleString('pt-BR')}</small></div><span class="status-badge ${esc(st)}">${esc(customerStatusLabel(st))}</span></div>
       <div class="order-customer-grid"><div><small>Total</small><b>${money(o.total||o.subtotal)}</b></div>${delivery?`<div><small>Entrega</small><b>${esc(orderTimeText(o))}</b></div>`:''}${delivery?`<div><small>Frete</small><b>${o.freteStatus==='COTACAO_PENDENTE'?'A calcular':money(o.valorFrete||0)}</b></div>`:''}</div>
       ${o.freteStatus==='COTACAO_PENDENTE'?'<div class="cx-note">🛵 A loja calculará a entrega e enviará o valor aqui para sua aprovação.</div>':''}
-      ${awaiting?`<div class="freight-decision"><b>🛵 A loja enviou o valor da entrega.</b><div>Frete: <strong>${money(o.valorFrete)}</strong> · Total: <strong>${money(o.total)}</strong></div><div class="order-actions"><button class="soft" data-shipping-no="${esc(o.id)}" type="button">Não</button><button class="primary" data-shipping-yes="${esc(o.id)}" type="button">Sim, aceito</button></div></div>`:''}
-      ${st==='AGUARDANDO_ACEITE_ERP'?'<div class="cx-note ok">✅ Frete aprovado por você. Aguardando o aceite final da loja.</div>':''}
+      ${awaiting?`<div class="freight-decision"><b>🛵 A loja enviou um valor de entrega.</b><div>Frete: <strong>${money(o.valorFrete)}</strong> · Total: <strong>${money(o.total)}</strong></div><div class="order-actions"><button class="soft" data-shipping-no="${esc(o.id)}" type="button">Não</button><button class="primary" data-shipping-yes="${esc(o.id)}" type="button">Sim, aceito</button></div></div>`:''}
+      ${st==='AGUARDANDO_ACEITE_ERP'?'<div class="cx-note ok">✅ Você aceitou o novo frete. Agora o pedido aguarda o aceite final da loja.</div>':''}
       ${st==='FRETE_RECUSADO_CLIENTE'||st==='CANCELADO'?`<div class="result err">🛑 <b>Pedido cancelado</b><br>${esc(msg||'Você não aceitou o valor da entrega. Caso queira prosseguir, faça um novo pedido.')}</div>`:''}
       ${st==='ACEITO'?`<div class="result"><b>🎉 Seu pedido foi aceito!</b>${delivery?`<br>Horário de entrega: <b>${esc(orderTimeText(o))}</b>`:''}</div>${pixCard(o.pix)}`:''}
       ${st==='REJEITADO'?`<div class="result err">❌ <b>Pedido rejeitado</b><br>${esc(msg||'Seu pedido não pôde ser aceito. Entre em contato conosco se precisar de ajuda.')}</div>`:''}
       ${msg&&!['REJEITADO','CANCELADO','FRETE_RECUSADO_CLIENTE'].includes(st)?`<div class="cx-note">${esc(msg)}</div>`:''}
       <div class="order-actions">${['CANCELADO','FRETE_RECUSADO_CLIENTE'].includes(st)?`<button class="primary" data-new-order="${esc(o.id)}" type="button">Fazer novo pedido</button>`:''}<button class="soft" data-refresh-order="${esc(o.id)}" type="button">Atualizar status</button></div></div>`;
-  }).join('')||'<div class="empty">Você ainda não possui pedidos salvos neste aparelho.</div>';
+  }).join('');
+
+  const html=`
+    <div class="order-actions" style="margin-bottom:12px">
+      <button class="soft" id="recoverOrdersBtn" type="button">🔐 Recuperar pedidos</button>
+    </div>
+    ${cards||'<div class="empty">Nenhum pedido foi encontrado neste aparelho. Se você já comprou antes, use “Recuperar pedidos”.</div>'}
+  `;
   openSimple('Meus pedidos',html);
+  E('recoverOrdersBtn').onclick=recoverOrdersForm;
   E('simpleBody').querySelectorAll('[data-refresh-order]').forEach(b=>b.onclick=showOrders);
   E('simpleBody').querySelectorAll('[data-new-order]').forEach(b=>b.onclick=()=>{
     closeOverlay(E('simpleOverlay'));

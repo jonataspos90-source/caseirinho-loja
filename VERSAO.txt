@@ -1,4 +1,4 @@
-Caseirinho Loja/App V9.1.1 — Experiência do Cliente
+Caseirinho Loja/App V9.1.2 — Experiência do Cliente
 Build: 2026-09-13
 
 Melhorias:
@@ -23,3 +23,8 @@ Sem alteração de schema/banco.
 - Cotação: revisão incremental e nova checagem a cada 6 segundos enquanto o app está aberto.
 - Cotação alterada pelo ERP gera novo aviso com o valor atualizado.
 - Uma resposta do cliente nunca confirma uma cotação antiga: o app envia a revisão exibida e o servidor exige que ela ainda seja a atual.
+
+- Meus Pedidos agora possui sessão segura de histórico do cliente, vinculada ao WhatsApp do pedido.
+- Pedidos e novas cotações podem ser restaurados do servidor mesmo quando o histórico local ficou incompleto.
+- Para recuperar histórico em outro aparelho/navegador: informar WhatsApp + código de um pedido anterior.
+- Mantido preenchimento automático dos dados do cliente e último endereço neste aparelho.
