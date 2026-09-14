@@ -7,7 +7,8 @@ const CATALOG_KEY='john_ecommerce_public_v1';
 const CART_KEY='caseirinho_cart_persistente_v1';
 const ORDERS_KEY='caseirinho_my_orders_v83';
 const PENDING_ORDER_KEY='caseirinho_pending_order_v901';
-const CUSTOMER_NOTICE_KEY='caseirinho_customer_notice_v910';
+const CUSTOMER_NOTICE_KEY='caseirinho_customer_notice_v911';
+const CUSTOMER_PROFILE_KEY='caseirinho_customer_profile_v1';
 const E=id=>document.getElementById(id);
 const S=v=>String(v??'');
 const N=v=>Number(v)||0;
@@ -24,10 +25,61 @@ let selectedGradeId='';
 let currentImages=[];
 let cepResolved=false;
 let catalogBusy=false;
+let profileHydrated=false;
+let pollBusy=false;
+let activeQuoteNotice='';
 
 function readJson(k,fallback){try{const x=JSON.parse(localStorage.getItem(k)||'null');return x??fallback}catch(_){return fallback}}
 function writeJson(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(_){}}
 function removeLocal(k){try{localStorage.removeItem(k)}catch(_){}}
+function customerProfile(){return readJson(CUSTOMER_PROFILE_KEY,{})}
+function saveCustomerProfileFromBody(body){
+  const c=body?.cliente||{},a=body?.entrega||{};
+  writeJson(CUSTOMER_PROFILE_KEY,{
+    nome:S(c.nome).trim(),
+    telefone:S(c.telefone).trim(),
+    email:S(c.email).trim(),
+    cpf:S(c.cpf).trim(),
+    modalidade:S(body?.modalidade||''),
+    entrega:{
+      cep:S(a.cep).replace(/\D/g,''),
+      logradouro:S(a.logradouro).trim(),
+      numero:S(a.numero).trim(),
+      complemento:S(a.complemento).trim(),
+      bairro:S(a.bairro).trim(),
+      cidade:S(a.cidade).trim(),
+      uf:S(a.uf).trim()
+    },
+    updatedAt:new Date().toISOString()
+  });
+}
+function applyCustomerProfile(){
+  if(profileHydrated)return;
+  profileHydrated=true;
+  const p=customerProfile(),a=p?.entrega||{};
+  const set=(id,val)=>{const el=E(id);if(el&&!S(el.value).trim()&&S(val).trim())el.value=S(val)};
+  set('cName',p.nome);
+  set('cPhone',formatPhone(p.telefone));
+  set('cEmail',p.email);
+  set('cCpf',p.cpf);
+  const mode=E('mode');
+  if(mode&&p.modalidade&&[...mode.options].some(o=>o.value===p.modalidade))mode.value=p.modalidade;
+  set('cep',S(a.cep).replace(/^(\d{5})(\d{3})$/,'$1-$2'));
+  set('number',a.numero);
+  set('street',a.logradouro);
+  set('district',a.bairro);
+  set('city',a.cidade);
+  set('uf',a.uf);
+  set('comp',a.complemento);
+  if(S(a.cep).replace(/\D/g,'').length===8&&a.logradouro&&a.cidade){
+    cepResolved=true;
+    if(E('cepStatus')){
+      E('cepStatus').className='info-box ok';
+      E('cepStatus').innerHTML=`✅ Endereço salvo neste aparelho: <b>${esc(a.logradouro)}</b> · ${esc(a.bairro)} · ${esc(a.cidade)}/${esc(a.uf)}. Você pode alterar o CEP ou o número quando quiser.`;
+    }
+  }
+  modeChanged();
+}
 function newRequestId(){
   try{if(crypto?.randomUUID)return crypto.randomUUID()}catch(_){}
   return 'req-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,12);
@@ -201,7 +253,7 @@ function mount(){
   E('storeName').textContent=catalog.loja?.nome||'Caseirinho';
   E('footerName').textContent=catalog.loja?.nome||'Caseirinho massas artesanais';
   E('storeSub').textContent=catalog.loja?.subtitulo||'Feito com carinho para você.';
-  renderCategories();renderFeatured();renderProducts();renderCart();renderCheckoutConfig();
+  renderCategories();renderFeatured();renderProducts();renderCart();renderCheckoutConfig();applyCustomerProfile();
 }
 async function loadCatalog(silent=false){
   if(catalogBusy)return;
@@ -551,10 +603,14 @@ function saveOrderUpdate(updated){
   return orders[i>=0?i:orders.length-1];
 }
 async function shippingDecision(o,accept){
-  if(!o?.id||!o?.publicToken)return;
+  if(!o?.id||!o?.publicToken)return false;
   try{
     const d=await api('/api/v1/public/store/'+encodeURIComponent(STORE)+'/orders/'+encodeURIComponent(o.id)+'/shipping-decision',{
-      method:'POST',body:JSON.stringify({token:o.publicToken,decision:accept?'ACCEPT':'REJECT'})
+      method:'POST',body:JSON.stringify({
+        token:o.publicToken,
+        decision:accept?'ACCEPT':'REJECT',
+        quoteRevision:Number.isFinite(Number(o.freteCotacaoVersao))?Number(o.freteCotacaoVersao):undefined
+      })
     });
     const saved=saveOrderUpdate({...o,...d});
     if(accept){
@@ -577,7 +633,8 @@ async function shippingDecision(o,accept){
       }
     }
     await showOrders();
-  }catch(err){toast(err.message)}
+    return true;
+  }catch(err){toast(err.message);setTimeout(()=>pollCustomerOrders(),250);return false}
 }
 function bindCustomerExperienceActions(root=document){
   root.querySelectorAll('[data-copy-pix]').forEach(b=>b.onclick=async()=>{
@@ -598,13 +655,24 @@ function markNotice(key){const x=seenNotices();x[key]=new Date().toISOString();w
 async function notifyOrderChange(before,after){
   if(!after?.id)return;
   const seen=seenNotices(),st=norm(after.status),old=norm(before?.status);
-  const quoteKey=`${after.id}:quote:${after.freteCotadoEm||after.updatedAt||after.valorFrete}`;
-  if(st==='AGUARDANDO_CLIENTE_FRETE'&&norm(after.freteDecisaoCliente||'PENDENTE')==='PENDENTE'&&!seen[quoteKey]){
-    markNotice(quoteKey);
-    const yes=await customerDialog({title:'Valor da entrega disponível',icon:'🛵',locked:true,
-      html:`<div class="cx-highlight">Frete: <b>${money(after.valorFrete)}</b></div><p>Total do pedido: <b>${money(after.total)}</b></p><p>Você aceita esse valor de entrega?</p>`,
-      actions:[{label:'Não',value:false},{label:'Sim, aceito',value:true,primary:true}]});
-    await shippingDecision(after,yes);return;
+  const quoteKey=`${after.id}:quote:${after.freteCotacaoVersao||after.freteCotadoEm||after.updatedAt||after.valorFrete}`;
+  if(
+    st==='AGUARDANDO_CLIENTE_FRETE'&&
+    norm(after.freteDecisaoCliente||'PENDENTE')==='PENDENTE'&&
+    !seen[quoteKey]&&
+    activeQuoteNotice!==quoteKey
+  ){
+    activeQuoteNotice=quoteKey;
+    try{
+      const yes=await customerDialog({title:'Novo valor de entrega',icon:'🛵',locked:true,
+        html:`<div class="cx-highlight">Frete: <b>${money(after.valorFrete)}</b></div><p>Total atualizado do pedido: <b>${money(after.total)}</b></p><p>Você aceita esse valor de entrega?</p>`,
+        actions:[{label:'Não, cancelar pedido',value:false},{label:'Sim, aceito',value:true,primary:true}]});
+      const ok=await shippingDecision(after,yes);
+      if(ok)markNotice(quoteKey);
+    }finally{
+      activeQuoteNotice='';
+    }
+    return;
   }
   const acceptKey=`${after.id}:accepted:${after.aceitoEm||after.updatedAt}`;
   if(st==='ACEITO'&&old!=='ACEITO'&&!seen[acceptKey]){
@@ -643,12 +711,18 @@ async function notifyOrderChange(before,after){
   }
 }
 async function pollCustomerOrders(){
-  if(document.hidden)return;
-  const orders=readJson(ORDERS_KEY,[]);
-  for(const before of orders.slice(-12)){
-    const after=await refreshOrder(before);
-    if(JSON.stringify(after)!==JSON.stringify(before))saveOrderUpdate(after);
-    await notifyOrderChange(before,after);
+  if(document.hidden||pollBusy)return;
+  pollBusy=true;
+  try{
+    const orders=readJson(ORDERS_KEY,[]);
+    const recent=orders.slice(-12);
+    const updated=await Promise.all(recent.map(async before=>({before,after:await refreshOrder(before)})));
+    for(const {before,after} of updated){
+      if(JSON.stringify(after)!==JSON.stringify(before))saveOrderUpdate(after);
+      await notifyOrderChange(before,after);
+    }
+  }finally{
+    pollBusy=false;
   }
 }
 
@@ -729,6 +803,7 @@ async function submitOrder(ev){
     if(idx>=0)orders[idx]={...orders[idx],...saved};
     else orders.push(saved);
     writeJson(ORDERS_KEY,orders.slice(-100));
+    saveCustomerProfileFromBody(body);
 
     // Somente depois de uma resposta válida podemos liberar o requestId.
     removeLocal(PENDING_ORDER_KEY);
@@ -892,7 +967,7 @@ function start(){
 
   // Heartbeats leves: catálogo por versão e pedidos do próprio aparelho por token público.
   setInterval(()=>{if(!document.hidden)checkCatalogVersion()},30000);
-  setInterval(()=>{if(!document.hidden)pollCustomerOrders()},20000);
+  setInterval(()=>{if(!document.hidden)pollCustomerOrders()},6000);
   setTimeout(()=>pollCustomerOrders(),2500);
   window.addEventListener('focus',()=>{checkCatalogVersion();pollCustomerOrders()});
   window.addEventListener('online',()=>{checkCatalogVersion();pollCustomerOrders()});

@@ -1,4 +1,4 @@
-Caseirinho Loja/App V9.1.0 — Experiência do Cliente
+Caseirinho Loja/App V9.1.1 — Experiência do Cliente
 Build: 2026-09-13
 
 Melhorias:
@@ -18,3 +18,8 @@ Melhorias:
 
 Compatibilidade API: 1.16.3+
 Sem alteração de schema/banco.
+
+- Cliente: dados do primeiro pedido ficam salvos somente neste navegador para preencher os próximos pedidos automaticamente; todos os campos continuam editáveis.
+- Cotação: revisão incremental e nova checagem a cada 6 segundos enquanto o app está aberto.
+- Cotação alterada pelo ERP gera novo aviso com o valor atualizado.
+- Uma resposta do cliente nunca confirma uma cotação antiga: o app envia a revisão exibida e o servidor exige que ela ainda seja a atual.

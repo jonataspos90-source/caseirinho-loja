@@ -9,8 +9,8 @@ test('todo pedido de entrega exige confirmação do frete',()=>{assert.match(app
 test('cotação do ERP aceita sim ou não no app',()=>{assert.match(app,/shipping-decision/);assert.match(app,/data-shipping-yes/);assert.match(app,/data-shipping-no/)});
 test('aceite mostra popup e pix',()=>{assert.match(app,/Seu pedido foi aceito!/);assert.match(app,/PIX disponível/);assert.match(app,/data-copy-pix/)});
 test('horário posterior gera aviso',()=>{assert.match(app,/Horário de entrega confirmado/);assert.match(app,/orderTimeText/)});
-test('polling de pedidos é leve e separado do catálogo',()=>{assert.match(app,/pollCustomerOrders/);assert.match(app,/20000/)});
-test('cache PWA foi versionado',()=>{assert.match(sw,/caseirinho-loja-v9\.1\.0-customer-experience/)});
+test('polling de pedidos é leve e separado do catálogo',()=>{assert.match(app,/pollCustomerOrders/);assert.match(app,/6000/)});
+test('cache PWA foi versionado',()=>{assert.match(sw,/caseirinho-loja-v9\.1\.1-customer-experience/)});
 
 
 test('recusa do frete apresenta cancelamento e convite para novo pedido',()=>{
@@ -18,4 +18,18 @@ test('recusa do frete apresenta cancelamento e convite para novo pedido',()=>{
   assert.match(app,/Fazer novo pedido/);
   assert.match(app,/st==='CANCELADO'/);
   assert.match(app,/data-new-order/);
+});
+
+test('V9.1.1 memoriza cliente e endereço no navegador',()=>{
+  assert.match(app,/CUSTOMER_PROFILE_KEY/);
+  assert.match(app,/saveCustomerProfileFromBody/);
+  assert.match(app,/applyCustomerProfile/);
+  assert.match(app,/Você pode alterar o CEP ou o número/);
+});
+
+test('V9.1.1 cotação usa revisão e polling mais rápido',()=>{
+  assert.match(app,/freteCotacaoVersao/);
+  assert.match(app,/quoteRevision/);
+  assert.match(app,/6000/);
+  assert.match(app,/Novo valor de entrega/);
 });
