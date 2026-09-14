@@ -1,4 +1,4 @@
-const CACHE='caseirinho-loja-v9.1.2-customer-history';
+const CACHE='caseirinho-loja-v9.1.3-freight-actions';
 const SHELL=[
   './',
   './index.html',

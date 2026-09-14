@@ -661,11 +661,20 @@ function saveOrderUpdate(updated){
   return orders[i>=0?i:orders.length-1];
 }
 async function shippingDecision(o,accept){
-  if(!o?.id||!o?.publicToken)return false;
+  if(!o?.id)return false;
+  const history=customerHistory();
+  const token=S(o?.publicToken).trim();
+  const historySession=S(history?.session).trim();
+  if(!token&&!historySession){
+    toast('Abra Meus Pedidos e recupere seu histórico para responder à cotação.');
+    setTimeout(()=>recoverOrdersForm(),150);
+    return false;
+  }
   try{
     const d=await api('/api/v1/public/store/'+encodeURIComponent(STORE)+'/orders/'+encodeURIComponent(o.id)+'/shipping-decision',{
       method:'POST',body:JSON.stringify({
-        token:o.publicToken,
+        token:token||undefined,
+        historySession:historySession||undefined,
         decision:accept?'ACCEPT':'REJECT',
         quoteRevision:Number.isFinite(Number(o.freteCotacaoVersao))?Number(o.freteCotacaoVersao):undefined
       })
@@ -699,13 +708,23 @@ function bindCustomerExperienceActions(root=document){
     const value=b.getAttribute('data-copy-pix')||'';
     try{await navigator.clipboard.writeText(value);toast('Chave PIX copiada.')}catch(_){toast('Não foi possível copiar. Selecione a chave manualmente.')}
   });
-  root.querySelectorAll('[data-shipping-yes]').forEach(b=>b.onclick=()=>{
-    const orders=readJson(ORDERS_KEY,[]),o=orders.find(x=>S(x.id)===S(b.dataset.shippingYes));
-    if(o)shippingDecision(o,true);
+  root.querySelectorAll('[data-shipping-yes]').forEach(b=>b.onclick=async()=>{
+    let orders=readJson(ORDERS_KEY,[]);
+    let o=orders.find(x=>S(x.id)===S(b.dataset.shippingYes));
+    if(!o){
+      orders=await syncCustomerHistory();
+      o=orders.find(x=>S(x.id)===S(b.dataset.shippingYes));
+    }
+    if(o)await shippingDecision(o,true);
   });
-  root.querySelectorAll('[data-shipping-no]').forEach(b=>b.onclick=()=>{
-    const orders=readJson(ORDERS_KEY,[]),o=orders.find(x=>S(x.id)===S(b.dataset.shippingNo));
-    if(o)shippingDecision(o,false);
+  root.querySelectorAll('[data-shipping-no]').forEach(b=>b.onclick=async()=>{
+    let orders=readJson(ORDERS_KEY,[]);
+    let o=orders.find(x=>S(x.id)===S(b.dataset.shippingNo));
+    if(!o){
+      orders=await syncCustomerHistory();
+      o=orders.find(x=>S(x.id)===S(b.dataset.shippingNo));
+    }
+    if(o)await shippingDecision(o,false);
   });
 }
 function seenNotices(){return readJson(CUSTOMER_NOTICE_KEY,{})}
@@ -972,11 +991,17 @@ async function showOrders(){
 
   const cards=orders.slice().reverse().map(o=>{
     const st=norm(o.status||'NOVO'),msg=o.mensagemCliente||'',delivery=norm(o.modalidade)==='ENTREGA';
-    const awaiting=st==='AGUARDANDO_CLIENTE_FRETE'&&norm(o.freteDecisaoCliente||'PENDENTE')==='PENDENTE';
+    const awaiting=
+      (
+        st==='AGUARDANDO_CLIENTE_FRETE' ||
+        norm(o.freteStatus)==='COTADO'
+      ) &&
+      norm(o.freteDecisaoCliente||'PENDENTE')==='PENDENTE' &&
+      !['ACEITO','REJEITADO','CANCELADO'].includes(st);
     return `<div class="order-card"><div class="order-top"><div><b>${esc(o.codigo||o.id)}</b><br><small>${new Date(o.criadoEm||o.createdAt||o.savedAt||Date.now()).toLocaleString('pt-BR')}</small></div><span class="status-badge ${esc(st)}">${esc(customerStatusLabel(st))}</span></div>
       <div class="order-customer-grid"><div><small>Total</small><b>${money(o.total||o.subtotal)}</b></div>${delivery?`<div><small>Entrega</small><b>${esc(orderTimeText(o))}</b></div>`:''}${delivery?`<div><small>Frete</small><b>${o.freteStatus==='COTACAO_PENDENTE'?'A calcular':money(o.valorFrete||0)}</b></div>`:''}</div>
       ${o.freteStatus==='COTACAO_PENDENTE'?'<div class="cx-note">🛵 A loja calculará a entrega e enviará o valor aqui para sua aprovação.</div>':''}
-      ${awaiting?`<div class="freight-decision"><b>🛵 A loja enviou um valor de entrega.</b><div>Frete: <strong>${money(o.valorFrete)}</strong> · Total: <strong>${money(o.total)}</strong></div><div class="order-actions"><button class="soft" data-shipping-no="${esc(o.id)}" type="button">Não</button><button class="primary" data-shipping-yes="${esc(o.id)}" type="button">Sim, aceito</button></div></div>`:''}
+      ${awaiting?`<div class="freight-decision"><b>🛵 Novo valor de entrega aguardando sua resposta</b><div>Frete: <strong>${money(o.valorFrete)}</strong> · Total atualizado: <strong>${money(o.total)}</strong></div><div class="order-actions"><button class="soft" data-shipping-no="${esc(o.id)}" type="button">Não, cancelar pedido</button><button class="primary" data-shipping-yes="${esc(o.id)}" type="button">Sim, aprovar frete</button></div></div>`:''}
       ${st==='AGUARDANDO_ACEITE_ERP'?'<div class="cx-note ok">✅ Você aceitou o novo frete. Agora o pedido aguarda o aceite final da loja.</div>':''}
       ${st==='FRETE_RECUSADO_CLIENTE'||st==='CANCELADO'?`<div class="result err">🛑 <b>Pedido cancelado</b><br>${esc(msg||'Você não aceitou o valor da entrega. Caso queira prosseguir, faça um novo pedido.')}</div>`:''}
       ${st==='ACEITO'?`<div class="result"><b>🎉 Seu pedido foi aceito!</b>${delivery?`<br>Horário de entrega: <b>${esc(orderTimeText(o))}</b>`:''}</div>${pixCard(o.pix)}`:''}
@@ -1075,8 +1100,13 @@ function start(){
   // Heartbeats leves: catálogo por versão e pedidos do próprio aparelho por token público.
   setInterval(()=>{if(!document.hidden)checkCatalogVersion()},30000);
   setInterval(()=>{if(!document.hidden)pollCustomerOrders()},6000);
-  setTimeout(()=>pollCustomerOrders(),2500);
-  window.addEventListener('focus',()=>{checkCatalogVersion();pollCustomerOrders()});
+  setTimeout(()=>pollCustomerOrders(),1800);
+  setTimeout(async()=>{
+    await ensureHistorySession();
+    await syncCustomerHistory();
+    await pollCustomerOrders();
+  },3200);
+  window.addEventListener('focus',async()=>{checkCatalogVersion();await ensureHistorySession();await syncCustomerHistory();pollCustomerOrders()});
   window.addEventListener('online',()=>{checkCatalogVersion();pollCustomerOrders()});
   document.addEventListener('visibilitychange',()=>{if(!document.hidden){checkCatalogVersion();pollCustomerOrders()}});
 }

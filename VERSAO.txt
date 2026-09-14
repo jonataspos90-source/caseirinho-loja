@@ -1,4 +1,4 @@
-Caseirinho Loja/App V9.1.2 — Experiência do Cliente
+Caseirinho Loja/App V9.1.3 — Experiência do Cliente
 Build: 2026-09-13
 
 Melhorias:
@@ -28,3 +28,8 @@ Sem alteração de schema/banco.
 - Pedidos e novas cotações podem ser restaurados do servidor mesmo quando o histórico local ficou incompleto.
 - Para recuperar histórico em outro aparelho/navegador: informar WhatsApp + código de um pedido anterior.
 - Mantido preenchimento automático dos dados do cliente e último endereço neste aparelho.
+
+- Aprovação/rejeição de frete pode usar o token do pedido ou a sessão segura de histórico.
+- Se o token individual não estiver mais no navegador, a sessão de histórico mantém a ação funcional.
+- Meus Pedidos destaca de forma explícita cotações aguardando Sim/Não.
+- Ao abrir/voltar ao app, o histórico e as cotações são sincronizados antes do polling normal.
