@@ -4,6 +4,7 @@ const SHELL=[
   './index.html',
   './styles.css',
   './app.js',
+  './commerce-engine-v9-3-0.js',
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',
