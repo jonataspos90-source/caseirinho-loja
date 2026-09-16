@@ -7,10 +7,11 @@ const sw=fs.readFileSync(path.join(root,'service-worker.js'),'utf8');
 const hotfix=fs.readFileSync(path.join(root,'store-hotfix-v9-3-1.js'),'utf8');
 const version=fs.readFileSync(path.join(root,'VERSAO.txt'),'utf8');
 
-test('PWA da Loja invalida cache antigo e mantém hotfix 9.3.1 carregado',()=>{
-  assert.match(sw,/caseirinho-loja-v9\.3\.2-orders-rating/);
+test('PWA da Loja invalida cache antigo e mantém hotfixes anteriores carregados',()=>{
+  assert.match(sw,/caseirinho-loja-v9\.3\.3-rejection-once/);
   assert.match(sw,/store-hotfix-v9-3-1\.js/);
   assert.match(sw,/store-hotfix-v9-3-2\.js/);
+  assert.match(sw,/store-hotfix-v9-3-3\.js/);
   assert.match(sw,/injectHotfix/);
 });
 
