@@ -22,6 +22,7 @@ jobs:
           node --check store-hotfix-v9-3-1.js
           node --check store-hotfix-v9-3-2.js
           node --check store-hotfix-v9-3-3.js
+          node --check store-hotfix-v9-3-4.js
           node --check service-worker.js
       - name: Regression tests
         run: node --test *.test.js
