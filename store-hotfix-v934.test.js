@@ -42,8 +42,8 @@ test('nova rejeição aparece uma vez e depois continua marcada mesmo com update
   assert.ok(seen['PED-NOVO:rejected:2026-09-16T11:05:00Z']);
 });
 
-test('V9.3.4 carrega a proteção antes do app e invalida o cache anterior',()=>{
-  assert.match(sw,/caseirinho-loja-v9\.3\.4-rejection-history/);
+test('V9.3.5 carrega a proteção antes do app e invalida o cache anterior',()=>{
+  assert.match(sw,/caseirinho-loja-v9\.3\.5-server-authority/);
   assert.match(sw,/injectBeforeApp/);
   assert.match(sw,/store-hotfix-v9-3-4\.js/);
   const guard=html.indexOf('store-hotfix-v9-3-4.js');
