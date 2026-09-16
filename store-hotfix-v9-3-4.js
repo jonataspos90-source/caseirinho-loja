@@ -45,7 +45,7 @@ primeExistingTerminalOrders(localStorage);
 
 /* V9.3.5: catálogo publicado na API é a única fonte de verdade.
    O app pode manter carrinho, pedidos e perfil localmente, mas nunca o catálogo. */
-const nativeFetch=typeof window.fetch==='function'?window.fetch.bind(window):null;
+const nativeFetch=typeof window.fetch==='function'?window.fetch:null;
 function isCanonicalCatalogUrl(value){try{const u=new URL(typeof value==='string'?value:value?.url,location.href);return /\/api\/v1\/public\/store\/[^/]+\/catalog\/?$/i.test(u.pathname)}catch(_){return false}}
 if(nativeFetch){
  window.fetch=async function(input,init){
