@@ -1,16 +1,23 @@
-Loja Online V9.3.0 — Motor Comercial / Ticket Médio
-Build: 2026-09-15
-API esperada: 1.17.0
+Loja Online V9.3.1 — Uso online / Imagens / PWA
+Build: 2026-09-16
+API esperada: 1.18.0
 
-NOVO
+CORREÇÕES
+- Loja/App volta a enviar heartbeat para o painel Uso App do ERP.
+- Identificação separada entre navegador e App/PWA.
+- Cache do Service Worker atualizado para V9.3.1 e shell antigo removido na ativação.
+- Hotfix é injetado também quando a navegação cai no HTML em cache.
+- Aviso “Imagem meramente ilustrativa” fica visível somente para imagem fallback/ilustrativa; foto real não recebe mais esse rótulo.
+
+MANTIDO DA V9.3.0
 - Cross-sell e upsell com foto no carrinho.
 - Preço especial validado no servidor e proteção de margem.
 - Combos inteligentes.
 - Cupons validados pela API.
 - Favoritos por loja/tenant.
 - Comprar novamente.
-- Programa de fidelidade parametrizável (acúmulo estimado).
+- Programa de fidelidade parametrizável.
 - Controle de capacidade antes do checkout.
 - Eventos de carrinho abandonado.
 - Avaliação do pedido.
-- Mantidos CEP, frete, histórico, PIX e multiempresa da V9.2.0.
+- CEP, frete, histórico, PIX e multiempresa.
