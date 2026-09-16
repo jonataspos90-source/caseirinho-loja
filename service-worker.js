@@ -1,10 +1,12 @@
-const CACHE='caseirinho-loja-v9.3.3-rejection-once';
+const CACHE='caseirinho-loja-v9.3.4-rejection-history';
 const HOTFIX931='./store-hotfix-v9-3-1.js';
 const HOTFIX932='./store-hotfix-v9-3-2.js';
 const HOTFIX933='./store-hotfix-v9-3-3.js';
-const HOTFIX931_TAG='<script src="./store-hotfix-v9-3-1.js?v=933"></'+'script>';
-const HOTFIX932_TAG='<script src="./store-hotfix-v9-3-2.js?v=933"></'+'script>';
-const HOTFIX933_TAG='<script src="./store-hotfix-v9-3-3.js?v=933"></'+'script>';
+const HOTFIX934='./store-hotfix-v9-3-4.js';
+const HOTFIX931_TAG='<script src="./store-hotfix-v9-3-1.js?v=934"></'+'script>';
+const HOTFIX932_TAG='<script src="./store-hotfix-v9-3-2.js?v=934"></'+'script>';
+const HOTFIX933_TAG='<script src="./store-hotfix-v9-3-3.js?v=934"></'+'script>';
+const HOTFIX934_TAG='<script src="./store-hotfix-v9-3-4.js?v=934"></'+'script>';
 const SHELL=[
   './',
   './index.html',
@@ -14,6 +16,7 @@ const SHELL=[
   HOTFIX931,
   HOTFIX932,
   HOTFIX933,
+  HOTFIX934,
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',
@@ -21,11 +24,17 @@ const SHELL=[
   './icons/apple-touch-icon.png'
 ];
 function injectOne(html,needle,tag){if(html.includes(needle))return html;const low=html.toLowerCase(),p=low.lastIndexOf('</body>');return p>=0?html.slice(0,p)+tag+html.slice(p):html+tag}
+function injectBeforeApp(html,needle,tag){
+  if(html.includes(needle))return html;
+  const p=html.indexOf('<script src="./app.js');
+  return p>=0?html.slice(0,p)+tag+html.slice(p):injectOne(html,needle,tag);
+}
 function injectHotfix(response){
   if(!response)return response;
   const ct=response.headers.get('content-type')||'';
   if(!ct.includes('text/html'))return response;
   return response.text().then(html=>{
+    html=injectBeforeApp(html,'store-hotfix-v9-3-4.js',HOTFIX934_TAG);
     html=injectOne(html,'store-hotfix-v9-3-1.js',HOTFIX931_TAG);
     html=injectOne(html,'store-hotfix-v9-3-2.js',HOTFIX932_TAG);
     html=injectOne(html,'store-hotfix-v9-3-3.js',HOTFIX933_TAG);
