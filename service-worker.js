@@ -1,10 +1,12 @@
-const CACHE='caseirinho-loja-v9.3.3-rejection-once';
+const CACHE='caseirinho-loja-v9.3.4-rejection-loop';
 const HOTFIX931='./store-hotfix-v9-3-1.js';
 const HOTFIX932='./store-hotfix-v9-3-2.js';
 const HOTFIX933='./store-hotfix-v9-3-3.js';
-const HOTFIX931_TAG='<script src="./store-hotfix-v9-3-1.js?v=933"></'+'script>';
-const HOTFIX932_TAG='<script src="./store-hotfix-v9-3-2.js?v=933"></'+'script>';
-const HOTFIX933_TAG='<script src="./store-hotfix-v9-3-3.js?v=933"></'+'script>';
+const HOTFIX934='./store-hotfix-v9-3-4.js';
+const HOTFIX931_TAG='<script src="./store-hotfix-v9-3-1.js?v=934"></'+'script>';
+const HOTFIX932_TAG='<script src="./store-hotfix-v9-3-2.js?v=934"></'+'script>';
+const HOTFIX933_TAG='<script src="./store-hotfix-v9-3-3.js?v=934"></'+'script>';
+const HOTFIX934_TAG='<script src="./store-hotfix-v9-3-4.js?v=934"></'+'script>';
 const SHELL=[
   './',
   './index.html',
@@ -14,6 +16,7 @@ const SHELL=[
   HOTFIX931,
   HOTFIX932,
   HOTFIX933,
+  HOTFIX934,
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',
@@ -29,6 +32,7 @@ function injectHotfix(response){
     html=injectOne(html,'store-hotfix-v9-3-1.js',HOTFIX931_TAG);
     html=injectOne(html,'store-hotfix-v9-3-2.js',HOTFIX932_TAG);
     html=injectOne(html,'store-hotfix-v9-3-3.js',HOTFIX933_TAG);
+    html=injectOne(html,'store-hotfix-v9-3-4.js',HOTFIX934_TAG);
     const h=new Headers(response.headers);h.delete('content-length');h.set('Cache-Control','no-cache');
     return new Response(html,{status:response.status,statusText:response.statusText,headers:h});
   });
