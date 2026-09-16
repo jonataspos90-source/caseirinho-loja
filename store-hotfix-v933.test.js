@@ -49,8 +49,8 @@ test('pedido rejeitado ainda não avisado não é marcado antecipadamente',()=>{
   assert.equal(seen['PED-2:rejected:2026-09-16T11:00:00Z'],undefined);
 });
 
-test('PWA mantém a correção V9.3.3 junto da V9.3.4',()=>{
-  assert.match(sw,/caseirinho-loja-v9\.3\.4-rejection-history/);
+test('PWA mantém a correção V9.3.3 junto da V9.3.5',()=>{
+  assert.match(sw,/caseirinho-loja-v9\.3\.5-server-authority/);
   assert.match(sw,/store-hotfix-v9-3-3\.js/);
   assert.match(sw,/store-hotfix-v9-3-4\.js/);
   assert.match(html,/store-hotfix-v9-3-3\.js\?v=934/);
