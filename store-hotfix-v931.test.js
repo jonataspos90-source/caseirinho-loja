@@ -8,10 +8,11 @@ const hotfix=fs.readFileSync(path.join(root,'store-hotfix-v9-3-1.js'),'utf8');
 const version=fs.readFileSync(path.join(root,'VERSAO.txt'),'utf8');
 
 test('PWA da Loja invalida cache antigo e mantém hotfixes anteriores carregados',()=>{
-  assert.match(sw,/caseirinho-loja-v9\.3\.3-rejection-once/);
+  assert.match(sw,/caseirinho-loja-v9\.3\.4-rejection-history/);
   assert.match(sw,/store-hotfix-v9-3-1\.js/);
   assert.match(sw,/store-hotfix-v9-3-2\.js/);
   assert.match(sw,/store-hotfix-v9-3-3\.js/);
+  assert.match(sw,/store-hotfix-v9-3-4\.js/);
   assert.match(sw,/injectHotfix/);
 });
 
