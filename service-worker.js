@@ -1,16 +1,33 @@
-const CACHE='caseirinho-loja-v9.2.0-multistore-performance';
+const CACHE='caseirinho-loja-v9.3.1-usage-images';
+const HOTFIX='./store-hotfix-v9-3-1.js';
+const HOTFIX_TAG='<script src="./store-hotfix-v9-3-1.js?v=931"></'+'script>';
 const SHELL=[
   './',
   './index.html',
   './styles.css',
   './app.js',
   './commerce-engine-v9-3-0.js',
+  HOTFIX,
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/icon-maskable-512.png',
   './icons/apple-touch-icon.png'
 ];
+
+function injectHotfix(response){
+  if(!response)return response;
+  const ct=response.headers.get('content-type')||'';
+  if(!ct.includes('text/html'))return response;
+  return response.text().then(html=>{
+    if(!html.includes('store-hotfix-v9-3-1.js')){
+      const low=html.toLowerCase(),p=low.lastIndexOf('</body>');
+      html=p>=0?html.slice(0,p)+HOTFIX_TAG+html.slice(p):html+HOTFIX_TAG;
+    }
+    const h=new Headers(response.headers);h.delete('content-length');h.set('Cache-Control','no-cache');
+    return new Response(html,{status:response.status,statusText:response.statusText,headers:h});
+  });
+}
 
 self.addEventListener('install',event=>{
   event.waitUntil((async()=>{
@@ -49,10 +66,12 @@ self.addEventListener('fetch',event=>{
     event.respondWith((async()=>{
       try{
         const net=await fetch(req,{cache:'no-store'});
-        if(net.ok)(await caches.open(CACHE)).put('./index.html',net.clone()).catch(()=>{});
-        return net;
+        const out=await injectHotfix(net);
+        if(out.ok)(await caches.open(CACHE)).put('./index.html',out.clone()).catch(()=>{});
+        return out;
       }catch(_){
-        return (await caches.match('./index.html')) || Response.error();
+        const cached=(await caches.match('./index.html')) || Response.error();
+        return injectHotfix(cached);
       }
     })());
     return;
