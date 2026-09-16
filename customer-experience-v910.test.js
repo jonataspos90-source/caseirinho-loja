@@ -10,7 +10,7 @@ test('cotação do ERP aceita sim ou não no app',()=>{assert.match(app,/shippin
 test('aceite mostra popup e pix',()=>{assert.match(app,/Seu pedido foi aceito!/);assert.match(app,/PIX disponível/);assert.match(app,/data-copy-pix/)});
 test('horário posterior gera aviso',()=>{assert.match(app,/Horário de entrega confirmado/);assert.match(app,/orderTimeText/)});
 test('polling de pedidos é leve e separado do catálogo',()=>{assert.match(app,/pollCustomerOrders/);assert.match(app,/4000/)});
-test('cache PWA atual foi versionado',()=>{assert.match(sw,/caseirinho-loja-v9\.3\.3-rejection-once/)});
+test('cache PWA atual foi versionado',()=>{assert.match(sw,/caseirinho-loja-v9\.3\.4-rejection-history/)});
 
 test('recusa do frete apresenta cancelamento e convite para novo pedido',()=>{assert.match(app,/title:'Pedido cancelado'/);assert.match(app,/Fazer novo pedido/);assert.match(app,/st==='CANCELADO'/);assert.match(app,/data-new-order/)});
 test('V9.2.0 memoriza cliente e endereço no navegador',()=>{assert.match(app,/CUSTOMER_PROFILE_KEY/);assert.match(app,/saveCustomerProfileFromBody/);assert.match(app,/applyCustomerProfile/);assert.match(app,/Você pode alterar o CEP ou o número/)});
