@@ -1,4 +1,4 @@
-const CACHE='caseirinho-loja-v9.3.4-rejection-history-v9.3.5-server-authority';
+const CACHE='caseirinho-loja-v9.3.5-server-authority';
 const HOTFIX931='./store-hotfix-v9-3-1.js';
 const HOTFIX932='./store-hotfix-v9-3-2.js';
 const HOTFIX933='./store-hotfix-v9-3-3.js';
