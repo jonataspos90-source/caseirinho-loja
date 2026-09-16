@@ -17,7 +17,7 @@ if(typeof Storage==='undefined')return;
 const nativeGet=Storage.prototype.getItem;
 const nativeSet=Storage.prototype.setItem;
 const nativeRemove=Storage.prototype.removeItem;
-function parse(raw,fallback){try{return JSON.parse(raw||'null')??fallback}catch(_){return fallback}}
+function parse(raw,fallback){try{const x=JSON.parse(raw||'null')??fallback;return x}catch(_){return fallback}}
 function notices(storage){const x=parse(nativeGet.call(storage,NOTICE_KEY),{});return x&&typeof x==='object'&&!Array.isArray(x)?{...x}:{}}
 function stableKey(id,type){return `${S(id)}:${type}:once`}
 function eventKey(o,type){return type==='rejected'?`${o.id}:rejected:${o.rejeitadoEm||o.updatedAt}`:`${o.id}:cancelled:${o.canceladoEm||o.updatedAt}`}
@@ -45,14 +45,16 @@ primeExistingTerminalOrders(localStorage);
 
 /* V9.3.5: catálogo publicado na API é a única fonte de verdade.
    O app pode manter carrinho, pedidos e perfil localmente, mas nunca o catálogo. */
-const nativeFetch=window.fetch.bind(window);
+const nativeFetch=typeof window.fetch==='function'?window.fetch.bind(window):null;
 function isCanonicalCatalogUrl(value){try{const u=new URL(typeof value==='string'?value:value?.url,location.href);return /\/api\/v1\/public\/store\/[^/]+\/catalog\/?$/i.test(u.pathname)}catch(_){return false}}
-window.fetch=async function(input,init){
- const response=await nativeFetch(input,init);
- if(response?.ok&&isCanonicalCatalogUrl(input)){
-   try{nativeRemove.call(localStorage,CATALOG_KEY)}catch(_){}
- }
- return response;
-};
+if(nativeFetch){
+ window.fetch=async function(input,init){
+  const response=await nativeFetch(input,init);
+  if(response?.ok&&isCanonicalCatalogUrl(input)){
+    try{nativeRemove.call(localStorage,CATALOG_KEY)}catch(_){}
+  }
+  return response;
+ };
+}
 window.CaseirinhoStoreHotfix934={version:VERSION,noticeKey:NOTICE_KEY,ordersKey:ORDERS_KEY,catalogKey:CATALOG_KEY,stableKey,primeExistingTerminalOrders,serverAuthoritative:true};
 })();
