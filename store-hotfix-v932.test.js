@@ -19,7 +19,8 @@ test('pergunta nota do pedido quando o status é concluído',()=>{
  assert.match(src,/Avalie seu pedido/);
  assert.match(src,/commerceEvent\('RATING'/);
 });
-test('PWA carrega o hotfix 9.3.2 e invalida cache anterior',()=>{
- assert.match(sw,/caseirinho-loja-v9\.3\.2-orders-rating/);
+test('PWA mantém hotfix 9.3.2 dentro do cache V9.3.3',()=>{
+ assert.match(sw,/caseirinho-loja-v9\.3\.3-rejection-once/);
  assert.match(sw,/store-hotfix-v9-3-2\.js/);
+ assert.match(sw,/store-hotfix-v9-3-3\.js/);
 });
