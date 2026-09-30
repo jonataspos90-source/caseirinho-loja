@@ -42,14 +42,15 @@ test('nova rejeição aparece uma vez e depois continua marcada mesmo com update
   assert.ok(seen['PED-NOVO:rejected:2026-09-16T11:05:00Z']);
 });
 
-test('V9.3.6 mantém proteção de autoridade antes do app e invalida cache anterior',()=>{
-  assert.match(sw,/caseirinho-loja-v9\.3\.6-parmesao-checkout/);
+test('V9.3.7 mantém proteção de autoridade antes do app e invalida cache anterior',()=>{
+  assert.match(sw,/caseirinho-loja-v9\.3\.6-parmesao-checkout-pix937/);
   assert.match(sw,/injectBeforeApp/);
   assert.match(sw,/store-hotfix-v9-3-4\.js/);
   assert.match(sw,/store-hotfix-v9-3-5\.js/);
   assert.match(sw,/checkout-parmesao-v9-3-6\.js/);
+  assert.match(sw,/pix-payment-v9-3-7\.js/);
   const guard=html.indexOf('store-hotfix-v9-3-4.js');
   const app=html.indexOf('./app.js');
   assert.ok(guard>=0&&app>=0&&guard<app);
-  assert.match(html,/version:'9\.3\.6'/);
+  assert.match(html,/version:'9\.3\.7'/);
 });
