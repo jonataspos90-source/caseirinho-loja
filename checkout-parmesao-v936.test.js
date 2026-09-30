@@ -24,9 +24,10 @@ test('requisição do pedido envia somente a decisão; preço fica no servidor',
   assert.doesNotMatch(js,/checkoutUpsell=.*preco/);
 });
 
-test('Loja e PWA carregam o upsell V9.3.6',()=>{
+test('Loja 9.3.7 preserva o upsell V9.3.6 no PWA',()=>{
   assert.match(html,/checkout-parmesao-v9-3-6\.js\?v=9360/);
-  assert.match(html,/version:'9\.3\.6'/);
-  assert.match(sw,/caseirinho-loja-v9\.3\.6-parmesao-checkout/);
+  assert.match(html,/version:'9\.3\.7'/);
+  assert.match(sw,/caseirinho-loja-v9\.3\.6-parmesao-checkout-pix937/);
   assert.match(sw,/checkout-parmesao-v9-3-6\.js/);
+  assert.match(sw,/pix-payment-v9-3-7\.js/);
 });
