@@ -19,9 +19,11 @@ test('pergunta nota do pedido quando o status é concluído',()=>{
  assert.match(src,/Avalie seu pedido/);
  assert.match(src,/commerceEvent\('RATING'/);
 });
-test('PWA mantém hotfix 9.3.2 dentro do cache V9.3.5',()=>{
- assert.match(sw,/caseirinho-loja-v9\.3\.5-server-authority/);
+test('PWA mantém hotfix 9.3.2 dentro do cache atual',()=>{
+ assert.match(sw,/caseirinho-loja-v9\.3\.6-parmesao-checkout/);
  assert.match(sw,/store-hotfix-v9-3-2\.js/);
  assert.match(sw,/store-hotfix-v9-3-3\.js/);
  assert.match(sw,/store-hotfix-v9-3-4\.js/);
+ assert.match(sw,/store-hotfix-v9-3-5\.js/);
+ assert.match(sw,/checkout-parmesao-v9-3-6\.js/);
 });
