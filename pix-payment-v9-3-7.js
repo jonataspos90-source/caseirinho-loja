@@ -14,8 +14,9 @@ const S=v=>String(v??'');
 const N=v=>Number(v)||0;
 const A=v=>Array.isArray(v)?v:[];
 const norm=v=>S(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUpperCase().replace(/[\s-]+/g,'_');
-const esc=v=>S(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const esc=v=>S(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
 const money=v=>N(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const CHECKOUT_NOTE_HTML='<b>💠 Pagamento via PIX</b><br>Depois que a loja aceitar seu pedido, o QR Code PIX será liberado em <b>Meus pedidos</b>, já com o valor correto. Chave oficial: <b>69.195.483/0001-23</b>.';
 
 function read(k,f){try{const x=JSON.parse(localStorage.getItem(k)||'null');return x??f}catch(_){return f}}
 function orders(){
@@ -96,7 +97,7 @@ function patchPixCards(){
   document.querySelectorAll('.pix-card').forEach(card=>{
     if(card.dataset.pix937==='1')return;
     card.dataset.pix937='1';
-    const oldTitle=card.querySelector('.pix-title');if(oldTitle)oldTitle.textContent='💠 PIX disponível para pagamento';
+    const oldTitle=card.querySelector('.pix-title');if(oldTitle&&oldTitle.textContent!=='💠 PIX disponível para pagamento')oldTitle.textContent='💠 PIX disponível para pagamento';
     const actions=document.createElement('div');actions.className='pix-pay-actions';actions.innerHTML=`<button class="pix-pay-primary" type="button" data-generate-pix-937>Gerar QR Code PIX</button><div class="pix-pay-note">Você também poderá copiar o PIX copia e cola. O valor será preenchido automaticamente com o total do pedido.</div>`;card.appendChild(actions);
     actions.querySelector('[data-generate-pix-937]').onclick=()=>generate(actions.querySelector('[data-generate-pix-937]'),findOrderFromCard(card.closest('.order-card'))||latestAcceptedPix());
   });
@@ -104,18 +105,33 @@ function patchPixCards(){
 function patchCheckout(){
   const payment=document.getElementById('payment');if(!payment)return;
   let note=document.getElementById('pixCheckoutNote937');
-  if(!note){note=document.createElement('div');note.id='pixCheckoutNote937';note.className='pix-checkout-note';payment.closest('label')?.insertAdjacentElement('afterend',note)}
+  if(!note){
+    note=document.createElement('div');note.id='pixCheckoutNote937';note.className='pix-checkout-note';note.style.display='none';
+    payment.closest('label')?.insertAdjacentElement('afterend',note);
+  }
   const show=/PIX/i.test(S(payment.value));
-  note.style.display=show?'block':'none';
-  if(show)note.innerHTML=`<b>💠 Pagamento via PIX</b><br>Depois que a loja aceitar seu pedido, o QR Code PIX será liberado em <b>Meus pedidos</b>, já com o valor correto. Chave oficial: <b>69.195.483/0001-23</b>.`;
-  if(!payment.dataset.pix937){payment.dataset.pix937='1';payment.addEventListener('change',patchCheckout)}
+  const nextDisplay=show?'block':'none';
+  if(note.style.display!==nextDisplay)note.style.display=nextDisplay;
+  if(show&&note.dataset.pixContent!=='1'){
+    note.innerHTML=CHECKOUT_NOTE_HTML;
+    note.dataset.pixContent='1';
+  }
+  if(!payment.dataset.pix937){payment.dataset.pix937='1';payment.addEventListener('change',patchCheckout,{passive:true})}
 }
 
 function init(){patchCheckout();patchPixCards()}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(init,250),{once:true});else setTimeout(init,100);
-const mo=new MutationObserver(()=>{patchPixCards();patchCheckout()});
-try{mo.observe(document.documentElement,{childList:true,subtree:true})}catch(_){}
+let scheduled=false;
+function schedulePatch(){
+  if(scheduled)return;scheduled=true;
+  requestAnimationFrame(()=>{scheduled=false;patchCheckout();patchPixCards()});
+}
+function relevantMutation(records){
+  return records.some(r=>[...r.addedNodes].some(n=>n.nodeType===1&&(n.matches?.('#payment,.order-card,.pix-card')||n.querySelector?.('#payment,.order-card,.pix-card'))));
+}
+const mo=new MutationObserver(records=>{if(relevantMutation(records))schedulePatch()});
+try{if(document.body)mo.observe(document.body,{childList:true,subtree:true});else document.addEventListener('DOMContentLoaded',()=>mo.observe(document.body,{childList:true,subtree:true}),{once:true})}catch(_){}
 [600,1600,3500,7000].forEach(ms=>setTimeout(init,ms));
 
-window.CaseirinhoPixPayment937={version:'9.3.7',generateForOrder:async id=>{const o=orders().find(x=>S(x.id)===S(id));const pix=await requestPix(o);showPix(o,pix);return pix}};
+window.CaseirinhoPixPayment937={version:'9.3.7',stability:'9.4.1',generateForOrder:async id=>{const o=orders().find(x=>S(x.id)===S(id));const pix=await requestPix(o);showPix(o,pix);return pix}};
 })();
