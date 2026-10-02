@@ -56,6 +56,6 @@ test('PWA mantém a correção V9.3.3 junto da Loja V9.3.7',()=>{
   assert.match(sw,/store-hotfix-v9-3-5\.js/);
   assert.match(sw,/checkout-parmesao-v9-3-6\.js/);
   assert.match(sw,/pix-payment-v9-3-7\.js/);
-  assert.match(html,/store-hotfix-v9-3-3\.js\?v=9490/);
+  assert.match(html,/store-hotfix-v9-3-3\.js\?v=937/);
   assert.match(html,/version:'9\.3\.7'/);
 });
