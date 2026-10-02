@@ -33,10 +33,11 @@ test('observador 9.4.9 não reprocessa o próprio card',()=>{
   assert.match(js,/cardUi949==='working'/);
   assert.match(js,/requestAnimationFrame\(enhanceAll\)/);
   assert.match(js,/retries>=20/);
+  assert.doesNotMatch(js,/remoteCatalog|fetchCatalog\(/);
 });
 
 test('Loja e PWA carregam correção segura 9.4.9',()=>{
-  assert.match(html,/product-cards-mobile-v9-4-8\.css\?v=9490/);
+  assert.match(html,/product-cards-mobile-v9-4-8\.css\?v=9480/);
   assert.match(html,/product-cards-mobile-v9-4-9\.js\?v=9490/);
   assert.doesNotMatch(html,/product-cards-mobile-v9-4-8\.js/);
   assert.match(sw,/cards949/);
