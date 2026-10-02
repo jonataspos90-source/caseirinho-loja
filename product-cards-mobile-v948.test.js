@@ -54,13 +54,15 @@ test('observadores 9.5.0 são restritos e não observam subtree dos cards',()=>{
   assert.doesNotMatch(js,/cardObserver\.observe\(r,\{childList:true,subtree:true\}\)/);
 });
 
-test('Loja e PWA carregam seletor inteligente 9.5.0',()=>{
-  assert.match(html,/productCardVersion:'9\.5\.0'/);
-  assert.match(html,/product-cards-mobile-v9-4-8\.css\?v=9500/);
+test('Loja e PWA mantêm seletor 9.5.0 e carregam agrupamento 9.5.1',()=>{
+  assert.match(html,/productCardVersion:'9\.5\.1'/);
+  assert.match(html,/product-cards-mobile-v9-4-8\.css\?v=9510/);
   assert.match(html,/product-cards-mobile-v9-5-0\.js\?v=9500/);
+  assert.match(html,/variant-grouping-v9-5-1\.js\?v=9510/);
   assert.doesNotMatch(html,/product-cards-mobile-v9-4-9\.js/);
-  assert.match(sw,/cards950/);
+  assert.match(sw,/cards951/);
   assert.match(sw,/product-cards-mobile-v9-5-0\.js/);
+  assert.match(sw,/variant-grouping-v9-5-1\.js/);
   assert.match(sw,/stripOldCardScripts/);
 });
 
