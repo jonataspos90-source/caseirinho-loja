@@ -54,20 +54,22 @@ test('observadores 9.5.0 são restritos e não observam subtree dos cards',()=>{
   assert.doesNotMatch(js,/cardObserver\.observe\(r,\{childList:true,subtree:true\}\)/);
 });
 
-test('Loja 9.5.4 preserva seletor 9.5.0, agrupamento 9.5.1 e sync 9.5.2',()=>{
-  assert.match(html,/productCardVersion:'9\.5\.4'/);
+test('Loja 9.5.5 preserva cards, agrupamento, sync e Entrega',()=>{
+  assert.match(html,/productCardVersion:'9\.5\.5'/);
   assert.match(html,/product-cards-mobile-v9-4-8\.css\?v=9510/);
   assert.match(html,/product-cards-mobile-v9-5-0\.js\?v=9500/);
   assert.match(html,/variant-grouping-v9-5-1\.js\?v=9510/);
   assert.match(html,/variant-selection-sync-v9-5-2\.js\?v=9520/);
   assert.match(html,/delivery-moto-v9-5-4\.js\?v=9540/);
+  assert.match(html,/delivery-mode-v9-5-5\.js\?v=9550/);
   assert.doesNotMatch(html,/delivery-moto-v9-5-3\.js/);
   assert.doesNotMatch(html,/product-cards-mobile-v9-4-9\.js/);
-  assert.match(sw,/cards954-delivery-stable/);
+  assert.match(sw,/cards955-delivery-mode/);
   assert.match(sw,/product-cards-mobile-v9-5-0\.js/);
   assert.match(sw,/variant-grouping-v9-5-1\.js/);
   assert.match(sw,/variant-selection-sync-v9-5-2\.js/);
   assert.match(sw,/delivery-moto-v9-5-4\.js/);
+  assert.match(sw,/delivery-mode-v9-5-5\.js/);
   assert.match(sw,/stripOldCardScripts/);
 });
 
