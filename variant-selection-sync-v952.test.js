@@ -31,12 +31,12 @@ test('modal sincroniza nome, descrição, preço e galeria da variante',()=>{
   assert.match(js,/renderGallery\(p\)/);
 });
 
-test('Loja V9.5.3 continua publicando a camada V9.5.2 junto da Entrega Moto',()=>{
-  assert.match(html,/Loja Online · V9\.5\.3/);
+test('Loja V9.5.4 continua publicando a camada V9.5.2 junto da Entrega Moto estável',()=>{
+  assert.match(html,/Loja Online · V9\.5\.4/);
   assert.match(html,/variant-selection-sync-v9-5-2\.js\?v=9520/);
-  assert.match(html,/delivery-moto-v9-5-3\.js\?v=9530/);
-  assert.match(sw,/cards953-delivery/);
+  assert.match(html,/delivery-moto-v9-5-4\.js\?v=9540/);
+  assert.match(sw,/cards954-delivery-stable/);
   assert.match(sw,/SYNCJS952/);
   assert.match(sw,/variant-selection-sync-v9-5-2\.js/);
-  assert.match(sw,/DELIVERYJS953/);
+  assert.match(sw,/DELIVERYJS954/);
 });
