@@ -1,36 +1,46 @@
-Loja Online V9.5.5 — Modalidade Entrega garantida / Entrega Moto estável / Cards / PWA
+Loja Online V9.5.7 — Vitrine mobile por chips / Carrossel de sabores / Desktop / Entrega
 Build: 2026-10-02
 API esperada: 1.19.0
 
-NOVIDADES V9.5.5
-- A opção "Entrega" passa a ser garantida no campo Recebimento do Caseirinho, mesmo se o aparelho estiver com configuração antiga em cache.
+NOVIDADES V9.5.7
+- Grades de sabores e variações no mobile deixam de ocupar uma lista vertical longa.
+- As opções passam a aparecer como chips/pílulas em carrossel horizontal deslizante.
+- O chip exibe somente o nome da opção/sabor; preços repetidos deixam de poluir a grade.
+- Antes da seleção, o card mantém obrigatoriamente o menor valor da grade no formato "A partir de R$ ...".
+- Ao selecionar uma opção, o chip recebe destaque visual e o preço principal passa a mostrar o valor exato do SKU escolhido.
+- Nome, descrição e imagem continuam sincronizados com a variante escolhida pela camada V9.5.2.
+- A troca de imagem ganhou transição visual suave.
+- Touch targets dos chips possuem pelo menos 48 px de altura.
+- SKUs, eventos, disponibilidade e fluxo de adicionar ao carrinho existentes foram preservados.
+- O modal mobile também recebe tratamento compacto para as opções de grade.
+- Cache do PWA atualizado para cards957-variant-carousel.
+
+MANTIDO DA V9.5.6
+- Layout desktop próprio com três colunas mais largas e legíveis.
+- Navegação inferior mobile oculta no PC.
+- Carrinho no desktop abre em painel lateral otimizado.
+- Cards, formulário e modal possuem proporções específicas para telas grandes.
+
+MANTIDO DA V9.5.5
+- A opção "Entrega" é garantida no campo Recebimento do Caseirinho mesmo com configuração antiga em cache.
 - A escolha do cliente é preservada caso o seletor seja redesenhado após atualização do catálogo.
-- A configuração publicada do Caseirinho no backend foi corrigida para permitir entrega de forma oficial.
-- A camada V9.5.5 é carregada explicitamente pelo index.html e também pelo PWA.
-- Cache do PWA atualizado para cards955-delivery-mode.
 
 MANTIDO DA V9.5.4
-- Corrigido travamento ao selecionar a modalidade Entrega no checkout mobile.
-- Consulta de distância possui timeout e fallback; falha do serviço de rota não congela nem bloqueia o checkout.
-- Em falha de cálculo, o cliente pode continuar o pedido e a loja confirma a taxa de entrega.
-- Uber/99 são apenas informação logística para o cliente: não há contratação, faturamento ou integração automática com essas plataformas.
-- O serviço de mapas/rotas é usado somente para calcular distância e taxa de entrega.
+- Corrigido travamento ao selecionar Entrega.
+- Consulta de distância possui timeout e fallback; falha do serviço de rota não congela o checkout.
+- Uber/99 são apenas informação logística para o cliente; não há contratação, faturamento ou integração automática.
 
 MANTIDO DA V9.5.3
 - Regra padrão: até 1 km R$ 9,99; km excedente R$ 1,99, com cobrança por km iniciado e preço comercial final em ,99.
-- Tabela de referência: 1 km R$ 9,99; 2 km R$ 11,99; 3 km R$ 13,99; 5 km R$ 17,99.
-- Endereço fora do limite máximo configurado no ERP bloqueia a finalização.
-- Totais do checkout mostram Produtos + Taxa de Entrega = Total quando a cotação automática estiver disponível.
-- Antes do envio definitivo é exibido um resumo amigável com a pergunta "Fazer o Pedido?".
-- O servidor recalcula o frete no momento da criação do pedido; o valor exibido pelo navegador não é fonte autoritativa.
+- Totais do checkout mostram Produtos + Taxa de Entrega = Total quando a cotação estiver disponível.
+- Antes do envio definitivo é exibido "Fazer o Pedido?".
 
 MANTIDO DA V9.5.2
 - Nome, descrição, imagem e preço acompanham a variação selecionada.
 - Clicar na foto ou em "Ver detalhes / fotos" abre exatamente o SKU escolhido.
 
 MANTIDO DA V9.5.1
-- Grades com mais de uma dimensão apresentadas por sabor e tamanho/peso.
-- Sabores visualmente separados, com tamanhos/pesos dentro de cada grupo.
+- Grades com mais de uma dimensão continuam reconhecendo sabor e tamanho/peso.
 
 MANTIDO DAS VERSÕES ANTERIORES
 - Layout mobile em uma coluna, imagem 4:3 e proteção contra corte lateral.
