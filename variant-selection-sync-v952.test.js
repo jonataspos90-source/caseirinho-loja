@@ -31,14 +31,16 @@ test('modal sincroniza nome, descrição, preço e galeria da variante',()=>{
   assert.match(js,/renderGallery\(p\)/);
 });
 
-test('Loja V9.5.5 mantém sync V9.5.2 e Entrega disponível',()=>{
-  assert.match(html,/Loja Online · V9\.5\.5/);
+test('Loja V9.5.6 mantém sync V9.5.2, desktop e Entrega disponível',()=>{
+  assert.match(html,/Loja Online · V9\.5\.6/);
   assert.match(html,/variant-selection-sync-v9-5-2\.js\?v=9520/);
-  assert.match(html,/delivery-moto-v9-5-4\.js\?v=9540/);
+  assert.match(html,/desktop-ux-v9-5-6\.css\?v=9560/);
+  assert.match(html,/delivery-moto-v9-5-4\.js\?v=9560/);
   assert.match(html,/delivery-mode-v9-5-5\.js\?v=9550/);
-  assert.match(sw,/cards955-delivery-mode/);
+  assert.match(sw,/cards956-desktop-delivery/);
   assert.match(sw,/SYNCJS952/);
   assert.match(sw,/variant-selection-sync-v9-5-2\.js/);
+  assert.match(sw,/DESKTOPCSS956/);
   assert.match(sw,/DELIVERYJS954/);
   assert.match(sw,/DELIVERYMODE955/);
 });
