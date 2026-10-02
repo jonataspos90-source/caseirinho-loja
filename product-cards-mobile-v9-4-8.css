@@ -1,0 +1,81 @@
+/* Caseirinho Loja - Product Cards Mobile V9.4.8
+   Corrige cards quebrados <=430px e garante nome, grade/preços e CTA visível. */
+
+.product-card{min-width:0;width:100%}
+.product-card .product-pic,.product-card .product-body{min-width:0;max-width:100%}
+.product-card .product-body h3{overflow-wrap:anywhere;word-break:normal}
+
+.card-grade-panel{display:grid;gap:8px;margin-top:2px}
+.card-grade-title{font-size:12px;font-weight:900;color:var(--ink)}
+.card-grade-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.card-grade-option{
+  min-width:0;min-height:48px;border:1px solid var(--line);border-radius:12px;
+  background:#fff;padding:9px 10px;display:flex;align-items:center;justify-content:space-between;
+  gap:8px;text-align:left;color:var(--ink);font-weight:800
+}
+.card-grade-option span{min-width:0;overflow-wrap:anywhere}
+.card-grade-option strong{flex:0 0 auto;color:var(--brand);white-space:nowrap;font-size:12px}
+.card-grade-option.active{border-color:var(--brand);background:var(--brand-soft);box-shadow:0 0 0 2px color-mix(in srgb,var(--brand) 12%,transparent)}
+.card-grade-option:disabled{opacity:.45}
+.product-card .card-add-selected{width:100%;min-height:50px}
+
+@media(max-width:720px){
+  /* sobrescreve explicitamente o grid antigo de <=430px */
+  .product-grid{grid-template-columns:minmax(0,1fr)!important;width:100%;max-width:100%}
+  .product-card{
+    display:flex!important;
+    flex-direction:column!important;
+    grid-template-columns:none!important;
+    grid-template-rows:none!important;
+    width:100%!important;
+    max-width:100%!important;
+    overflow:hidden!important;
+  }
+  .product-card .product-pic{
+    display:block!important;
+    width:100%!important;
+    height:auto!important;
+    min-height:0!important;
+    aspect-ratio:4/3!important;
+    overflow:hidden!important;
+    flex:0 0 auto!important;
+  }
+  .product-card .product-pic img{display:block!important;width:100%!important;height:100%!important;object-fit:cover!important}
+  .product-card .no-image{width:100%!important;height:100%!important;min-height:210px}
+  .product-card .product-body{
+    display:flex!important;
+    flex-direction:column!important;
+    width:100%!important;
+    padding:14px!important;
+    gap:9px!important;
+    overflow:visible!important;
+  }
+  .product-card .category-label{font-size:11px}
+  .product-card .product-body h3{display:block!important;width:100%!important;margin:0!important;font-size:19px!important;line-height:1.25!important;color:var(--ink)!important}
+  .product-card .description{display:block!important;width:100%!important;min-height:0!important;font-size:13px!important;line-height:1.45!important}
+  .product-card .price{display:block!important;font-size:22px!important;line-height:1.15!important;margin-top:1px}
+  .product-card .availability{font-size:12px!important;line-height:1.4!important}
+  .product-card .actions{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    gap:8px!important;
+    width:100%!important;
+    margin-top:4px!important;
+  }
+  .product-card .actions .add-btn,.product-card .actions .card-add-selected{
+    order:1;width:100%!important;min-width:0!important;min-height:50px!important;font-size:15px!important
+  }
+  .product-card .actions .view-btn{
+    order:2;width:100%!important;min-width:0!important;min-height:44px!important
+  }
+  .card-grade-options{grid-template-columns:minmax(0,1fr)}
+  .card-grade-option{width:100%;min-height:50px;font-size:14px;padding:11px 12px}
+  .card-grade-option strong{font-size:14px}
+  .variant-summary{display:none!important}
+}
+
+@media(max-width:350px){
+  .product-card .product-body{padding:12px!important}
+  .product-card .product-body h3{font-size:18px!important}
+  .product-card .no-image{min-height:190px}
+}
