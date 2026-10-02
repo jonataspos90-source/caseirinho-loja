@@ -1,20 +1,22 @@
-Loja Online V9.5.4 — Entrega Moto estável / Distância / Resumo de Pedido / Cards / PWA
+Loja Online V9.5.5 — Modalidade Entrega garantida / Entrega Moto estável / Cards / PWA
 Build: 2026-10-02
 API esperada: 1.19.0
 
-NOVIDADES V9.5.4
+NOVIDADES V9.5.5
+- A opção "Entrega" passa a ser garantida no campo Recebimento do Caseirinho, mesmo se o aparelho estiver com configuração antiga em cache.
+- A escolha do cliente é preservada caso o seletor seja redesenhado após atualização do catálogo.
+- A configuração publicada do Caseirinho no backend foi corrigida para permitir entrega de forma oficial.
+- A camada V9.5.5 é carregada explicitamente pelo index.html e também pelo PWA.
+- Cache do PWA atualizado para cards955-delivery-mode.
+
+MANTIDO DA V9.5.4
 - Corrigido travamento ao selecionar a modalidade Entrega no checkout mobile.
-- Removido o MutationObserver que observava todo o carrinho e podia entrar em ciclo ao redesenhar o próprio bloco de frete.
-- Bloco de entrega agora é renderizado de forma idempotente, evitando reescritas de DOM desnecessárias.
 - Consulta de distância possui timeout e fallback; falha do serviço de rota não congela nem bloqueia o checkout.
 - Em falha de cálculo, o cliente pode continuar o pedido e a loja confirma a taxa de entrega.
 - Uber/99 são apenas informação logística para o cliente: não há contratação, faturamento ou integração automática com essas plataformas.
 - O serviço de mapas/rotas é usado somente para calcular distância e taxa de entrega.
-- Cache do PWA atualizado para cards954-delivery-stable e páginas antigas com delivery-moto-v9-5-3.js têm o script antigo removido antes da injeção da V9.5.4.
 
 MANTIDO DA V9.5.3
-- Cálculo de taxa de entrega após preenchimento do CEP, rua, número, cidade e UF.
-- Exibição da distância real da rota e do valor calculado pela API quando o provedor de rota estiver disponível.
 - Regra padrão: até 1 km R$ 9,99; km excedente R$ 1,99, com cobrança por km iniciado e preço comercial final em ,99.
 - Tabela de referência: 1 km R$ 9,99; 2 km R$ 11,99; 3 km R$ 13,99; 5 km R$ 17,99.
 - Endereço fora do limite máximo configurado no ERP bloqueia a finalização.
@@ -25,12 +27,10 @@ MANTIDO DA V9.5.3
 MANTIDO DA V9.5.2
 - Nome, descrição, imagem e preço acompanham a variação selecionada.
 - Clicar na foto ou em "Ver detalhes / fotos" abre exatamente o SKU escolhido.
-- Sincronização visual para Panquecas e demais produtos com variantes.
 
 MANTIDO DA V9.5.1
 - Grades com mais de uma dimensão apresentadas por sabor e tamanho/peso.
 - Sabores visualmente separados, com tamanhos/pesos dentro de cada grupo.
-- IDs/SKUs e fluxo original de carrinho preservados.
 
 MANTIDO DAS VERSÕES ANTERIORES
 - Layout mobile em uma coluna, imagem 4:3 e proteção contra corte lateral.
