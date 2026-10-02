@@ -3,52 +3,67 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 
 const css=fs.readFileSync('product-cards-mobile-v9-4-8.css','utf8');
-const js=fs.readFileSync('product-cards-mobile-v9-4-9.js','utf8');
+const js=fs.readFileSync('product-cards-mobile-v9-5-0.js','utf8');
 const html=fs.readFileSync('index.html','utf8');
 const sw=fs.readFileSync('service-worker.js','utf8');
 
-test('card mobile sobrescreve o grid antigo de 430px',()=>{
+test('card mobile continua em uma coluna e sem corte lateral',()=>{
   assert.match(css,/display:flex!important/);
   assert.match(css,/flex-direction:column!important/);
   assert.match(css,/grid-template-columns:none!important/);
   assert.match(css,/aspect-ratio:4\/3!important/);
 });
 
-test('grade exibe opções com preços e CTA de adicionar',()=>{
-  assert.match(js,/card-grade-options/);
-  assert.match(js,/variacaoLabel/);
-  assert.match(js,/money\(priceOf\(v\)\)/);
-  assert.match(js,/\+ Adicionar ao carrinho/);
-  assert.match(js,/card-add-selected/);
+test('grade inteligente distingue sabor e peso quando o peso se repete',()=>{
+  assert.match(js,/hasSecondDimension/);
+  assert.match(js,/duplicatePrimary/);
+  assert.match(js,/Sabor e peso/);
+  assert.match(js,/contextualLabel/);
+  assert.match(js,/detailFromDescription/);
+  assert.match(js,/optionLabel/);
 });
 
-test('card usa fluxo existente do modal para adicionar variante correta',()=>{
-  assert.match(js,/#variantBox \[data-variant\]/);
-  assert.match(js,/modalAdd/);
-  assert.match(js,/productClose/);
+test('produto com grade exige escolha explícita antes de adicionar',()=>{
+  assert.match(js,/Nenhuma opção selecionada/);
+  assert.match(js,/add\.disabled=true/);
+  assert.match(js,/Escolha uma opção/);
+  assert.match(js,/selectedProductId/);
+  assert.match(js,/Selecionado:/);
 });
 
-test('observador 9.4.9 é não bloqueante e não reprocessa o interior do card',()=>{
-  assert.match(js,/cardUi949==='done'/);
-  assert.match(js,/cardUi949==='working'/);
+test('modal também mostra rótulo completo e exige escolha consciente',()=>{
+  assert.match(js,/function enhanceModal/);
+  assert.match(js,/explicitModalVariant/);
+  assert.match(js,/buttons\.forEach/);
+  assert.match(js,/A partir de /);
+  assert.match(js,/Adicionar ao carrinho/);
+});
+
+test('carrinho recompõe nome completo do SKU selecionado',()=>{
+  assert.match(js,/function cartProductName/);
+  assert.match(js,/function enhanceCart/);
+  assert.match(js,/CART_KEY/);
+  assert.match(js,/produtoId/);
+});
+
+test('observadores 9.5.0 são restritos e não observam subtree dos cards',()=>{
   assert.match(js,/requestAnimationFrame\(enhanceAll\)/);
   assert.match(js,/loadRemoteCatalog/);
   assert.match(js,/cache:'no-store'/);
-  assert.match(js,/observer\.observe\(r,\{childList:true\}\)/);
-  assert.doesNotMatch(js,/observer\.observe\(r,\{childList:true,subtree:true\}\)/);
-  assert.doesNotMatch(js,/retries>=20/);
-  assert.doesNotMatch(js,/localStorage\.getItem\(CATALOG_KEY/);
+  assert.match(js,/cardObserver\.observe\(r,\{childList:true\}\)/);
+  assert.doesNotMatch(js,/cardObserver\.observe\(r,\{childList:true,subtree:true\}\)/);
 });
 
-test('Loja e PWA carregam correção segura 9.4.9',()=>{
-  assert.match(html,/product-cards-mobile-v9-4-8\.css\?v=9480/);
-  assert.match(html,/product-cards-mobile-v9-4-9\.js\?v=9490/);
-  assert.doesNotMatch(html,/product-cards-mobile-v9-4-8\.js/);
-  assert.match(sw,/cards949/);
-  assert.match(sw,/product-cards-mobile-v9-4-8\.css/);
-  assert.match(sw,/product-cards-mobile-v9-4-9\.js/);
+test('Loja e PWA carregam seletor inteligente 9.5.0',()=>{
+  assert.match(html,/productCardVersion:'9\.5\.0'/);
+  assert.match(html,/product-cards-mobile-v9-4-8\.css\?v=9500/);
+  assert.match(html,/product-cards-mobile-v9-5-0\.js\?v=9500/);
+  assert.doesNotMatch(html,/product-cards-mobile-v9-4-9\.js/);
+  assert.match(sw,/cards950/);
+  assert.match(sw,/product-cards-mobile-v9-5-0\.js/);
+  assert.match(sw,/stripOldCardScripts/);
 });
 
-test('JavaScript 9.4.9 possui sintaxe válida',()=>{
+test('JavaScript 9.5.0 possui sintaxe válida',()=>{
   assert.doesNotThrow(()=>new Function(js));
 });
