@@ -1,47 +1,41 @@
-Loja Online V9.5.7 — Vitrine mobile por chips / Carrossel de sabores / Desktop / Entrega
+Loja Online V9.5.8 — Assistente Caseirinho / CASEIRINHO10 / WhatsApp / Primeira Compra
 Build: 2026-10-02
-API esperada: 1.19.0
+API esperada: 1.19.2
 
-NOVIDADES V9.5.7
-- Grades de sabores e variações no mobile deixam de ocupar uma lista vertical longa.
-- As opções passam a aparecer como chips/pílulas em carrossel horizontal deslizante.
-- O chip exibe somente o nome da opção/sabor; preços repetidos deixam de poluir a grade.
-- Antes da seleção, o card mantém obrigatoriamente o menor valor da grade no formato "A partir de R$ ...".
-- Ao selecionar uma opção, o chip recebe destaque visual e o preço principal passa a mostrar o valor exato do SKU escolhido.
-- Nome, descrição e imagem continuam sincronizados com a variante escolhida pela camada V9.5.2.
-- A troca de imagem ganhou transição visual suave.
-- Touch targets dos chips possuem pelo menos 48 px de altura.
-- SKUs, eventos, disponibilidade e fluxo de adicionar ao carrinho existentes foram preservados.
-- O modal mobile também recebe tratamento compacto para as opções de grade.
-- Cache do PWA atualizado para cards957-variant-carousel.
+NOVIDADES V9.5.8
+- Adicionado assistente virtual do Caseirinho para ajudar com compras, entrega, pedidos e cupons.
+- Adicionado campo de cupom no checkout.
+- Cupom CASEIRINHO10 concede 10% de desconto exclusivamente na primeira compra.
+- Validação do CASEIRINHO10 exige obrigatoriamente o WhatsApp do cliente.
+- WhatsApp é normalizado antes da consulta: remove +55, espaços, traços, parênteses e zero de tronco antes do DDD; números locais de 9 dígitos recebem DDD 11 no Caseirinho.
+- Validação pública usa POST /api/v1/cupons/validar.
+- Respostas tratadas: PRIMEIRA_COMPRA_OK, CLIENTE_JA_USOU, CUPOM_EXPIRADO e WHATSAPP_INVALIDO.
+- O navegador mostra uma prévia do desconto, mas a concessão definitiva é revalidada no servidor no momento do pedido.
+- O servidor confere token público do pedido, WhatsApp do pedido e histórico de compras antes de aplicar o desconto.
+- O desconto é calculado somente sobre os produtos; a taxa de entrega/frete não recebe desconto.
+- A aplicação é idempotente e não permite substituir silenciosamente outro cupom já aplicado ao pedido.
+- Promoção possui suporte a início/fim/ativação pelo Motor Comercial. Nenhuma data final fixa foi criada nesta versão porque a campanha ainda não recebeu uma data de encerramento informada.
+- Cache do PWA atualizado para cards958-coupon-assistant.
+
+MANTIDO DA V9.5.7
+- Grades de sabores e variações no mobile usam chips/pílulas em carrossel horizontal deslizante.
+- Antes da seleção, o card mantém o menor valor da grade no formato "A partir de R$ ...".
+- Ao selecionar uma opção, preço, nome, descrição e imagem continuam sincronizados com o SKU escolhido.
+- Touch targets, SKUs, disponibilidade e fluxo de adicionar ao carrinho foram preservados.
 
 MANTIDO DA V9.5.6
 - Layout desktop próprio com três colunas mais largas e legíveis.
 - Navegação inferior mobile oculta no PC.
 - Carrinho no desktop abre em painel lateral otimizado.
-- Cards, formulário e modal possuem proporções específicas para telas grandes.
 
 MANTIDO DA V9.5.5
 - A opção "Entrega" é garantida no campo Recebimento do Caseirinho mesmo com configuração antiga em cache.
 - A escolha do cliente é preservada caso o seletor seja redesenhado após atualização do catálogo.
 
 MANTIDO DA V9.5.4
-- Corrigido travamento ao selecionar Entrega.
 - Consulta de distância possui timeout e fallback; falha do serviço de rota não congela o checkout.
 - Uber/99 são apenas informação logística para o cliente; não há contratação, faturamento ou integração automática.
 
-MANTIDO DA V9.5.3
-- Regra padrão: até 1 km R$ 9,99; km excedente R$ 1,99, com cobrança por km iniciado e preço comercial final em ,99.
-- Totais do checkout mostram Produtos + Taxa de Entrega = Total quando a cotação estiver disponível.
-- Antes do envio definitivo é exibido "Fazer o Pedido?".
-
-MANTIDO DA V9.5.2
-- Nome, descrição, imagem e preço acompanham a variação selecionada.
-- Clicar na foto ou em "Ver detalhes / fotos" abre exatamente o SKU escolhido.
-
-MANTIDO DA V9.5.1
-- Grades com mais de uma dimensão continuam reconhecendo sabor e tamanho/peso.
-
 MANTIDO DAS VERSÕES ANTERIORES
 - Layout mobile em uma coluna, imagem 4:3 e proteção contra corte lateral.
-- Pedidos, avaliações, PIX, LGPD, CEP, histórico, cupons, fidelidade, combos, favoritos e demais recursos existentes.
+- Pedidos, avaliações, PIX, LGPD, CEP, histórico, fidelidade, combos, favoritos e demais recursos existentes.
