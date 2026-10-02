@@ -22,14 +22,16 @@ test('cliente pode aceitar ou rejeitar proposta revisada',()=>{
   assert.match(rev,/SUBSTITUIDO/);
 });
 
-test('pedido PIX aceito ganha um único botão de QR',()=>{
+test('pedido PIX aceito ganha um único botão de QR e um único PDF',()=>{
   assert.match(pixEnsure,/acceptedPix/);
   assert.match(pixEnsure,/pix-card/);
   assert.doesNotMatch(pixEnsure,/Gerar QR Code PIX/);
   assert.match(pixMain,/Gerar QR Code PIX/);
   assert.match(pixMain,/CaseirinhoPixPayment937/);
-  assert.match(dedupe,/removePixDuplicates/);
-  assert.match(dedupe,/removePdfDuplicates/);
+  assert.match(dedupe,/function cleanPix/);
+  assert.match(dedupe,/function cleanPdf/);
+  assert.match(dedupe,/PDF_SELECTOR/);
+  assert.match(dedupe,/data-pdf-action-single/);
 });
 
 test('PWA carrega revisão e garantia PIX preservando compatibilidade 9.3.6',()=>{
