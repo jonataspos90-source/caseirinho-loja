@@ -1,19 +1,26 @@
-Loja Online V9.5.3 — Entrega Moto / Maps / Resumo de Pedido / Cards / PWA
+Loja Online V9.5.4 — Entrega Moto estável / Distância / Resumo de Pedido / Cards / PWA
 Build: 2026-10-02
 API esperada: 1.19.0
 
-NOVIDADES V9.5.3
-- Cálculo de taxa de entrega em tempo real após preenchimento do CEP, rua, número, cidade e UF.
-- Selo visual "Envios Moto - Uber/99" no checkout.
-- Exibição da distância real da rota e do valor calculado pela API.
+NOVIDADES V9.5.4
+- Corrigido travamento ao selecionar a modalidade Entrega no checkout mobile.
+- Removido o MutationObserver que observava todo o carrinho e podia entrar em ciclo ao redesenhar o próprio bloco de frete.
+- Bloco de entrega agora é renderizado de forma idempotente, evitando reescritas de DOM desnecessárias.
+- Consulta de distância possui timeout e fallback; falha do serviço de rota não congela nem bloqueia o checkout.
+- Em falha de cálculo, o cliente pode continuar o pedido e a loja confirma a taxa de entrega.
+- Uber/99 são apenas informação logística para o cliente: não há contratação, faturamento ou integração automática com essas plataformas.
+- O serviço de mapas/rotas é usado somente para calcular distância e taxa de entrega.
+- Cache do PWA atualizado para cards954-delivery-stable e páginas antigas com delivery-moto-v9-5-3.js têm o script antigo removido antes da injeção da V9.5.4.
+
+MANTIDO DA V9.5.3
+- Cálculo de taxa de entrega após preenchimento do CEP, rua, número, cidade e UF.
+- Exibição da distância real da rota e do valor calculado pela API quando o provedor de rota estiver disponível.
 - Regra padrão: até 1 km R$ 9,99; km excedente R$ 1,99, com cobrança por km iniciado e preço comercial final em ,99.
 - Tabela de referência: 1 km R$ 9,99; 2 km R$ 11,99; 3 km R$ 13,99; 5 km R$ 17,99.
 - Endereço fora do limite máximo configurado no ERP bloqueia a finalização.
-- Em indisponibilidade do Maps, o fluxo anterior de cotação manual continua disponível.
-- Totais do checkout passam a mostrar Produtos + Taxa de Entrega = Total quando a cotação automática estiver disponível.
+- Totais do checkout mostram Produtos + Taxa de Entrega = Total quando a cotação automática estiver disponível.
 - Antes do envio definitivo é exibido um resumo amigável com a pergunta "Fazer o Pedido?".
-- O servidor recalcula o frete no momento da criação do pedido; o valor exibido pelo navegador não é tratado como fonte autoritativa.
-- Cache do PWA atualizado para cards953-delivery.
+- O servidor recalcula o frete no momento da criação do pedido; o valor exibido pelo navegador não é fonte autoritativa.
 
 MANTIDO DA V9.5.2
 - Nome, descrição, imagem e preço acompanham a variação selecionada.
