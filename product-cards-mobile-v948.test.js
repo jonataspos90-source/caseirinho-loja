@@ -69,8 +69,10 @@ test('mobile V9.5.7 usa chips horizontais e oculta preço repetido',()=>{
   assert.match(carousel,/\.card-grade-option strong\{display:none!important\}/);
 });
 
-test('Loja 9.5.7 preserva cards, agrupamento, sync, desktop e Entrega',()=>{
+test('Loja 9.5.8 preserva cards, agrupamento, sync, desktop e Entrega',()=>{
+  assert.match(html,/Loja Online · V9\.5\.8/);
   assert.match(html,/productCardVersion:'9\.5\.7'/);
+  assert.match(html,/couponAssistantVersion:'9\.5\.8'/);
   assert.match(html,/product-cards-mobile-v9-4-8\.css\?v=9510/);
   assert.match(html,/product-cards-mobile-v9-5-0\.js\?v=9500/);
   assert.match(html,/variant-grouping-v9-5-1\.js\?v=9510/);
@@ -82,10 +84,11 @@ test('Loja 9.5.7 preserva cards, agrupamento, sync, desktop e Entrega',()=>{
   assert.match(html,/delivery-mode-v9-5-5\.js\?v=9550/);
   assert.doesNotMatch(html,/delivery-moto-v9-5-3\.js/);
   assert.doesNotMatch(html,/product-cards-mobile-v9-4-9\.js/);
-  assert.match(sw,/cards957-variant-carousel/);
+  assert.match(sw,/cards958-coupon-assistant/);
   assert.match(sw,/mobile-variant-carousel-v9-5-7\.css/);
   assert.match(sw,/mobile-variant-carousel-v9-5-7\.js/);
   assert.match(sw,/desktop-ux-v9-5-6\.css/);
+  assert.match(sw,/caseirinho-coupon-assistant-v9-5-8\.js/);
   assert.match(sw,/stripOldCardScripts/);
 });
 
