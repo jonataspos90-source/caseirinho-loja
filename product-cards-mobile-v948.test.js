@@ -28,12 +28,16 @@ test('card usa fluxo existente do modal para adicionar variante correta',()=>{
   assert.match(js,/productClose/);
 });
 
-test('observador 9.4.9 não reprocessa o próprio card',()=>{
+test('observador 9.4.9 é não bloqueante e não reprocessa o interior do card',()=>{
   assert.match(js,/cardUi949==='done'/);
   assert.match(js,/cardUi949==='working'/);
   assert.match(js,/requestAnimationFrame\(enhanceAll\)/);
-  assert.match(js,/retries>=20/);
-  assert.doesNotMatch(js,/remoteCatalog|fetchCatalog\(/);
+  assert.match(js,/loadRemoteCatalog/);
+  assert.match(js,/cache:'no-store'/);
+  assert.match(js,/observer\.observe\(r,\{childList:true\}\)/);
+  assert.doesNotMatch(js,/observer\.observe\(r,\{childList:true,subtree:true\}\)/);
+  assert.doesNotMatch(js,/retries>=20/);
+  assert.doesNotMatch(js,/localStorage\.getItem\(CATALOG_KEY/);
 });
 
 test('Loja e PWA carregam correção segura 9.4.9',()=>{
