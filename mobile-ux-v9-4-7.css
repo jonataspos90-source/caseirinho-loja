@@ -1,0 +1,203 @@
+/* Caseirinho Loja - Mobile UX V9.4.7
+   Camada mobile-first para 320px-428px, touch e teclado virtual. */
+:root{
+  --caseirinho-vvh:100dvh;
+  --caseirinho-vvtop:0px;
+  --touch-min:44px;
+}
+html,body{max-width:100%;overflow-x:clip}
+body{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+img,svg,video,canvas{max-width:100%}
+
+/* Evita zoom automático em Safari/iOS sem bloquear zoom/pinch do usuário. */
+input,select,textarea{
+  font-size:16px !important;
+  line-height:1.25;
+  min-height:48px;
+}
+textarea{min-height:96px;resize:vertical}
+input[type="checkbox"],input[type="radio"]{min-height:0}
+button,a,input,select,textarea{touch-action:manipulation}
+
+/* Área mínima de toque. */
+.head-btn,.soft,.primary,.glass,.cat-chip,.view-btn,.add-btn,
+.variant-buttons button,.order-actions button,.submit,.close,
+.qty button,.remove,.bottom-nav button,.receipt-pdf-btn,
+[data-generate-pix-937],[data-pix939]{
+  min-height:var(--touch-min);
+}
+.qty button{width:44px;height:44px;min-width:44px}
+.consent input{width:22px;height:22px;min-width:22px;min-height:22px;flex:0 0 22px}
+
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{
+  outline:3px solid color-mix(in srgb,var(--brand) 32%,transparent);
+  outline-offset:2px;
+}
+
+/* Nunca permitir que conteúdo flex/grid force largura maior que a viewport. */
+.top-inner>*,.product-card>*,.product-body>*,.cart-item>*,.drawer-head>*,
+.form-grid>*,.order-card>*,.product-info>*{min-width:0}
+.product-body h3,.description,.order-card,.info-box,.result,.pix-card{
+  overflow-wrap:anywhere;
+  word-break:break-word;
+}
+
+/* Drawer e modais usam a altura realmente visível quando o teclado abre. */
+.drawer.open,.overlay.open{overscroll-behavior:contain}
+.drawer-panel{
+  height:var(--caseirinho-vvh,100dvh);
+  max-height:var(--caseirinho-vvh,100dvh);
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  scroll-padding-top:84px;
+  scroll-padding-bottom:150px;
+}
+.product-modal,.simple-card{
+  max-height:min(92dvh,var(--caseirinho-vvh,92dvh));
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  scroll-padding-top:72px;
+  scroll-padding-bottom:120px;
+}
+.checkout input,.checkout select,.checkout textarea{
+  scroll-margin-block:88px 170px;
+}
+
+/* Ações dinâmicas do pedido não podem escapar do cartão. */
+.order-actions,.receipt-pdf-actions,.pix-pay-actions{flex-wrap:wrap;max-width:100%}
+.receipt-pdf-actions .receipt-pdf-btn,.pix-card button{max-width:100%;width:100%}
+
+@media (max-width:720px){
+  body{padding-bottom:calc(84px + env(safe-area-inset-bottom))}
+  .wrap{width:calc(100% - 20px);max-width:100%}
+
+  /* Cabeçalho em duas linhas: marca/carrinho e busca. */
+  .top-inner{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    grid-template-rows:auto auto;
+    gap:8px 10px;
+    padding:8px 0 10px;
+    min-height:auto;
+  }
+  .brand{grid-column:1;grid-row:1;max-width:100%;min-height:44px}
+  .brand>span:last-child{min-width:0}
+  .brand b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:56vw}
+  .search{grid-column:1/-1;grid-row:2;width:100%}
+  .search input{height:48px;padding-left:44px}
+  #cartTop{grid-column:2;grid-row:1;min-width:48px}
+
+  .hero{padding-top:12px}
+  .hero-card{min-height:auto;padding:26px 20px;border-radius:22px}
+  .hero h1{font-size:clamp(30px,9vw,40px);line-height:1.02;letter-spacing:-.03em}
+  .hero p{font-size:15px}
+  .hero-actions{display:grid;grid-template-columns:1fr;gap:10px}
+  .hero-actions button{width:100%;min-height:48px}
+
+  .section{padding:20px 0}
+  .section-head{align-items:flex-start}
+  .section-head h2{font-size:25px}
+  .catalog-head{gap:10px;align-items:center}
+  .catalog-head>div{min-width:0}
+  .category-row{margin-inline:-2px;padding-bottom:12px;scroll-snap-type:x proximity}
+  .cat-chip{min-height:46px;scroll-snap-align:start}
+
+  /* 320-428px: uma coluna legível e sem cortes. */
+  .product-grid{grid-template-columns:minmax(0,1fr)!important;gap:14px}
+  .product-card{border-radius:19px}
+  .product-pic{aspect-ratio:4/3}
+  .product-body{padding:14px;gap:9px}
+  .actions{gap:9px}
+  .actions button{min-height:48px}
+
+  .overlay.open{padding:6px;align-items:end}
+  .product-modal{
+    width:100%;
+    grid-template-columns:1fr;
+    gap:12px;
+    padding:14px;
+    border-radius:22px 22px 10px 10px;
+  }
+  .close{position:absolute;right:12px;top:12px;width:48px;height:48px}
+  .gallery-main{aspect-ratio:4/3}
+  .product-info{padding:2px}
+  .product-info h2{font-size:24px;padding-right:50px}
+  .variant-buttons{grid-template-columns:1fr;gap:9px}
+  .variant-buttons button{min-height:52px;padding:12px}
+  .buy-row{display:grid;grid-template-columns:92px minmax(0,1fr);gap:9px}
+  .buy-row input{height:50px}
+
+  /* Checkout nativo mobile: uma coluna, campos grandes e sem zoom. */
+  .drawer-panel{
+    width:100%;
+    padding:14px 14px calc(28px + env(safe-area-inset-bottom));
+    box-shadow:none;
+  }
+  .drawer-head{position:sticky;top:0;z-index:4;background:#fff;padding-top:4px}
+  .drawer-head h2{font-size:23px}
+  .form-grid{grid-template-columns:minmax(0,1fr)!important;gap:12px}
+  .form-grid .full{grid-column:auto}
+  .form-grid label,.obs{font-size:13px;gap:7px}
+  .form-grid input,.form-grid select,.obs textarea,.buy-row input{
+    font-size:16px!important;
+    min-height:50px;
+    border-radius:13px;
+    padding:13px 12px;
+  }
+  .delivery-box{padding:12px 10px;border-radius:14px}
+  .info-box{font-size:13px;padding:12px;line-height:1.5}
+  .consent{font-size:13px;line-height:1.45;gap:10px;align-items:flex-start}
+  .submit{min-height:52px;font-size:16px;position:relative}
+
+  .cart-item{grid-template-columns:56px minmax(0,1fr) auto;gap:9px;padding:10px 8px}
+  .cart-item img{width:56px;height:56px}
+  .cart-item h4{font-size:14px;overflow-wrap:anywhere}
+  .remove{min-height:40px;padding:8px 10px}
+  .totals{font-size:14px}
+  .grand{font-size:20px}
+
+  .simple.open{padding:6px;align-items:end}
+  .simple-card{
+    width:100%;
+    max-height:var(--caseirinho-vvh,100dvh);
+    border-radius:22px 22px 10px 10px;
+    padding:14px;
+  }
+  .order-card{padding:14px 12px;border-radius:16px}
+  .order-top{align-items:flex-start;gap:8px}
+  .order-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+  .order-actions button{width:100%;min-height:46px}
+  .receipt-pdf-actions{justify-content:stretch}
+  .receipt-pdf-btn{width:100%;min-height:48px}
+  .pix-card{padding:14px 12px!important;max-width:100%}
+  .pix-card button{min-height:48px;font-size:16px!important;white-space:normal}
+
+  .bottom-nav{
+    bottom:max(6px,env(safe-area-inset-bottom));
+    width:calc(100% - 10px);
+    padding:6px;
+    gap:2px;
+    border-radius:18px;
+  }
+  .bottom-nav button{min-height:54px;padding:6px 2px;font-size:19px}
+  .bottom-nav button span{font-size:10px;line-height:1.05}
+}
+
+/* 320px realmente estreito: prioriza leitura e elimina qualquer sobra. */
+@media (max-width:350px){
+  .wrap{width:calc(100% - 14px)}
+  .hero-card{padding:22px 16px}
+  .hero h1{font-size:29px}
+  .brand b{max-width:48vw}
+  .bottom-nav button span{font-size:9px}
+  .drawer-panel{padding-inline:10px}
+  .cart-item{grid-template-columns:50px minmax(0,1fr)}
+  .cart-item img{width:50px;height:50px}
+  .cart-item>*:last-child{grid-column:2}
+  .buy-row{grid-template-columns:80px minmax(0,1fr)}
+}
+
+/* Ao abrir teclado virtual, libera espaço útil e remove navegação fixa. */
+body.caseirinho-keyboard-open{padding-bottom:0}
+body.caseirinho-keyboard-open .bottom-nav{display:none!important}
+body.caseirinho-keyboard-open .drawer-panel{padding-bottom:18px}
