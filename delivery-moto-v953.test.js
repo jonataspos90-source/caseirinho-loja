@@ -4,6 +4,7 @@ const fs=require('node:fs');
 
 const js=fs.readFileSync('delivery-moto-v9-5-4.js','utf8');
 const mode=fs.readFileSync('delivery-mode-v9-5-5.js','utf8');
+const desktop=fs.readFileSync('desktop-ux-v9-5-6.css','utf8');
 const html=fs.readFileSync('index.html','utf8');
 const sw=fs.readFileSync('service-worker.js','utf8');
 
@@ -54,13 +55,22 @@ test('V9.5.5 garante a opção Entrega e preserva a escolha',()=>{
   assert.match(mode,/MutationObserver/);
 });
 
-test('Loja e PWA publicam V9.5.5 com cálculo V9.5.4',()=>{
-  assert.match(html,/Loja Online · V9\.5\.5/);
-  assert.match(html,/productCardVersion:'9\.5\.5'/);
-  assert.match(html,/delivery-moto-v9-5-4\.js\?v=9540/);
+test('V9.5.6 possui layout desktop próprio',()=>{
+  assert.match(desktop,/@media \(min-width: 1024px\)/);
+  assert.match(desktop,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+  assert.match(desktop,/\.bottom-nav\{display:none!important\}/);
+  assert.match(desktop,/\.drawer-panel\{width:min\(520px,42vw\)/);
+});
+
+test('Loja e PWA publicam V9.5.6 com entrega e desktop',()=>{
+  assert.match(html,/Loja Online · V9\.5\.6/);
+  assert.match(html,/productCardVersion:'9\.5\.6'/);
+  assert.match(html,/desktop-ux-v9-5-6\.css\?v=9560/);
+  assert.match(html,/delivery-moto-v9-5-4\.js\?v=9560/);
   assert.match(html,/delivery-mode-v9-5-5\.js\?v=9550/);
   assert.doesNotMatch(html,/delivery-moto-v9-5-3\.js/);
-  assert.match(sw,/cards955-delivery-mode/);
+  assert.match(sw,/cards956-desktop-delivery/);
+  assert.match(sw,/DESKTOPCSS956/);
   assert.match(sw,/DELIVERYJS954/);
   assert.match(sw,/DELIVERYMODE955/);
   assert.match(sw,/stripOldDeliveryScripts/);
