@@ -4,6 +4,7 @@ const fs=require('node:fs');
 
 const css=fs.readFileSync('product-cards-mobile-v9-4-8.css','utf8');
 const desktop=fs.readFileSync('desktop-ux-v9-5-6.css','utf8');
+const carousel=fs.readFileSync('mobile-variant-carousel-v9-5-7.css','utf8');
 const js=fs.readFileSync('product-cards-mobile-v9-5-0.js','utf8');
 const html=fs.readFileSync('index.html','utf8');
 const sw=fs.readFileSync('service-worker.js','utf8');
@@ -61,24 +62,30 @@ test('desktop usa três colunas e opções legíveis',()=>{
   assert.match(desktop,/overflow-wrap:normal!important/);
 });
 
-test('Loja 9.5.6 preserva cards, agrupamento, sync e Entrega',()=>{
-  assert.match(html,/productCardVersion:'9\.5\.6'/);
+test('mobile V9.5.7 usa chips horizontais e oculta preço repetido',()=>{
+  assert.match(carousel,/variant-chip-track957/);
+  assert.match(carousel,/overflow-x:auto!important/);
+  assert.match(carousel,/border-radius:999px!important/);
+  assert.match(carousel,/\.card-grade-option strong\{display:none!important\}/);
+});
+
+test('Loja 9.5.7 preserva cards, agrupamento, sync, desktop e Entrega',()=>{
+  assert.match(html,/productCardVersion:'9\.5\.7'/);
   assert.match(html,/product-cards-mobile-v9-4-8\.css\?v=9510/);
   assert.match(html,/product-cards-mobile-v9-5-0\.js\?v=9500/);
   assert.match(html,/variant-grouping-v9-5-1\.js\?v=9510/);
   assert.match(html,/variant-selection-sync-v9-5-2\.js\?v=9520/);
+  assert.match(html,/mobile-variant-carousel-v9-5-7\.css\?v=9570/);
+  assert.match(html,/mobile-variant-carousel-v9-5-7\.js\?v=9570/);
   assert.match(html,/desktop-ux-v9-5-6\.css\?v=9560/);
   assert.match(html,/delivery-moto-v9-5-4\.js\?v=9560/);
   assert.match(html,/delivery-mode-v9-5-5\.js\?v=9550/);
   assert.doesNotMatch(html,/delivery-moto-v9-5-3\.js/);
   assert.doesNotMatch(html,/product-cards-mobile-v9-4-9\.js/);
-  assert.match(sw,/cards956-desktop-delivery/);
-  assert.match(sw,/product-cards-mobile-v9-5-0\.js/);
-  assert.match(sw,/variant-grouping-v9-5-1\.js/);
-  assert.match(sw,/variant-selection-sync-v9-5-2\.js/);
+  assert.match(sw,/cards957-variant-carousel/);
+  assert.match(sw,/mobile-variant-carousel-v9-5-7\.css/);
+  assert.match(sw,/mobile-variant-carousel-v9-5-7\.js/);
   assert.match(sw,/desktop-ux-v9-5-6\.css/);
-  assert.match(sw,/delivery-moto-v9-5-4\.js/);
-  assert.match(sw,/delivery-mode-v9-5-5\.js/);
   assert.match(sw,/stripOldCardScripts/);
 });
 
