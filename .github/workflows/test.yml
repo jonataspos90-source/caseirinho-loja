@@ -25,6 +25,8 @@ jobs:
           node --check store-hotfix-v9-3-4.js
           node --check store-hotfix-v9-3-5.js
           node --check checkout-parmesao-v9-3-6.js
+          node --check pix-payment-v9-3-7.js
+          node --check pix-payment-ensure-v9-3-9.js
           node --check order-receipt-pdf-v9-4-1.js
           node --check order-actions-dedupe-v9-4-2.js
           node --check service-worker.js
