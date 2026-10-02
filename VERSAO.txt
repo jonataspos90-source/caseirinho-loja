@@ -1,17 +1,18 @@
-Loja Online V9.3.2 — Pedidos / Avaliações / PWA
-Build: 2026-09-16
+Loja Online V9.5.1 — Cards / Grades / Sabores / Tamanhos / PWA
+Build: 2026-10-02
 API esperada: 1.18.1
 
-CORREÇÕES V9.3.2
-- Pedidos antigos rejeitados/cancelados não aparecem como se fossem uma atualização do pedido recém-criado.
-- Sincronização do histórico marca avisos antigos antes do próximo ciclo de atualização da tela.
-- Após um checkout concluído com sucesso, a Loja pergunta a nota da experiência de compra.
-- Quando um pedido novo chega a ENTREGUE/RETIRADO/CONCLUÍDO/FINALIZADO, a Loja pergunta automaticamente a nota do pedido.
-- Avaliações históricas não geram pop-ups retroativos; continuam disponíveis no histórico do cliente.
-- Cache do PWA atualizado para V9.3.2.
+CORREÇÕES V9.5.1
+- Grades com mais de uma dimensão passam a ser apresentadas de forma explícita por sabor e tamanho/peso.
+- Sabores como Frango, Sardinha e Palmito ficam visualmente separados; dentro de cada sabor aparecem as opções de tamanho/peso correspondentes.
+- O agrupamento funciona tanto nos cards do cardápio quanto no modal de detalhes do produto.
+- Os botões originais das variantes são preservados, mantendo os IDs/SKUs e os eventos de seleção e inclusão no carrinho.
+- A V9.5.0 permanece como base do seletor inteligente; a V9.5.1 adiciona a camada de agrupamento visual sem regressão da lógica de compra.
+- Cache do PWA atualizado para cards951, evitando que celulares continuem usando a estrutura antiga.
+- Testes de regressão atualizados para validar a combinação V9.5.0 + hotfix V9.5.1.
 
-MANTIDO DA V9.3.1
-- Heartbeat da Loja/App para o painel Uso App do ERP.
-- Identificação separada entre navegador e App/PWA.
-- Aviso “Imagem meramente ilustrativa” apenas para fallback/ilustração.
-- Cross-sell, upsell, combos, cupons, fidelidade, capacidade, favoritos, recompra, CEP, frete, histórico, PIX e multiempresa.
+MANTIDO DAS VERSÕES ANTERIORES
+- Escolha explícita da grade antes de adicionar produto com variantes ao carrinho.
+- Rótulo completo do SKU selecionado no carrinho.
+- Layout mobile em uma coluna, imagem 4:3 e proteção contra corte lateral.
+- Pedidos, avaliações, PIX, LGPD, frete, CEP, histórico, cupons, fidelidade, combos, favoritos e demais recursos existentes.
