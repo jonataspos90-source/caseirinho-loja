@@ -28,9 +28,10 @@ test('polling não recarrega catálogo completo a cada 30 segundos',()=>{
   assert.doesNotMatch(app,/setInterval\(\(\)=>\{if\(!document\.hidden\)loadCatalog\(true\)\},30000\)/);
 });
 
-test('service worker limita a limpeza ao script congelado 9.4.8',()=>{
+test('service worker remove somente scripts antigos de cards e preserva a versão atual',()=>{
   assert.doesNotMatch(sw,/injectPatch|PATCH_TAG/);
-  assert.match(sw,/stripFrozenCardScript/);
-  assert.match(sw,/product-cards-mobile-v9-4-8\\\.js/);
-  assert.match(sw,/product-cards-mobile-v9-4-9\.js/);
+  assert.match(sw,/stripOldCardScripts/);
+  assert.match(sw,/product-cards-mobile-v9-4-\(\?:8\|9\)/);
+  assert.match(sw,/product-cards-mobile-v9-5-0\.js/);
+  assert.match(sw,/variant-grouping-v9-5-1\.js/);
 });
