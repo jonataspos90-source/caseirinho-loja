@@ -6,6 +6,7 @@ const js=fs.readFileSync('variant-grouping-v9-5-1.js','utf8');
 const html=fs.readFileSync('index.html','utf8');
 const sw=fs.readFileSync('service-worker.js','utf8');
 const css=fs.readFileSync('product-cards-mobile-v9-4-8.css','utf8');
+const carousel=fs.readFileSync('mobile-variant-carousel-v9-5-7.css','utf8');
 
 test('hotfix V9.5.1 possui sintaxe válida',()=>{
   assert.doesNotThrow(()=>new Function(js));
@@ -31,17 +32,27 @@ test('CSS contém estilos para agrupamento de sabor e opção',()=>{
   assert.match(css,/\.modal-size-options/);
 });
 
-test('Loja V9.5.6 preserva agrupamento, sincronização, desktop e Entrega',()=>{
-  assert.match(html,/Loja Online · V9\.5\.6/);
-  assert.match(html,/productCardVersion:'9\.5\.6'/);
+test('V9.5.7 converte agrupamentos mobile em vitrine horizontal compacta',()=>{
+  assert.match(carousel,/\.card-grade-flavor\{display:contents!important\}/);
+  assert.match(carousel,/\.card-grade-flavor-name\{display:none!important\}/);
+  assert.match(carousel,/variant-chip-track957/);
+});
+
+test('Loja V9.5.7 preserva agrupamento, sincronização, desktop e Entrega',()=>{
+  assert.match(html,/Loja Online · V9\.5\.7/);
+  assert.match(html,/productCardVersion:'9\.5\.7'/);
   assert.match(html,/variant-grouping-v9-5-1\.js\?v=9510/);
   assert.match(html,/variant-selection-sync-v9-5-2\.js\?v=9520/);
+  assert.match(html,/mobile-variant-carousel-v9-5-7\.css\?v=9570/);
+  assert.match(html,/mobile-variant-carousel-v9-5-7\.js\?v=9570/);
   assert.match(html,/desktop-ux-v9-5-6\.css\?v=9560/);
   assert.match(html,/delivery-moto-v9-5-4\.js\?v=9560/);
   assert.match(html,/delivery-mode-v9-5-5\.js\?v=9550/);
-  assert.match(sw,/cards956-desktop-delivery/);
+  assert.match(sw,/cards957-variant-carousel/);
   assert.match(sw,/variant-grouping-v9-5-1\.js/);
   assert.match(sw,/variant-selection-sync-v9-5-2\.js/);
+  assert.match(sw,/mobile-variant-carousel-v9-5-7\.css/);
+  assert.match(sw,/mobile-variant-carousel-v9-5-7\.js/);
   assert.match(sw,/desktop-ux-v9-5-6\.css/);
   assert.match(sw,/delivery-moto-v9-5-4\.js/);
   assert.match(sw,/delivery-mode-v9-5-5\.js/);
