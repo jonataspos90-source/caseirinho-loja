@@ -31,6 +31,6 @@ test('Rótulo ilustrativo não cobre fotos reais',()=>{
   assert.match(hotfix,/note\.style\.display=fallback\?'':'none'/);
 });
 
-test('Contrato de versão aponta para API 1.19.0',()=>{
-  assert.match(version,/API esperada: 1\.19\.0/);
+test('Contrato de versão aponta para API 1.19.2',()=>{
+  assert.match(version,/API esperada: 1\.19\.2/);
 });
