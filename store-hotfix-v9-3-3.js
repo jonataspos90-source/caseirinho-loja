@@ -83,3 +83,41 @@ function migrate(){
 migrate();
 window.CaseirinhoStoreHotfix933={version:VERSION,noticeKey:NOTICE_KEY,ordersKey:ORDERS_KEY,stableKey};
 })();
+
+(()=>{'use strict';
+if(window.__CASEIRINHO_DELIVERY_OPTION_GUARD__)return;
+window.__CASEIRINHO_DELIVERY_OPTION_GUARD__=true;
+const cfg=window.CASEIRINHO_CONFIG||{};
+const q=new URLSearchParams(location.search);
+const store=String(q.get('empresa')||q.get('loja')||cfg.storeSlug||'caseirinho').trim().toLowerCase();
+if(store!=='caseirinho')return;
+let mutating=false,observer=null;
+function ensureDelivery(){
+ const mode=document.getElementById('mode');
+ if(!mode||mutating)return false;
+ if([...mode.options].some(o=>String(o.value).toUpperCase()==='ENTREGA'))return true;
+ mutating=true;
+ try{
+  const option=document.createElement('option');
+  option.value='ENTREGA';
+  option.textContent='Entrega';
+  mode.appendChild(option);
+  mode.dataset.caseirinhoDeliveryEnabled='1';
+  return true;
+ }finally{mutating=false}
+}
+function install(){
+ const mode=document.getElementById('mode');
+ if(!mode)return false;
+ ensureDelivery();
+ if(!observer){observer=new MutationObserver(()=>queueMicrotask(ensureDelivery));observer.observe(mode,{childList:true})}
+ return true;
+}
+function boot(){
+ let tries=0;
+ const timer=setInterval(()=>{tries++;if(install()||tries>=40)clearInterval(timer)},250);
+ install();
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+window.CaseirinhoDeliveryOptionGuard={ensureDelivery};
+})();
