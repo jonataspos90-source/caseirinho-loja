@@ -1,4 +1,4 @@
-const CACHE='caseirinho-loja-v9.3.6-parmesao-checkout-pix937-revision938-pix939-stability940-payment941-receipt942-actions943-pixsingle944-pdfsingle945-pdfmarker946-mobile947-cards949b';
+const CACHE='caseirinho-loja-v9.3.6-parmesao-checkout-pix937-revision938-pix939-stability940-payment941-receipt942-actions943-pixsingle944-pdfsingle945-pdfmarker946-mobile947-cards949c';
 const HOTFIX931='./store-hotfix-v9-3-1.js';
 const HOTFIX932='./store-hotfix-v9-3-2.js';
 const HOTFIX933='./store-hotfix-v9-3-3.js';
