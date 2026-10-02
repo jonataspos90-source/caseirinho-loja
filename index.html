@@ -9,9 +9,9 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
   <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png">
-  <link rel="stylesheet" href="./styles.css?v=9470">
-  <link rel="stylesheet" href="./mobile-ux-v9-4-7.css?v=9470">
-  <link rel="stylesheet" href="./product-cards-mobile-v9-4-8.css?v=9480">
+  <link rel="stylesheet" href="./styles.css?v=9490">
+  <link rel="stylesheet" href="./mobile-ux-v9-4-7.css?v=9490">
+  <link rel="stylesheet" href="./product-cards-mobile-v9-4-8.css?v=9490">
 </head>
 <body>
   <header class="top">
@@ -168,39 +168,16 @@
       storeSlug:'caseirinho',
       version:'9.3.7',
       mobileUxVersion:'9.4.7',
-      productCardVersion:'9.4.8',
-      bootRescueVersion:'9.4.9'
+      productCardVersion:'9.4.9'
     };
   </script>
-  <script src="./store-hotfix-v9-3-4.js?v=937"></script>
-  <script src="./app.js?v=9470" defer></script>
-  <script src="./commerce-engine-v9-3-0.js?v=9470" defer></script>
+  <script src="./store-hotfix-v9-3-4.js?v=9490"></script>
+  <script src="./app.js?v=9490" defer></script>
+  <script src="./commerce-engine-v9-3-0.js?v=9490" defer></script>
   <script src="./checkout-parmesao-v9-3-6.js?v=9360" defer></script>
   <script src="./pix-payment-v9-3-7.js?v=9370" defer></script>
-  <script src="./store-hotfix-v9-3-3.js?v=937" defer></script>
-  <script src="./mobile-ux-v9-4-7.js?v=9470" defer></script>
-  <script src="./product-cards-mobile-v9-4-8.js?v=9480" defer></script>
-  <script>
-    (function(){
-      'use strict';
-      function appWired(){return typeof document.getElementById('shopBtn')?.onclick==='function'&&typeof document.getElementById('cartTop')?.onclick==='function'}
-      function rescue(){
-        if(appWired()||window.__CASEIRINHO_APP_RESCUE_LOADING__)return;
-        window.__CASEIRINHO_APP_RESCUE_LOADING__=true;
-        var s=document.createElement('script');
-        s.src='./app.js';
-        s.async=false;
-        s.onload=function(){window.__CASEIRINHO_APP_RESCUE_LOADING__=false};
-        s.onerror=function(){
-          window.__CASEIRINHO_APP_RESCUE_LOADING__=false;
-          var st=document.getElementById('syncStatus');
-          if(st)st.textContent='Não foi possível iniciar a Loja. Verifique a conexão e toque em atualizar.';
-        };
-        document.body.appendChild(s);
-      }
-      window.addEventListener('load',function(){setTimeout(rescue,700)},{once:true});
-      if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./service-worker.js',{updateViaCache:'none'}).catch(function(){});
-    })();
-  </script>
+  <script src="./store-hotfix-v9-3-3.js?v=9490" defer></script>
+  <script src="./mobile-ux-v9-4-7.js?v=9490" defer></script>
+  <script src="./product-cards-mobile-v9-4-9.js?v=9490" defer></script>
 </body>
 </html>
