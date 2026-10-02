@@ -1,26 +1,30 @@
-Loja Online V9.5.2 — Cards / Grades / Sabores / Tamanhos / Sincronização Visual / PWA
+Loja Online V9.5.3 — Entrega Moto / Maps / Resumo de Pedido / Cards / PWA
 Build: 2026-10-02
-API esperada: 1.18.1
+API esperada: 1.19.0
 
-CORREÇÕES V9.5.2
-- Ao selecionar uma variação, o card passa a mostrar o nome específico do SKU escolhido, e não apenas o nome genérico da grade.
-- A descrição do card muda para a descrição específica da variação selecionada.
-- A imagem do card muda para a imagem cadastrada no SKU selecionado.
-- O preço exibido acompanha o SKU escolhido.
-- Depois da seleção, clicar na foto ou em "Ver detalhes / fotos" abre exatamente a mesma variação escolhida.
-- No modal, nome, descrição, preço e galeria acompanham a variação selecionada.
-- Exemplo: ao escolher Panqueca de Carne, a foto, o nome e a descrição passam a ser os da Panqueca de Carne; ao escolher Frango, todo o conteúdo visual passa para Frango.
-- O comportamento vale para todos os produtos com grades/variações que possuam dados próprios cadastrados no catálogo.
-- Cache do PWA atualizado para cards952.
+NOVIDADES V9.5.3
+- Cálculo de taxa de entrega em tempo real após preenchimento do CEP, rua, número, cidade e UF.
+- Selo visual "Envios Moto - Uber/99" no checkout.
+- Exibição da distância real da rota e do valor calculado pela API.
+- Regra padrão: até 1 km R$ 9,99; km excedente R$ 1,99, com cobrança por km iniciado e preço comercial final em ,99.
+- Tabela de referência: 1 km R$ 9,99; 2 km R$ 11,99; 3 km R$ 13,99; 5 km R$ 17,99.
+- Endereço fora do limite máximo configurado no ERP bloqueia a finalização.
+- Em indisponibilidade do Maps, o fluxo anterior de cotação manual continua disponível.
+- Totais do checkout passam a mostrar Produtos + Taxa de Entrega = Total quando a cotação automática estiver disponível.
+- Antes do envio definitivo é exibido um resumo amigável com a pergunta "Fazer o Pedido?".
+- O servidor recalcula o frete no momento da criação do pedido; o valor exibido pelo navegador não é tratado como fonte autoritativa.
+- Cache do PWA atualizado para cards953-delivery.
+
+MANTIDO DA V9.5.2
+- Nome, descrição, imagem e preço acompanham a variação selecionada.
+- Clicar na foto ou em "Ver detalhes / fotos" abre exatamente o SKU escolhido.
+- Sincronização visual para Panquecas e demais produtos com variantes.
 
 MANTIDO DA V9.5.1
 - Grades com mais de uma dimensão apresentadas por sabor e tamanho/peso.
 - Sabores visualmente separados, com tamanhos/pesos dentro de cada grupo.
-- Agrupamento nos cards e no modal.
 - IDs/SKUs e fluxo original de carrinho preservados.
 
 MANTIDO DAS VERSÕES ANTERIORES
-- Escolha explícita da grade antes de adicionar produto com variantes ao carrinho.
-- Rótulo completo do SKU selecionado no carrinho.
 - Layout mobile em uma coluna, imagem 4:3 e proteção contra corte lateral.
-- Pedidos, avaliações, PIX, LGPD, frete, CEP, histórico, cupons, fidelidade, combos, favoritos e demais recursos existentes.
+- Pedidos, avaliações, PIX, LGPD, CEP, histórico, cupons, fidelidade, combos, favoritos e demais recursos existentes.
