@@ -31,16 +31,18 @@ test('CSS contém estilos para agrupamento de sabor e opção',()=>{
   assert.match(css,/\.modal-size-options/);
 });
 
-test('Loja V9.5.5 preserva agrupamento, sincronização e Entrega',()=>{
-  assert.match(html,/Loja Online · V9\.5\.5/);
-  assert.match(html,/productCardVersion:'9\.5\.5'/);
+test('Loja V9.5.6 preserva agrupamento, sincronização, desktop e Entrega',()=>{
+  assert.match(html,/Loja Online · V9\.5\.6/);
+  assert.match(html,/productCardVersion:'9\.5\.6'/);
   assert.match(html,/variant-grouping-v9-5-1\.js\?v=9510/);
   assert.match(html,/variant-selection-sync-v9-5-2\.js\?v=9520/);
-  assert.match(html,/delivery-moto-v9-5-4\.js\?v=9540/);
+  assert.match(html,/desktop-ux-v9-5-6\.css\?v=9560/);
+  assert.match(html,/delivery-moto-v9-5-4\.js\?v=9560/);
   assert.match(html,/delivery-mode-v9-5-5\.js\?v=9550/);
-  assert.match(sw,/cards955-delivery-mode/);
+  assert.match(sw,/cards956-desktop-delivery/);
   assert.match(sw,/variant-grouping-v9-5-1\.js/);
   assert.match(sw,/variant-selection-sync-v9-5-2\.js/);
+  assert.match(sw,/desktop-ux-v9-5-6\.css/);
   assert.match(sw,/delivery-moto-v9-5-4\.js/);
   assert.match(sw,/delivery-mode-v9-5-5\.js/);
 });
