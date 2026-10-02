@@ -1,15 +1,23 @@
-Loja Online V9.5.1 — Cards / Grades / Sabores / Tamanhos / PWA
+Loja Online V9.5.2 — Cards / Grades / Sabores / Tamanhos / Sincronização Visual / PWA
 Build: 2026-10-02
 API esperada: 1.18.1
 
-CORREÇÕES V9.5.1
-- Grades com mais de uma dimensão passam a ser apresentadas de forma explícita por sabor e tamanho/peso.
-- Sabores como Frango, Sardinha e Palmito ficam visualmente separados; dentro de cada sabor aparecem as opções de tamanho/peso correspondentes.
-- O agrupamento funciona tanto nos cards do cardápio quanto no modal de detalhes do produto.
-- Os botões originais das variantes são preservados, mantendo os IDs/SKUs e os eventos de seleção e inclusão no carrinho.
-- A V9.5.0 permanece como base do seletor inteligente; a V9.5.1 adiciona a camada de agrupamento visual sem regressão da lógica de compra.
-- Cache do PWA atualizado para cards951, evitando que celulares continuem usando a estrutura antiga.
-- Testes de regressão atualizados para validar a combinação V9.5.0 + hotfix V9.5.1.
+CORREÇÕES V9.5.2
+- Ao selecionar uma variação, o card passa a mostrar o nome específico do SKU escolhido, e não apenas o nome genérico da grade.
+- A descrição do card muda para a descrição específica da variação selecionada.
+- A imagem do card muda para a imagem cadastrada no SKU selecionado.
+- O preço exibido acompanha o SKU escolhido.
+- Depois da seleção, clicar na foto ou em "Ver detalhes / fotos" abre exatamente a mesma variação escolhida.
+- No modal, nome, descrição, preço e galeria acompanham a variação selecionada.
+- Exemplo: ao escolher Panqueca de Carne, a foto, o nome e a descrição passam a ser os da Panqueca de Carne; ao escolher Frango, todo o conteúdo visual passa para Frango.
+- O comportamento vale para todos os produtos com grades/variações que possuam dados próprios cadastrados no catálogo.
+- Cache do PWA atualizado para cards952.
+
+MANTIDO DA V9.5.1
+- Grades com mais de uma dimensão apresentadas por sabor e tamanho/peso.
+- Sabores visualmente separados, com tamanhos/pesos dentro de cada grupo.
+- Agrupamento nos cards e no modal.
+- IDs/SKUs e fluxo original de carrinho preservados.
 
 MANTIDO DAS VERSÕES ANTERIORES
 - Escolha explícita da grade antes de adicionar produto com variantes ao carrinho.
