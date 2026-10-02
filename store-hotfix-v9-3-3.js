@@ -90,7 +90,7 @@ window.__CASEIRINHO_DELIVERY_OPTION_GUARD__=true;
 const cfg=window.CASEIRINHO_CONFIG||{};
 const q=new URLSearchParams(location.search);
 const store=String(q.get('empresa')||q.get('loja')||cfg.storeSlug||'caseirinho').trim().toLowerCase();
-if(store!=='caseirinho')return;
+if(store!=='caseirinho'||typeof document==='undefined')return;
 let mutating=false,observer=null;
 function ensureDelivery(){
  const mode=document.getElementById('mode');
@@ -110,7 +110,10 @@ function install(){
  const mode=document.getElementById('mode');
  if(!mode)return false;
  ensureDelivery();
- if(!observer){observer=new MutationObserver(()=>queueMicrotask(ensureDelivery));observer.observe(mode,{childList:true})}
+ if(!observer&&typeof MutationObserver!=='undefined'){
+  observer=new MutationObserver(()=>queueMicrotask(ensureDelivery));
+  observer.observe(mode,{childList:true});
+ }
  return true;
 }
 function boot(){
