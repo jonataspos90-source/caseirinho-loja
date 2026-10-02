@@ -13,11 +13,14 @@
   background:#fff;padding:9px 10px;display:flex;align-items:center;justify-content:space-between;
   gap:8px;text-align:left;color:var(--ink);font-weight:800
 }
-.card-grade-option span{min-width:0;overflow-wrap:anywhere}
+.card-grade-option span{min-width:0;flex:1;overflow-wrap:anywhere;line-height:1.3}
 .card-grade-option strong{flex:0 0 auto;color:var(--brand);white-space:nowrap;font-size:12px}
 .card-grade-option.active{border-color:var(--brand);background:var(--brand-soft);box-shadow:0 0 0 2px color-mix(in srgb,var(--brand) 12%,transparent)}
 .card-grade-option:disabled{opacity:.45}
+.card-selected-choice{font-size:12px;line-height:1.35;font-weight:800;color:var(--muted);padding:2px 1px}
+.card-grade-option.active~* .card-selected-choice,.card-selected-choice.is-selected{color:var(--brand)}
 .product-card .card-add-selected{width:100%;min-height:50px}
+.product-card .card-add-selected:disabled{opacity:.62;cursor:not-allowed}
 
 @media(max-width:720px){
   /* sobrescreve explicitamente o grid antigo de <=430px */
@@ -69,8 +72,9 @@
     order:2;width:100%!important;min-width:0!important;min-height:44px!important
   }
   .card-grade-options{grid-template-columns:minmax(0,1fr)}
-  .card-grade-option{width:100%;min-height:50px;font-size:14px;padding:11px 12px}
+  .card-grade-option{width:100%;min-height:54px;font-size:14px;padding:11px 12px}
   .card-grade-option strong{font-size:14px}
+  .card-selected-choice{font-size:13px}
   .variant-summary{display:none!important}
 }
 
