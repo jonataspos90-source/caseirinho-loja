@@ -40,8 +40,8 @@ test('carrossel V9.5.7 preserva botões/SKUs e anima troca de imagem',()=>{
   assert.match(carousel,/aria-selected/);
 });
 
-test('Loja V9.5.8 mantém sync V9.5.2, carrossel, desktop, Entrega e cupom',()=>{
-  assert.match(html,/Loja Online · V9\.5\.8/);
+test('Loja V9.5.9 mantém sync V9.5.2, carrossel, desktop, Entrega e cupom',()=>{
+  assert.match(html,/Loja Online · V9\.5\.9/);
   assert.match(html,/couponAssistantVersion:'9\.5\.8'/);
   assert.match(html,/variant-selection-sync-v9-5-2\.js\?v=9520/);
   assert.match(html,/mobile-variant-carousel-v9-5-7\.js\?v=9570/);
