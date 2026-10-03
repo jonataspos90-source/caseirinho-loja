@@ -38,8 +38,8 @@ test('V9.5.7 converte agrupamentos mobile em vitrine horizontal compacta',()=>{
   assert.match(carousel,/variant-chip-track957/);
 });
 
-test('Loja V9.5.8 preserva agrupamento, sincronização, desktop e Entrega',()=>{
-  assert.match(html,/Loja Online · V9\.5\.8/);
+test('Loja V9.5.9 preserva agrupamento, sincronização, desktop e Entrega',()=>{
+  assert.match(html,/Loja Online · V9\.5\.9/);
   assert.match(html,/productCardVersion:'9\.5\.7'/);
   assert.match(html,/couponAssistantVersion:'9\.5\.8'/);
   assert.match(html,/variant-grouping-v9-5-1\.js\?v=9510/);
