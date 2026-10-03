@@ -20,6 +20,7 @@ jobs:
           node --check app.js
           node --check caseirinho-coupon-assistant-v9-5-8.js
           node --check caseirinho-cashback-v9-6-0.js
+          node --check cashback-checkout-popup-v9-6-4.js
           node --check customer-cashback-wallet-v9-6-3.js
           node --check commerce-engagement-v9-6-1.js
           node --check commerce-engine-v9-3-0.js
