@@ -22,11 +22,12 @@ test('fluxo CASEIRINHO10 continua solicitando WhatsApp e validando primeira comp
   assert.match(john,/validateFirstPurchase/);
 });
 
-test('cupom genérico não depende mais do campo nativo oculto',()=>{
+test('cupom genérico usa validação privada no servidor e não depende do campo nativo oculto',()=>{
   assert.match(john,/async function applyGenericCoupon/);
   assert.match(john,/GENERIC_OK/);
-  assert.match(john,/\/commerce-engine\?_t=/);
+  assert.match(john,/\/coupon\/validate\?_t=/);
   assert.match(john,/\/commercial-apply\?_t=/);
+  assert.doesNotMatch(john,/\/commerce-engine\?_t=/);
   assert.doesNotMatch(john,/syncNativeGeneric/);
   assert.doesNotMatch(john,/ceCouponInput/);
 });
