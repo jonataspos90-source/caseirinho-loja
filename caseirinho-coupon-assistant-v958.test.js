@@ -12,15 +12,23 @@ test('assistente V9.5.8 possui JavaScript válido',()=>{
 });
 
 test('fluxo CASEIRINHO10 solicita WhatsApp e trata respostas do ERP',()=>{
-  assert.match(src,/CASEIRINHO10 garante 10% de desconto na sua primeira compra/);
-  assert.match(src,/Por favor, informe seu WhatsApp para validar a promoção/);
+  assert.match(src,/CASEIRINHO10 dá 10% na primeira compra/);
+  assert.match(src,/Informe seu WhatsApp/);
   assert.match(src,/PRIMEIRA_COMPRA_OK/);
   assert.match(src,/CLIENTE_JA_USOU/);
   assert.match(src,/CUPOM_EXPIRADO/);
   assert.match(src,/\/api\/v1\/cupons\/validar/);
 });
 
-test('telefone é higienizado e cupom é revalidado no pedido',()=>{
+test('cupons do Motor Comercial são carregados e sincronizados no checkout',()=>{
+  assert.match(src,/\/commerce-engine\?_t=/);
+  assert.match(src,/GENERIC_OK/);
+  assert.match(src,/syncNativeGeneric/);
+  assert.match(src,/ceCouponInput/);
+  assert.match(src,/Cupons ativos:/);
+});
+
+test('telefone é higienizado e CASEIRINHO10 é revalidado no pedido',()=>{
   assert.match(src,/startsWith\('55'\)/);
   assert.match(src,/while\(d\.startsWith\('0'\)/);
   assert.match(src,/d\.length===9/);
