@@ -140,10 +140,16 @@ async function reserveCashback(){
 async function releaseReservation(){
   const st=readState();if(!st?.reservationId){removeState();return}
   setStatus('Liberando a reserva...','loading');
-  try{await api('/api/v1/public/store/'+encodeURIComponent(STORE)+'/cashback/reservations/'+encodeURIComponent(st.reservationId)+'/release',{method:'POST',body:JSON.stringify({orderRef:st.orderRef})})}catch(e){console.warn('[CASHBACK 9.6.0] liberação pendente',e)}
-  const available=round2(N(st.available)+N(st.reservedAmount));
-  saveState({enabled:true,phone:st.phone,cpf:st.cpf,available,balance:Math.max(N(st.balance),available),percentage:st.percentage,maxRedemptionPercent:st.maxRedemptionPercent,status:'BALANCE'});
-  setStatus('Cashback não será usado nesta compra.','');
+  try{
+    await api('/api/v1/public/store/'+encodeURIComponent(STORE)+'/cashback/reservations/'+encodeURIComponent(st.reservationId)+'/release',{method:'POST',body:JSON.stringify({orderRef:st.orderRef})});
+    removeState();lastIdentity='';
+    await queryBalance(true);
+    setStatus('Cashback não será usado nesta compra. Saldo reconfirmado pelo ERP.','');
+  }catch(e){
+    console.warn('[CASHBACK 9.6.0] liberação não confirmada',e);
+    removeState();lastIdentity='';mount();
+    setStatus('Não foi possível confirmar a liberação agora. O saldo será reconferido pelo ERP antes de qualquer novo uso.','warn');
+  }
 }
 
 function watchCustomer(){
