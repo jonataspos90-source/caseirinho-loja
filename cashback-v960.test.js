@@ -25,6 +25,13 @@ test('cashback is a separate checkout discount and does not discount freight',()
   assert.match(js,/productsAfter\+ship\.value/);
 });
 
+test('release never manufactures a local balance and rechecks ERP',()=>{
+  assert.match(js,/async function releaseReservation/);
+  assert.match(js,/await queryBalance\(true\)/);
+  assert.match(js,/Saldo reconfirmado pelo ERP/);
+  assert.doesNotMatch(js,/st\.available\)\+N\(st\.reservedAmount/);
+});
+
 test('cashback loads after coupons and before app',()=>{
   const coupon=index.indexOf('caseirinho-john-coupon-v9-5-9.js');
   const cashback=index.indexOf('caseirinho-cashback-v9-6-0.js');
