@@ -36,6 +36,16 @@ test('resumo final pergunta Fazer o Pedido e discrimina valores',()=>{
   assert.match(js,/requestSubmit/);
 });
 
+test('resumo final replica cupom, fidelidade e cashback antes de confirmar',()=>{
+  assert.match(js,/function visibleDiscounts\(/);
+  assert.match(js,/coupon958DiscountRow/);
+  assert.match(js,/cashback960DiscountRow/);
+  assert.match(js,/dm954ConfirmDiscounts/);
+  assert.match(js,/dm954-row discount/);
+  assert.match(js,/productsAfter=Math\.max\(0,round2\(sub-discount\)\)/);
+  assert.match(js,/sub-discountTotal\(\)/);
+});
+
 test('endereço fora do limite bloqueia conclusão',()=>{
   assert.match(js,/canDeliver===false/);
   assert.match(js,/setCheckoutBlocked\(true\)/);
@@ -70,7 +80,7 @@ test('V9.5.7 adiciona carrossel de sabores sem interferir no checkout',()=>{
   assert.doesNotMatch(carousel,/deliveryBox/);
 });
 
-test('Loja e PWA V9.6.0 preservam entrega, desktop, carrossel e cashback',()=>{
+test('Loja e PWA preservam entrega, desktop, carrossel, cupons e cashback',()=>{
   assert.match(html,/Loja Online · V9\.6\.0/);
   assert.match(html,/productCardVersion:'9\.5\.7'/);
   assert.match(html,/couponAssistantVersion:'9\.5\.8'/);
@@ -78,11 +88,11 @@ test('Loja e PWA V9.6.0 preservam entrega, desktop, carrossel e cashback',()=>{
   assert.match(html,/mobile-variant-carousel-v9-5-7\.css\?v=9570/);
   assert.match(html,/mobile-variant-carousel-v9-5-7\.js\?v=9570/);
   assert.match(html,/desktop-ux-v9-5-6\.css\?v=9560/);
-  assert.match(html,/delivery-moto-v9-5-4\.js\?v=9560/);
+  assert.match(html,/delivery-moto-v9-5-4\.js\?v=9611/);
   assert.match(html,/delivery-mode-v9-5-5\.js\?v=9550/);
   assert.doesNotMatch(html,/delivery-moto-v9-5-3\.js/);
-  assert.match(sw,/cards958-coupon-assistant/);
-  assert.match(sw,/cashback960/);
+  assert.match(sw,/caseirinho-loja-v9\.6\.2-delivery-discounts/);
+  assert.match(sw,/CASHBACKJS960/);
   assert.match(sw,/VARIANTCSS957/);
   assert.match(sw,/VARIANTJS957/);
   assert.match(sw,/DESKTOPCSS956/);
