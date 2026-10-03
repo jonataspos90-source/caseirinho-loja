@@ -31,7 +31,7 @@ test('bottom navigation displays the customer cashback amount when available',()
 });
 
 test('wallet keeps coupon and cashback non-cumulative rule visible',()=>{
-  assert.match(js,/não é cumulativo com o cupom/i);
+  assert.match(js,/não acumula com cupom de desconto/i);
 });
 
 test('store loads cashback wallet v9.6.3',()=>{
