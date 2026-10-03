@@ -69,8 +69,8 @@ test('mobile V9.5.7 usa chips horizontais e oculta preço repetido',()=>{
   assert.match(carousel,/\.card-grade-option strong\{display:none!important\}/);
 });
 
-test('Loja 9.5.8 preserva cards, agrupamento, sync, desktop e Entrega',()=>{
-  assert.match(html,/Loja Online · V9\.5\.8/);
+test('Loja 9.5.9 preserva cards, agrupamento, sync, desktop e Entrega',()=>{
+  assert.match(html,/Loja Online · V9\.5\.9/);
   assert.match(html,/productCardVersion:'9\.5\.7'/);
   assert.match(html,/couponAssistantVersion:'9\.5\.8'/);
   assert.match(html,/product-cards-mobile-v9-4-8\.css\?v=9510/);
