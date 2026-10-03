@@ -56,5 +56,10 @@ if(nativeFetch){
   return response;
  };
 }
-window.CaseirinhoStoreHotfix934={version:VERSION,noticeKey:NOTICE_KEY,ordersKey:ORDERS_KEY,catalogKey:CATALOG_KEY,stableKey,primeExistingTerminalOrders,serverAuthoritative:true};
+function loadEngagement961(){
+  if(window.__CASEIRINHO_ENGAGEMENT_961__||document.querySelector('script[data-caseirinho-engagement-961]'))return;
+  const s=document.createElement('script');s.src='./commerce-engagement-v9-6-1.js?v=9611';s.async=false;s.dataset.caseirinhoEngagement961='1';document.head.appendChild(s);
+}
+loadEngagement961();
+window.CaseirinhoStoreHotfix934={version:VERSION,noticeKey:NOTICE_KEY,ordersKey:ORDERS_KEY,catalogKey:CATALOG_KEY,stableKey,primeExistingTerminalOrders,serverAuthoritative:true,loadEngagement961};
 })();
