@@ -37,7 +37,7 @@ test('cashback loads after coupons and before app',()=>{
   const cashback=index.indexOf('caseirinho-cashback-v9-6-0.js');
   const app=index.indexOf('./app.js?v=9600');
   assert.ok(coupon>=0&&cashback>coupon&&app>cashback);
-  assert.match(index,/Loja Online · V9\.6\.0/);
+  assert.match(index,/cashbackVersion:'9\.6\.0'/);
 });
 
 test('PWA caches and injects cashback module',()=>{
