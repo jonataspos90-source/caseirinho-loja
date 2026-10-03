@@ -2,115 +2,60 @@
 if(window.__CASEIRINHO_ENGAGEMENT_961__)return;
 window.__CASEIRINHO_ENGAGEMENT_961__=true;
 
+const CFG=window.CASEIRINHO_CONFIG||{};
+const API=String(CFG.apiUrl||'https://john-cloud-api-production.up.railway.app').replace(/\/+$/,'');
+const STORE=String(
+  new URLSearchParams(location.search).get('empresa')||
+  new URLSearchParams(location.search).get('loja')||
+  CFG.storeSlug||'caseirinho'
+).trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+ .replace(/[^a-z0-9-]/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'')||'caseirinho';
+const PREFIX='john_store_'+STORE+'_';
+const CART_KEY=PREFIX+'cart_v1';
+const ORDERS_KEY=PREFIX+'orders_v1';
+const PROFILE_KEY=PREFIX+'customer_profile_v1';
+const SESSION_KEY=PREFIX+'commerce_session_v1';
+const SENT_KEY=PREFIX+'engagement_last_snapshot_v961';
+const RATED_PREFIX=PREFIX+'rating_done_v961_';
+const E=id=>document.getElementById(id);
 const S=v=>String(v??'');
 const N=v=>Number(v)||0;
 const A=v=>Array.isArray(v)?v:[];
-const E=id=>document.getElementById(id);
 const esc=v=>S(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-const STORE_ID=()=>S(window.STORE||(typeof STORE!=='undefined'?STORE:'caseirinho')||'caseirinho');
-const scope=()=>S((typeof STORE_SCOPE!=='undefined'?STORE_SCOPE:window.STORE_SCOPE)||('john_store_'+STORE_ID()+'_'));
-const SESSION_KEY=()=>scope()+'commerce_session_v1';
-const RATED_KEY=()=>scope()+'engagement_rated_orders_v1';
 let cfg={abandonedCart:{enabled:true,minutes:30},ratings:{enabled:true}};
-let snapshotTimer=null;
-let lastFingerprint='';
-let lastSentAt=0;
-let wrapped=false;
+let lastSignature='';
+let lastSendAt=0;
+let sending=false;
+let checkoutObserver=null;
+let orderObserver=null;
 
-function sessionId(){
-  let x='';try{x=localStorage.getItem(SESSION_KEY())||''}catch(_){}
-  if(!x){x=(crypto.randomUUID?.()||('s'+Date.now()+Math.random().toString(36).slice(2)));try{localStorage.setItem(SESSION_KEY(),x)}catch(_){}}
-  return x;
-}
-function rows(){try{return A(typeof cart!=='undefined'?cart:window.cart)}catch(_){return A(window.cart)}}
-function customer(){return{name:S(E('cName')?.value).trim(),phone:S(E('cPhone')?.value).trim(),email:S(E('cEmail')?.value).trim(),cpf:S(E('cCpf')?.value).trim()}}
-function itemName(x){return S(x?.nome||x?.nomeComercial||x?.descricao||x?.produto?.nome||x?.produtoId||'Item')}
-function itemQty(x){return Math.max(0,N(x?.quantidade||x?.qty||1))}
-function itemPrice(x){return Math.max(0,N(x?.precoUnitario??x?.preco??x?.valorUnitario))}
-function cartData(){
-  const c=rows(),who=customer();
-  const details=c.map(x=>({productId:S(x?.produtoId||x?.id),name:itemName(x),quantity:itemQty(x),unitPrice:itemPrice(x)}));
-  return{...who,total:details.reduce((s,x)=>s+x.quantity*x.unitPrice,0),items:details.reduce((s,x)=>s+x.quantity,0),itemNames:details.map(x=>x.quantity+'x '+x.name).join(', '),itemDetails:details,lastActivityAt:new Date().toISOString()};
-}
-async function callApi(path,opt={}){
-  const fn=window.api||(typeof api==='function'?api:null);
-  if(!fn)throw new Error('API da Loja indisponível.');
-  return fn('/api/v1/public/store/'+encodeURIComponent(STORE_ID())+path,opt);
-}
-async function postEvent(type,data={},extra={}){
-  try{
-    return await callApi('/commerce-events',{method:'POST',keepalive:!!extra.keepalive,body:JSON.stringify({type,sessionId:sessionId(),phone:S(data.phone||customer().phone),orderId:S(extra.orderId||data.orderId||''),data})});
-  }catch(e){console.warn('[Engagement] evento '+type,e);return null}
-}
-function fingerprint(d){return JSON.stringify({phone:d.phone,name:d.name,email:d.email,total:Number(d.total).toFixed(2),items:d.items,itemNames:d.itemNames})}
-async function sendSnapshot(force=false,keepalive=false){
-  const d=cartData(),now=Date.now();
-  if(d.items<=0){
-    if(force||lastFingerprint){await postEvent('CART_CLEARED',{...customer(),items:0,total:0},{keepalive});lastFingerprint='';lastSentAt=now}
-    return;
-  }
-  const fp=fingerprint(d);
-  if(!force&&fp===lastFingerprint&&now-lastSentAt<15000)return;
-  await postEvent('CART_SNAPSHOT',d,{keepalive});
-  lastFingerprint=fp;lastSentAt=now;
-}
-function queueSnapshot(force=false){clearTimeout(snapshotTimer);snapshotTimer=setTimeout(()=>sendSnapshot(force,false),force?120:650)}
-
-function ratedSet(){try{return new Set(JSON.parse(localStorage.getItem(RATED_KEY())||'[]')||[])}catch(_){return new Set()}}
-function saveRated(set){try{localStorage.setItem(RATED_KEY(),JSON.stringify([...set].slice(-100)))}catch(_){}}
-function successOrderCode(){const text=S(E('checkoutResult')?.textContent);const m=text.match(/Pedido\s+([^\s]+)\s+recebido/i);return m?.[1]||''}
-function ensureRatingPrompt(){
-  if(cfg?.ratings?.enabled===false)return false;
-  const host=E('checkoutResult'),code=successOrderCode();
-  if(!host||!code||host.querySelector('#eng961Rating'))return false;
-  const rated=ratedSet();if(rated.has(code))return false;
-  const c=customer();
-  const box=document.createElement('div');box.id='eng961Rating';box.className='eng961-rating';
-  box.innerHTML=`<div class="eng961-title">⭐ Como foi sua experiência de compra?</div><div class="eng961-sub">Avalie o processo do pedido no Caseirinho.</div><div class="eng961-stars">${[1,2,3,4,5].map(n=>`<button type="button" data-eng-rating="${n}" aria-label="${n} estrela${n>1?'s':''}">★</button>`).join('')}</div><textarea id="eng961Comment" maxlength="500" placeholder="Conte para nós (opcional)"></textarea><button type="button" id="eng961Send" disabled>Enviar avaliação</button><div id="eng961Status" class="eng961-status"></div>`;
-  host.appendChild(box);
-  let selected=0;
-  box.querySelectorAll('[data-eng-rating]').forEach(b=>b.onclick=()=>{selected=N(b.dataset.engRating);box.querySelectorAll('[data-eng-rating]').forEach(x=>x.classList.toggle('selected',N(x.dataset.engRating)<=selected));E('eng961Send').disabled=!selected});
-  E('eng961Send').onclick=async()=>{
-    const btn=E('eng961Send');if(!selected||!btn)return;btn.disabled=true;btn.textContent='Enviando...';
-    const data={...c,orderId:code,rating:selected,comment:S(E('eng961Comment')?.value).trim(),source:'CHECKOUT'};
-    const r=await postEvent('RATING',data,{orderId:code});
-    if(r){rated.add(code);saveRated(rated);box.innerHTML='<b>Obrigado! Sua avaliação foi registrada. ⭐</b>'}
-    else{btn.disabled=false;btn.textContent='Enviar avaliação';const st=E('eng961Status');if(st)st.textContent='Não foi possível enviar agora. Tente novamente.'}
-  };
-  return true;
-}
-function style(){if(E('eng961Style'))return;const s=document.createElement('style');s.id='eng961Style';s.textContent=`
-.eng961-rating{margin-top:14px;padding:15px;border:1px solid #ead7dc;border-radius:14px;background:#fffafb;text-align:left}.eng961-title{font-size:17px;font-weight:900;color:#172554}.eng961-sub{font-size:13px;color:#64748b;margin:4px 0 10px}.eng961-stars{display:flex;gap:6px;margin:8px 0}.eng961-stars button{border:1px solid #e2e8f0;background:#fff;color:#cbd5e1;border-radius:9px;font-size:25px;padding:6px 9px;line-height:1;cursor:pointer}.eng961-stars button.selected{color:#f59e0b;background:#fffbeb;border-color:#fcd34d}.eng961-rating textarea{width:100%;min-height:72px;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:9px;padding:9px;margin:6px 0 9px;resize:vertical}.eng961-rating #eng961Send{border:0;border-radius:9px;background:#7b1438;color:#fff;font-weight:900;padding:9px 13px}.eng961-rating #eng961Send:disabled{opacity:.5}.eng961-status{font-size:12px;color:#b91c1c;margin-top:6px}`;document.head.appendChild(s)}
-
-async function refreshConfig(){try{const r=await callApi('/commerce-engine',{cache:'no-store'});cfg={...cfg,...(r?.config||{})}}catch(e){console.warn('[Engagement] configuração',e)}}
-function wrapCart(){
-  if(window.__ENG961_CART_WRAPPED__)return;const old=window.renderCart;if(typeof old!=='function')return;
-  window.__ENG961_CART_WRAPPED__=true;
-  window.renderCart=function(){const r=old.apply(this,arguments);queueSnapshot(true);return r};
-}
-function wrapSubmit(){
-  if(window.__ENG961_SUBMIT_WRAPPED__)return;const old=window.submitOrder;if(typeof old!=='function')return;
-  window.__ENG961_SUBMIT_WRAPPED__=true;
-  window.submitOrder=async function(){
-    const before=cartData();
-    const r=await old.apply(this,arguments);
-    setTimeout(async()=>{
-      const code=successOrderCode();
-      if(code){await postEvent('ORDER_CREATED',{...before,orderId:code,source:'CHECKOUT'},{orderId:code});await postEvent('CART_CLEARED',{...customer(),items:0,total:0,orderId:code},{orderId:code});lastFingerprint='';ensureRatingPrompt()}
-      else queueSnapshot(true);
-    },120);
-    return r;
-  };
-  const f=E('checkout');if(f)f.onsubmit=window.submitOrder;
-}
-function bindIdentity(){
-  ['cName','cPhone','cEmail','cCpf'].forEach(id=>{const el=E(id);if(!el||el.dataset.eng961Bound==='1')return;el.dataset.eng961Bound='1';el.addEventListener('input',()=>{if(rows().length)queueSnapshot(false)});el.addEventListener('change',()=>{if(rows().length)queueSnapshot(true)})});
-}
-function install(){style();wrapCart();wrapSubmit();bindIdentity();if(rows().length)queueSnapshot(true);ensureRatingPrompt()}
-
-refreshConfig().finally(()=>{install();[300,900,1800,3500].forEach(ms=>setTimeout(install,ms))});
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&rows().length)sendSnapshot(true,true)});
-window.addEventListener('pagehide',()=>{if(rows().length)sendSnapshot(true,true)});
-const obs=new MutationObserver(()=>{wrapCart();wrapSubmit();bindIdentity();ensureRatingPrompt()});obs.observe(document.documentElement,{childList:true,subtree:true});
-window.CaseirinhoEngagement961={snapshot:()=>sendSnapshot(true,false),rating:ensureRatingPrompt,refreshConfig};
+function read(k,f){try{const x=JSON.parse(localStorage.getItem(k)||'null');return x??f}catch(_){return f}}
+function write(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(_){}}
+function cart(){return A(read(CART_KEY,[]))}
+function orders(){return A(read(ORDERS_KEY,[]))}
+function profile(){return read(PROFILE_KEY,{})||{}}
+function sessionId(){let x='';try{x=localStorage.getItem(SESSION_KEY)||''}catch(_){}if(!x){x=(crypto.randomUUID?.()||('s'+Date.now()+Math.random().toString(36).slice(2)));try{localStorage.setItem(SESSION_KEY,x)}catch(_){}}return x}
+function phoneDigits(v){let d=S(v).replace(/\D/g,'');if(d.startsWith('55')&&d.length>=12)d=d.slice(2);return d.slice(-11)}
+function identity(){const p=profile();return{name:S(E('cName')?.value||p.nome||'').trim(),phone:phoneDigits(E('cPhone')?.value||p.telefone||''),email:S(E('cEmail')?.value||p.email||'').trim(),cpf:S(E('cCpf')?.value||p.cpf||'').replace(/\D/g,'')}}
+function snapshot(){const c=cart(),who=identity();const itemDetails=c.map(x=>({productId:S(x.produtoId||x.productId||x.id),name:S(x.nome||x.name||x.descricao||'Produto'),quantity:N(x.quantidade||x.quantity),unitPrice:N(x.precoUnitario??x.preco??x.price)}));const total=itemDetails.reduce((s,x)=>s+x.quantity*x.unitPrice,0);return{...who,total,items:itemDetails.reduce((s,x)=>s+x.quantity,0),cartSize:itemDetails.length,itemNames:itemDetails.map(x=>`${x.quantity}x ${x.name}`).join(', '),itemDetails,page:location.pathname,updatedAt:new Date().toISOString()}}
+async function postEvent(type,data={},keepalive=false){const body=JSON.stringify({type,sessionId:sessionId(),phone:S(data.phone||identity().phone),orderId:S(data.orderId||''),data});const r=await fetch(`${API}/api/v1/public/store/${encodeURIComponent(STORE)}/commerce-events?_t=${Date.now()}`,{method:'POST',cache:'no-store',keepalive:!!keepalive,headers:{'Content-Type':'application/json','Cache-Control':'no-cache'},body});if(!r.ok)throw new Error('HTTP '+r.status);return true}
+function signature(s){return JSON.stringify({ids:A(s.itemDetails).map(x=>[x.productId,x.quantity,x.unitPrice]),name:s.name,phone:s.phone,email:s.email,cpf:s.cpf,total:s.total})}
+async function sendSnapshot(force=false,keepalive=false){if(sending)return false;const s=snapshot(),sig=signature(s),now=Date.now();if(!s.cartSize){const prev=read(SENT_KEY,{});if(prev?.hadCart){try{await postEvent('CART_CLEARED',{...s,items:0,cartSize:0},keepalive)}catch(_){}write(SENT_KEY,{hadCart:false,at:now});lastSignature=''}return false}if(!force&&sig===lastSignature&&now-lastSendAt<30000)return false;sending=true;try{await postEvent('CART_SNAPSHOT',s,keepalive);lastSignature=sig;lastSendAt=now;write(SENT_KEY,{hadCart:true,at:now,signature:sig});return true}catch(_){return false}finally{sending=false}}
+function scheduleSnapshot(force=false){setTimeout(()=>sendSnapshot(force,false),120)}
+async function loadConfig(){try{const r=await fetch(`${API}/api/v1/public/store/${encodeURIComponent(STORE)}/commerce-engine?_t=${Date.now()}`,{cache:'no-store'});const j=await r.json();if(r.ok&&j?.config)cfg={...cfg,...j.config}}catch(_){}}
+function latestOrder(){return [...orders()].sort((a,b)=>new Date(b.savedAt||b.criadoEm||b.createdAt||0)-new Date(a.savedAt||a.criadoEm||a.createdAt||0))[0]||null}
+function rated(orderId){try{return localStorage.getItem(RATED_PREFIX+S(orderId))==='1'}catch(_){return false}}
+function markRated(orderId){try{localStorage.setItem(RATED_PREFIX+S(orderId),'1')}catch(_){}}
+function ratingHtml(order,compact=false){const oid=esc(order?.id||'');const code=esc(order?.codigo||order?.code||'');return `<div class="ce961-rating" data-ce961-order="${oid}" style="margin-top:12px;padding:14px;border:1px solid #ead7dc;border-radius:14px;background:#fffafb"><b style="display:block;margin-bottom:5px">⭐ Como foi sua experiência${code?' com o pedido '+code:''}?</b><small style="display:block;color:#6b7280;margin-bottom:9px">Sua avaliação ajuda o Caseirinho a melhorar.</small><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:9px">${[1,2,3,4,5].map(n=>`<button type="button" data-ce961-rate="${n}" style="border:1px solid #ead7dc;background:#fff;border-radius:10px;padding:8px 10px;font-size:18px;cursor:pointer" aria-label="${n} estrela${n>1?'s':''}">${'★'.repeat(n)}</button>`).join('')}</div>${compact?'':`<textarea data-ce961-comment rows="2" maxlength="500" placeholder="Quer deixar um comentário? (opcional)" style="width:100%;box-sizing:border-box;border:1px solid #d1d5db;border-radius:9px;padding:8px"></textarea>`}<div data-ce961-status style="font-size:12px;margin-top:6px"></div></div>`}
+async function submitRating(box,n,order){if(!box||!order?.id||rated(order.id))return;const status=box.querySelector('[data-ce961-status]'),buttons=[...box.querySelectorAll('[data-ce961-rate]')];buttons.forEach(b=>b.disabled=true);if(status)status.textContent='Enviando sua avaliação...';const who=identity(),comment=S(box.querySelector('[data-ce961-comment]')?.value).trim();try{await postEvent('RATING',{orderId:S(order.id),orderCode:S(order.codigo||order.code||''),rating:N(n),comment,name:who.name,customerName:who.name,phone:who.phone,email:who.email,cpf:who.cpf,source:'CHECKOUT'});markRated(order.id);box.innerHTML='<b style="color:#166534">✓ Obrigado! Sua avaliação foi registrada.</b>'}catch(e){buttons.forEach(b=>b.disabled=false);if(status)status.textContent='Não foi possível enviar agora. Tente novamente.'}}
+function bindRating(box,order){box?.querySelectorAll('[data-ce961-rate]').forEach(b=>b.addEventListener('click',()=>submitRating(box,N(b.dataset.ce961Rate),order)))}
+function renderCheckoutRating(){if(cfg?.ratings?.enabled===false)return;const host=E('checkoutResult');if(!host||!/pedido\s+.+\s+recebido/i.test(S(host.textContent)))return;const o=latestOrder();if(!o?.id||rated(o.id)||host.querySelector('.ce961-rating'))return;host.insertAdjacentHTML('beforeend',ratingHtml(o,false));bindRating(host.querySelector('.ce961-rating'),o)}
+function enhanceOrderCards(){if(cfg?.ratings?.enabled===false)return;const list=[...orders()].reverse();document.querySelectorAll('.order-card').forEach((card,i)=>{const o=list[i];if(!o?.id||rated(o.id)||card.querySelector('.ce961-rating'))return;card.insertAdjacentHTML('beforeend',ratingHtml(o,true));bindRating(card.querySelector('.ce961-rating'),o)})}
+function watchCheckout(){const host=E('checkoutResult');if(!host)return;checkoutObserver?.disconnect();checkoutObserver=new MutationObserver(()=>setTimeout(renderCheckoutRating,20));checkoutObserver.observe(host,{childList:true,subtree:true,characterData:true});renderCheckoutRating()}
+function watchOrders(){orderObserver?.disconnect();orderObserver=new MutationObserver(()=>{if(document.querySelector('.order-card'))setTimeout(enhanceOrderCards,60)});orderObserver.observe(document.body,{childList:true,subtree:true})}
+function watchIdentity(){['cName','cPhone','cEmail','cCpf'].forEach(id=>{const el=E(id);if(!el||el.dataset.ce961Bound==='1')return;el.dataset.ce961Bound='1';el.addEventListener('change',()=>scheduleSnapshot(true));el.addEventListener('blur',()=>scheduleSnapshot(true))})}
+function watchCart(){let previous='';setInterval(()=>{const s=signature(snapshot());if(s!==previous){previous=s;scheduleSnapshot(true)}},1500);setInterval(()=>{if(cart().length)sendSnapshot(false,false)},30000);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')sendSnapshot(true,true);else scheduleSnapshot(false)});window.addEventListener('pagehide',()=>sendSnapshot(true,true))}
+async function install(){await loadConfig();watchCheckout();watchOrders();watchIdentity();watchCart();setTimeout(()=>{watchIdentity();scheduleSnapshot(true);enhanceOrderCards();renderCheckoutRating()},600);setInterval(watchIdentity,3000)}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
+window.CaseirinhoEngagement961={snapshot:()=>snapshot(),sendSnapshot,renderCheckoutRating,enhanceOrderCards};
 })();
