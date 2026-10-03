@@ -24,16 +24,15 @@ function readState(){try{return JSON.parse(localStorage.getItem(KEY)||'null')}ca
 function saveState(v){try{localStorage.setItem(KEY,JSON.stringify(v))}catch(_){}}
 function clearState(){try{localStorage.removeItem(KEY)}catch(_){}renderDiscount()}
 function setCouponStatus(text,type=''){const el=document.getElementById('coupon958Status');if(!el)return;el.className='coupon958-status '+type;el.textContent=text}
-function activeByDate(c){if(!c||c.active===false||c.ativo===false)return false;const now=Date.now(),start=c.startAt||c.inicio,end=c.endAt||c.fim;if(start&&Number.isFinite(new Date(start).getTime())&&new Date(start).getTime()>now)return false;if(end&&Number.isFinite(new Date(end).getTime())&&new Date(end).getTime()<now)return false;return true}
 function isPercent(c){return ['PERCENT','PERCENTUAL','PERCENTAGE','%'].includes(normalizeCode(c?.type||c?.tipo))}
 function couponDiscount(c,subtotal){if(!c)return 0;const min=N(c.minSubtotal||c.pedidoMinimo);if(min>subtotal+1e-9)return 0;let d=isPercent(c)?subtotal*Math.max(0,Math.min(100,N(c.value||c.valor)))/100:Math.max(0,N(c.value||c.valor));const max=N(c.maxDiscount||c.descontoMaximo);if(max>0)d=Math.min(d,max);return round2(Math.min(subtotal,d))}
 function couponBenefit(c){return isPercent(c)?`${N(c.value||c.valor)}% de desconto`:`${money(N(c.value||c.valor))} de desconto`}
 
-async function loadCommercePrivate(){
-  const r=await previousFetch(API+'/api/v1/public/store/'+encodeURIComponent(STORE)+'/commerce-engine?_t='+Date.now(),{cache:'no-store',headers:{'Cache-Control':'no-cache'}});
+async function validateTypedCoupon(code,subtotal){
+  const r=await previousFetch(API+'/api/v1/public/store/'+encodeURIComponent(STORE)+'/coupon/validate?_t='+Date.now(),{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json','Cache-Control':'no-cache'},body:JSON.stringify({code,subtotal})});
   let data={};try{data=await r.json()}catch(_){}
-  if(!r.ok)throw new Error(data.error||'Não foi possível validar o cupom.');
-  return data.config||{};
+  if(!r.ok){const e=new Error(data.error||'Não foi possível validar o cupom.');e.status=data.status||'';e.data=data;throw e}
+  return data;
 }
 
 function renderDiscount(){
@@ -50,19 +49,20 @@ function renderDiscount(){
 
 async function applyGenericCoupon(code){
   const normalized=normalizeCode(code);if(!normalized)return setCouponStatus('Digite o código do cupom.','warn');
+  const subtotal=parseMoney(document.getElementById('subtotal')?.textContent||'');
   setCouponStatus('Validando cupom...','loading');
   try{
-    const cfg=await loadCommercePrivate();
-    const coupon=A(cfg.coupons).find(c=>activeByDate(c)&&normalizeCode(c.code||c.codigo)===normalized);
-    if(!coupon){clearState();setCouponStatus('Cupom inválido, indisponível ou fora da vigência.','warn');return false}
-    const subtotal=parseMoney(document.getElementById('subtotal')?.textContent||'');
-    const min=N(coupon.minSubtotal||coupon.pedidoMinimo);
-    if(min>subtotal+1e-9){clearState();setCouponStatus(`Este cupom exige pedido mínimo de ${money(min)}.`,'warn');return false}
-    const discount=couponDiscount(coupon,subtotal);
-    saveState({code:normalized,status:'GENERIC_OK',coupon:{id:coupon.id||null,code:normalized,type:coupon.type||coupon.tipo||'PERCENT',value:N(coupon.value||coupon.valor),minSubtotal:min,maxDiscount:N(coupon.maxDiscount||coupon.descontoMaximo)||null,startAt:coupon.startAt||coupon.inicio||null,endAt:coupon.endAt||coupon.fim||null,active:true},validatedAt:new Date().toISOString()});
+    const data=await validateTypedCoupon(normalized,subtotal),coupon=data.coupon||{};
+    const min=N(coupon.minSubtotal),discount=N(data.discount)||couponDiscount(coupon,subtotal);
+    saveState({code:normalized,status:'GENERIC_OK',coupon:{code:normalized,type:coupon.type||'PERCENT',value:N(coupon.value),minSubtotal:min,maxDiscount:N(coupon.maxDiscount)||null,startAt:coupon.startAt||null,endAt:coupon.endAt||null,active:true},validatedAt:new Date().toISOString()});
     setCouponStatus(`Cupom aplicado: ${couponBenefit(coupon)}${discount>0?` (${money(discount)} neste carrinho)`:''}.`,'ok');
     renderDiscount();return true;
-  }catch(e){console.error('[CUPOM 9.5.9]',e);setCouponStatus('Não foi possível validar o cupom agora. Tente novamente.','err');return false}
+  }catch(e){
+    clearState();console.error('[CUPOM 9.5.9]',e);
+    if(e.status==='PEDIDO_MINIMO'){setCouponStatus(e.message,'warn');return false}
+    if(e.status==='CUPOM_INVALIDO'){setCouponStatus('Cupom inválido, indisponível ou fora da vigência.','warn');return false}
+    setCouponStatus('Não foi possível validar o cupom agora. Tente novamente.','err');return false;
+  }
 }
 
 function keepCouponListPrivate(){
