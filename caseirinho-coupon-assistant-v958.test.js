@@ -49,18 +49,23 @@ test('John consulta contexto real da loja e responde além de cupons',()=>{
   assert.match(john,/pagamento/);
 });
 
-test('index publica V9.5.9 e carrega correção antes do app principal',()=>{
-  assert.match(index,/Loja Online · V9\.5\.9/);
+test('index V9.6.0 preserva cupons e carrega cashback antes do app principal',()=>{
+  assert.match(index,/Loja Online · V9\.6\.0/);
   assert.match(index,/johnAssistantVersion:'9\.5\.9'/);
+  assert.match(index,/cashbackVersion:'9\.6\.0'/);
   const basePos=index.indexOf('caseirinho-coupon-assistant-v9-5-8.js');
   const johnPos=index.indexOf('caseirinho-john-coupon-v9-5-9.js');
-  const appPos=index.indexOf('./app.js?v=9590');
-  assert.ok(basePos>=0&&johnPos>basePos&&appPos>johnPos);
+  const cashbackPos=index.indexOf('caseirinho-cashback-v9-6-0.js');
+  const appPos=index.indexOf('./app.js?v=9600');
+  assert.ok(basePos>=0&&johnPos>basePos&&cashbackPos>johnPos&&appPos>cashbackPos);
 });
 
-test('PWA V9.5.9 inclui e injeta a correção de John',()=>{
-  assert.match(sw,/coupon-assistant-john959/);
+test('PWA V9.6.0 preserva John e inclui Cashback',()=>{
+  assert.match(sw,/coupon-assistant-john959-cashback960/);
   assert.match(sw,/JOHNJS959/);
+  assert.match(sw,/CASHBACKJS960/);
   assert.match(sw,/caseirinho-john-coupon-v9-5-9\.js\?v=9590/);
+  assert.match(sw,/caseirinho-cashback-v9-6-0\.js\?v=9600/);
   assert.match(sw,/injectBeforeApp\(html,'caseirinho-john-coupon-v9-5-9\.js',JOHNJS959_TAG\)/);
+  assert.match(sw,/injectBeforeApp\(html,'caseirinho-cashback-v9-6-0\.js',CASHBACKJS960_TAG\)/);
 });
