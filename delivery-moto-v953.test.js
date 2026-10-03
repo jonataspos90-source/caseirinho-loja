@@ -70,8 +70,8 @@ test('V9.5.7 adiciona carrossel de sabores sem interferir no checkout',()=>{
   assert.doesNotMatch(carousel,/deliveryBox/);
 });
 
-test('Loja e PWA V9.5.8 preservam entrega, desktop e carrossel',()=>{
-  assert.match(html,/Loja Online · V9\.5\.8/);
+test('Loja e PWA V9.5.9 preservam entrega, desktop e carrossel',()=>{
+  assert.match(html,/Loja Online · V9\.5\.9/);
   assert.match(html,/productCardVersion:'9\.5\.7'/);
   assert.match(html,/couponAssistantVersion:'9\.5\.8'/);
   assert.match(html,/mobile-variant-carousel-v9-5-7\.css\?v=9570/);
