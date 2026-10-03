@@ -40,20 +40,24 @@ test('carrossel V9.5.7 preserva botões/SKUs e anima troca de imagem',()=>{
   assert.match(carousel,/aria-selected/);
 });
 
-test('Loja V9.5.9 mantém sync V9.5.2, carrossel, desktop, Entrega e cupom',()=>{
-  assert.match(html,/Loja Online · V9\.5\.9/);
+test('Loja V9.6.0 mantém sync V9.5.2, carrossel, desktop, Entrega, cupom e cashback',()=>{
+  assert.match(html,/Loja Online · V9\.6\.0/);
   assert.match(html,/couponAssistantVersion:'9\.5\.8'/);
+  assert.match(html,/cashbackVersion:'9\.6\.0'/);
   assert.match(html,/variant-selection-sync-v9-5-2\.js\?v=9520/);
   assert.match(html,/mobile-variant-carousel-v9-5-7\.js\?v=9570/);
   assert.match(html,/desktop-ux-v9-5-6\.css\?v=9560/);
   assert.match(html,/delivery-moto-v9-5-4\.js\?v=9560/);
   assert.match(html,/delivery-mode-v9-5-5\.js\?v=9550/);
   assert.match(html,/caseirinho-coupon-assistant-v9-5-8\.js\?v=9580/);
+  assert.match(html,/caseirinho-cashback-v9-6-0\.js\?v=9600/);
   assert.match(sw,/cards958-coupon-assistant/);
+  assert.match(sw,/cashback960/);
   assert.match(sw,/SYNCJS952/);
   assert.match(sw,/VARIANTJS957/);
   assert.match(sw,/DESKTOPCSS956/);
   assert.match(sw,/DELIVERYJS954/);
   assert.match(sw,/DELIVERYMODE955/);
   assert.match(sw,/COUPONJS958/);
+  assert.match(sw,/CASHBACKJS960/);
 });
