@@ -983,7 +983,7 @@ async function submitOrder(ev){
       `<div class="result">
         <b>Pedido ${esc(result.codigo)} recebido! 🎉</b><br>
         ${esc(freightText)}<br>
-        Total atual: <b>${money(result.total)}</b><br>
+        ${window.JohnOrderAmounts.lines(saved).map(([label,value])=>esc(label)+': <b>'+esc(value)+'</b>').join('<br>')}<br>
         <button class="soft" type="button" id="openSavedOrders" style="margin-top:9px">Acompanhar pedido</button>
       </div>`;
 
@@ -1069,7 +1069,7 @@ function ordersCardsHtml(orders){
       !['ACEITO','REJEITADO','CANCELADO'].includes(st);
 
     return `<div class="order-card"><div class="order-top"><div><b>${esc(o.codigo||o.id)}</b><br><small>${new Date(o.criadoEm||o.createdAt||o.savedAt||Date.now()).toLocaleString('pt-BR')}</small></div><span class="status-badge ${esc(st)}">${esc(customerStatusLabel(st))}</span></div>
-      <div class="order-customer-grid"><div><small>Total</small><b>${money(o.total||o.subtotal)}</b></div>${delivery?`<div><small>Entrega</small><b>${esc(orderTimeText(o))}</b></div>`:''}${delivery?`<div><small>Frete</small><b>${o.freteStatus==='COTACAO_PENDENTE'?'A calcular':money(o.valorFrete||0)}</b></div>`:''}</div>
+      <div class="order-customer-grid">${window.JohnOrderAmounts.lines(o).map(([label,value])=>`<div><small>${esc(label)}</small><b>${esc(value)}</b></div>`).join('')}${delivery?`<div><small>Entrega</small><b>${esc(orderTimeText(o))}</b></div>`:''}</div>
       ${o.freteStatus==='COTACAO_PENDENTE'?'<div class="cx-note">🛵 A loja calculará a entrega e enviará o valor aqui para sua aprovação.</div>':''}
       ${awaiting?`<div class="freight-decision"><b>🛵 Novo valor de entrega aguardando sua resposta</b><div>Frete: <strong>${money(o.valorFrete)}</strong> · Total atualizado: <strong>${money(o.total)}</strong></div><div class="order-actions"><button class="soft" data-shipping-no="${esc(o.id)}" type="button">Não, cancelar pedido</button><button class="primary" data-shipping-yes="${esc(o.id)}" type="button">Sim, aprovar frete</button></div></div>`:''}
       ${st==='AGUARDANDO_ACEITE_ERP'?'<div class="cx-note ok">✅ Você aceitou o novo frete. Agora o pedido aguarda o aceite final da loja.</div>':''}

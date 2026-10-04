@@ -91,14 +91,12 @@ function receiptLines(o){
     });
   }
   sep();
-  add('Subtotal: '+money(tot.subtotal),{bold:true});
-  if(deliveryMode(o)==='Entrega')add('Frete: '+money(tot.freight),{bold:true});
-  add('TOTAL DO PEDIDO: '+money(tot.total),{size:14,bold:true,gap:22});
+  window.JohnOrderAmounts.lines(o).forEach(([label,value])=>add(label+': '+value,{size:label.startsWith('Total')?14:10,bold:true,gap:label.startsWith('Total')?22:14}));
   sep();
   add('PIX OFICIAL DO CASEIRINHO',{size:12,bold:true,gap:18});
   add('Chave PIX (CNPJ): '+prettyPix(),{bold:true});
   add('CNPJ sem pontuação: '+PIX_KEY);
-  add('Valor do pedido: '+money(tot.total),{bold:true});
+  add('Valor do pedido: '+money(window.JohnOrderAmounts.breakdown(o).total),{bold:true});
   add('Confira o recebedor e o valor no aplicativo do seu banco antes de concluir o pagamento.',{size:9,gap:12});
   const obs=S(o?.observacao||o?.payload?.observacao).trim();
   if(obs){sep();add('OBSERVAÇÃO',{bold:true});wrap(obs,76).forEach(x=>add(x,{size:9,gap:12}))}
