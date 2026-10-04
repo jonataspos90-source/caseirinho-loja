@@ -1,4 +1,4 @@
-const CACHE='caseirinho-loja-v9.6.2-delivery-discounts';
+const CACHE='caseirinho-loja-v9.6.3-official-logo';
 const HOTFIX931='./store-hotfix-v9-3-1.js';
 const HOTFIX932='./store-hotfix-v9-3-2.js';
 const HOTFIX933='./store-hotfix-v9-3-3.js';
