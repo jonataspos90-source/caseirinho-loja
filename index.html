@@ -18,6 +18,16 @@
   <link rel="stylesheet" href="./product-cards-mobile-v9-4-8.css?v=9510">
   <link rel="stylesheet" href="./mobile-variant-carousel-v9-5-7.css?v=9570">
   <link rel="stylesheet" href="./desktop-ux-v9-5-6.css?v=9560">
+  <style>
+    .bottom-nav.instagram-enabled{grid-template-columns:repeat(6,minmax(0,1fr))}
+    .bottom-nav.instagram-enabled.cashback-wallet-enabled{grid-template-columns:repeat(7,minmax(0,1fr))}
+    #navInstagram{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:54px;padding:6px 2px;border-radius:12px;text-decoration:none;color:#a42c6b}
+    #navInstagram span{display:block;font-size:9px;font-weight:800;line-height:1.05}
+    #navInstagram:focus-visible,.instagram-footer:focus-visible{outline:3px solid #a42c6b;outline-offset:3px}
+    .instagram-footer{display:inline-flex;align-items:center;gap:10px;padding:10px 12px;margin-top:6px;border:1px solid #a42c6b30;border-radius:12px;text-decoration:none;color:#a42c6b;background:#fff;font-size:12px;line-height:1.6;overflow-wrap:anywhere}
+    .instagram-footer svg{flex-shrink:0}
+    @media(max-width:420px){#navInstagram span{font-size:8px}}
+  </style>
 </head>
 <body>
   <header class="top">
@@ -75,17 +85,18 @@
 
     <footer class="footer">
       <div class="wrap footer-grid">
-        <div><b id="footerName">Loja Online</b><p>Loja integrada ao sistema de pedidos.</p></div>
+        <div><b id="footerName">Loja Online</b><p>Loja integrada ao sistema de pedidos.</p><a class="instagram-footer" href="https://www.instagram.com/caseirinho_massas_artesanais/" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg><span>Siga o Caseirinho<br><b>@caseirinho_massas_artesanais</b></span></a></div>
         <div><p>🔒 Preços e disponibilidade confirmados pelo servidor.</p><button class="link-btn" id="privacyBtn" type="button">🔐 Privacidade / LGPD</button></div>
       </div>
     </footer>
   </main>
 
-  <nav class="bottom-nav" aria-label="Navegação">
+  <nav class="bottom-nav instagram-enabled" aria-label="Navegação">
     <button id="navMenu" type="button">📖<span>Cardápio</span></button>
     <button id="navCart" type="button">🛒<span>Carrinho</span><b id="navCartCount">0</b></button>
     <button id="navOrders" type="button">🧾<span>Pedidos</span></button>
     <button id="navStore" type="button">🏪<span>Loja</span></button>
+    <a id="navInstagram" href="https://www.instagram.com/caseirinho_massas_artesanais/" target="_blank" rel="noopener noreferrer" aria-label="Abrir Instagram do Caseirinho em nova aba"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg><span>Instagram</span></a>
     <button id="navWhats" type="button">💬<span>WhatsApp</span></button>
   </nav>
 
