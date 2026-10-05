@@ -1209,15 +1209,35 @@ function showPrivacy(){
   const l=catalog.loja?.lgpd||{};
   openSimple('Política de Privacidade / LGPD',`<p><b>Controlador:</b> ${esc(l.controlador||catalog.loja?.nome||STORE||'Loja')}</p><p>${esc(l.politica||'Os dados informados são utilizados para atendimento, cadastro, processamento do pedido, entrega e contato relacionados à compra.')}</p><p><b>Retenção:</b> ${esc(l.retencao||'Os dados são mantidos pelo período necessário às finalidades informadas e às obrigações legais aplicáveis.')}</p>`);
 }
-function whatsapp(){
+function whatsapp(message=''){
   const n=S(catalog.loja?.whatsapp).replace(/\D/g,'');
   if(!n)return toast('WhatsApp da loja não informado.');
-  window.open('https://wa.me/'+(n.startsWith('55')?n:'55'+n),'_blank','noopener');
+  const base='https://wa.me/'+(n.startsWith('55')?n:'55'+n);
+  const url=message?base+'?text='+encodeURIComponent(message):base;
+  window.open(url,'_blank','noopener');
+}
+function promoWhatsapp(){
+  whatsapp('Olá! 🎉 Quero encomendar salgados fritos do Caseirinho para uma festa. Gostaria de conhecer as opções, valores e condições para quantidades maiores. Pode me ajudar?');
 }
 
 function wire(){
-  E('search').oninput=renderProducts;
-  E('clearFilter').onclick=()=>{activeCategory='';E('search').value='';renderCategories();renderProducts()};
+  E('search').oninput=()=>{
+    const hasQuery=!!S(E('search').value).trim();
+    if(hasQuery&&activeCategory){activeCategory='';renderCategories()}
+    renderProducts();
+    renderSearchSuggestions();
+  };
+  E('search').onfocus=renderSearchSuggestions;
+  E('search').onkeydown=e=>{
+    if(e.key==='Enter'&&S(E('search').value).trim()){
+      e.preventDefault();
+      hideSearchResults();
+      E('catalogSection')?.scrollIntoView({behavior:'smooth',block:'start'});
+    }else if(e.key==='Escape'){
+      hideSearchResults();
+    }
+  };
+  E('clearFilter').onclick=()=>{activeCategory='';E('search').value='';hideSearchResults();renderCategories();renderProducts()};
   E('homeBtn').onclick=E('navMenu').onclick=E('shopBtn').onclick=()=>E('catalogSection').scrollIntoView({behavior:'smooth'});
   E('cartTop').onclick=E('navCart').onclick=()=>openOverlay(E('cartDrawer'));
   E('cartClose').onclick=()=>closeOverlay(E('cartDrawer'));
@@ -1239,9 +1259,11 @@ function wire(){
   E('date').onchange=()=>{if(!allowedDate(E('date').value,E('mode').value))toast('Escolha um dos dias disponíveis.')};
   E('checkout').onsubmit=submitOrder;
   E('navOrders').onclick=showOrders;E('navStore').onclick=showStore;
-  E('navWhats').onclick=E('whatsHero').onclick=whatsapp;
+  E('navWhats').onclick=()=>whatsapp();
+  E('whatsHero').onclick=promoWhatsapp;
   E('privacyBtn').onclick=showPrivacy;
-  document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeOverlay(E('productOverlay'));closeOverlay(E('simpleOverlay'));closeOverlay(E('cartDrawer'))}});
+  document.addEventListener('click',e=>{if(E('searchBox')&&!E('searchBox').contains(e.target))hideSearchResults()});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'){hideSearchResults();closeOverlay(E('productOverlay'));closeOverlay(E('simpleOverlay'));closeOverlay(E('cartDrawer'))}});
 }
 
 function installPwa(){
