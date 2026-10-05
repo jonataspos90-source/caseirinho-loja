@@ -319,6 +319,8 @@ function renderCategories(){
     cs.map(c=>`<button class="cat-chip ${S(activeCategory)===S(c.id)?'active':''}" data-cat="${esc(c.id)}">${esc(c.emoji||'✨')} ${esc(c.nome)}</button>`).join('');
   E('categories').querySelectorAll('[data-cat]').forEach(b=>b.onclick=()=>{
     activeCategory=b.dataset.cat||'';
+    if(E('search'))E('search').value='';
+    hideSearchResults();
     renderCategories();renderProducts();
   });
 }
