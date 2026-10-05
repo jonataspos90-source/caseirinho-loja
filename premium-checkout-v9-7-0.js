@@ -11,6 +11,7 @@ if(STORE!=='caseirinho')return;
 const E=id=>document.getElementById(id);
 let syncing=false;
 let scheduled=false;
+let featuredObserver=null;
 
 function addIntro(){
   const panel=E('cartDrawer')?.querySelector('.drawer-panel');
@@ -110,8 +111,50 @@ function decorateParmesao(){
   if(copy&&!copy.dataset.premiumCopy){copy.dataset.premiumCopy='1';copy.textContent='Acrescente Queijo Parmesão Vale ao seu pedido.'}
 }
 
+function featuredSection(){
+  return E('featured')?.closest('section.section')||null;
+}
+
+function arrangeDirectCatalog(){
+  const hero=document.querySelector('main > .hero');
+  if(hero)hero.hidden=true;
+
+  const catalog=E('catalogSection');
+  const highlights=featuredSection();
+  if(catalog&&highlights&&catalog.nextElementSibling!==highlights){
+    catalog.insertAdjacentElement('afterend',highlights);
+  }
+}
+
+function isErpHighlightCard(card){
+  return [...card.querySelectorAll('.tags .tag')].some(tag=>
+    !tag.classList.contains('hot')&&S(tag.textContent).trim().toUpperCase()==='DESTAQUE'
+  );
+}
+
+function enforceErpHighlights(){
+  const featured=E('featured');
+  const section=featuredSection();
+  if(!featured||!section)return;
+
+  for(const card of [...featured.querySelectorAll(':scope > .product-card')]){
+    if(!isErpHighlightCard(card))card.remove();
+  }
+
+  const hasHighlights=!!featured.querySelector(':scope > .product-card');
+  section.hidden=!hasHighlights;
+  if(hasHighlights){
+    const title=section.querySelector('.section-head h2');
+    const copy=section.querySelector('.section-head p');
+    if(title)title.textContent='Destaques';
+    if(copy)copy.textContent='Produtos marcados como destaque no ERP.';
+  }
+}
+
 function decorateCheckout(){
   document.body.classList.add('caseirinho-premium-ui');
+  arrangeDirectCatalog();
+  enforceErpHighlights();
   const submit=E('checkout')?.querySelector('.submit');
   if(submit&&!submit.dataset.premiumCopy){submit.dataset.premiumCopy='1';submit.textContent='Confirmar meu pedido  →'}
   addIntro();
@@ -141,7 +184,15 @@ function scheduleInteractionRefresh(){
 
 function boot(){
   sync();
-  // Sem MutationObserver: evita o ciclo que travava o checkout no celular.
+
+  // Observa apenas a lista de destaques. Não observa checkout, classes ou atributos,
+  // evitando o ciclo de mutações que já causou travamento no celular.
+  const featured=E('featured');
+  if(featured&&!featuredObserver){
+    featuredObserver=new MutationObserver(()=>scheduleSync(0));
+    featuredObserver.observe(featured,{childList:true});
+  }
+
   document.addEventListener('click',event=>{
     const target=event.target?.closest?.('#cartDrawer, #customerExperienceOverlay, #deliveryMotoConfirm954, [data-open-cart], [data-view], [data-add]');
     if(target)scheduleInteractionRefresh();
@@ -156,5 +207,5 @@ function boot(){
 }
 
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-window.CaseirinhoPremiumCheckout970={version:'9.7.2-safe',disabled:false,sync,scheduleSync};
+window.CaseirinhoPremiumCheckout970={version:'9.7.3-direct-catalog',disabled:false,sync,scheduleSync,enforceErpHighlights,arrangeDirectCatalog};
 })();
