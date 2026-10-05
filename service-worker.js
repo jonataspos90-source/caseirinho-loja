@@ -1,4 +1,4 @@
-const CACHE='caseirinho-loja-v9.6.5-order-amounts';
+const CACHE='caseirinho-loja-v9.7.1-banner-salgados-busca';
 const HOTFIX931='./store-hotfix-v9-3-1.js';
 const HOTFIX932='./store-hotfix-v9-3-2.js';
 const HOTFIX933='./store-hotfix-v9-3-3.js';

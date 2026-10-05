@@ -9,11 +9,11 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Caseirinho">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Loja Online · V9.7.0</title>
+  <title>Loja Online · V9.7.1</title>
   <link rel="manifest" href="./manifest.webmanifest?v=clean-20261004">
   <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png?v=clean-20261004">
   <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png?v=clean-20261004">
-  <link rel="stylesheet" href="./styles.css?v=9490">
+  <link rel="stylesheet" href="./styles.css?v=9710">
   <link rel="stylesheet" href="./mobile-ux-v9-4-7.css?v=9490">
   <link rel="stylesheet" href="./product-cards-mobile-v9-4-8.css?v=9510">
   <link rel="stylesheet" href="./mobile-variant-carousel-v9-5-7.css?v=9570">
@@ -38,25 +38,34 @@
         <img class="brand-mark" src="./icons/icon-192.png?v=clean-20261004" width="48" height="48" alt="Caseirinho Massas Artesanais" style="object-fit:contain;background:transparent">
         <span><b id="storeName">Loja Online</b><small>Pedidos online</small></span>
       </button>
-      <label class="search">
-        <span>⌕</span>
-        <input id="search" type="search" placeholder="Buscar no cardápio..." autocomplete="off">
-      </label>
+      <div class="search" id="searchBox">
+        <span aria-hidden="true">⌕</span>
+        <input id="search" type="search" placeholder="Buscar no cardápio..." autocomplete="off" aria-label="Buscar produtos no cardápio" aria-controls="searchResults" aria-expanded="false">
+        <div class="search-results" id="searchResults" role="listbox" aria-label="Sugestões de produtos" hidden></div>
+      </div>
       <button class="head-btn" id="cartTop" type="button">🛒 <span class="desktop-only">Carrinho</span> <b id="cartCount">0</b></button>
     </div>
   </header>
 
   <main>
     <section class="hero">
-      <div class="wrap hero-card">
-        <div>
+      <div class="wrap hero-card hero-promo">
+        <div class="hero-copy">
           <span class="pill">✨ artesanal · feito com carinho</span>
-          <h1>Massas artesanais que dão vontade de repetir.</h1>
-          <p id="storeSub">Escolha seus produtos, monte seu pedido e acompanhe tudo pelo app.</p>
+          <h1>Salgados fritos <span class="hero-title-accent">para festas</span></h1>
+          <p id="storeSub" data-fixed="promo">Aceitamos encomendas para festas. Fale no WhatsApp para negociar quantidades ou encontre as opções no nosso cardápio.</p>
+          <div class="promo-offer" aria-label="Promoção para clientes novos">
+            <strong>Clientes novos ganham <span>10% OFF</span> no app</strong>
+            <small>Use o cupom <b>CASEIRINHO10</b> na primeira compra.</small>
+          </div>
           <div class="hero-actions">
             <button class="primary" id="shopBtn" type="button">Ver cardápio</button>
-            <button class="glass" id="whatsHero" type="button"><svg class="whatsapp-brand-icon" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:middle"><rect width="24" height="24" rx="6" fill="#25D366"/><path d="M6.1 18.3l.9-3.1a7 7 0 1 1 2.6 2.6z" fill="none" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/><path d="M9.2 7.9c-.2-.5-.4-.5-.7-.5h-.5c-.2 0-.5.1-.7.4-.3.3-.9.9-.9 2.1s.9 2.4 1 2.6c.1.2 1.8 2.8 4.4 3.8 2.2.9 2.6.6 3.1.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.1-1.2-.1-.1-.3-.2-.6-.3l-1.8-.9c-.2-.1-.4-.1-.6.2l-.8 1c-.1.2-.3.2-.6.1-.3-.1-1.2-.4-2.2-1.3-.8-.7-1.3-1.5-1.4-1.8-.2-.3 0-.4.1-.5l.4-.5.3-.5c.1-.2 0-.4 0-.5z" fill="#fff"/></svg> WhatsApp</button>
+            <button class="glass" id="whatsHero" type="button"><svg class="whatsapp-brand-icon" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:middle"><rect width="24" height="24" rx="6" fill="#25D366"/><path d="M6.1 18.3l.9-3.1a7 7 0 1 1 2.6 2.6z" fill="none" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/><path d="M9.2 7.9c-.2-.5-.4-.5-.7-.5h-.5c-.2 0-.5.1-.7.4-.3.3-.9.9-.9 2.1s.9 2.4 1 2.6c.1.2 1.8 2.8 4.4 3.8 2.2.9 2.6.6 3.1.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.1-1.2-.1-.1-.3-.2-.6-.3l-1.8-.9c-.2-.1-.4-.1-.6.2l-.8 1c-.1.2-.3.2-.6.1-.3-.1-1.2-.4-2.2-1.3-.8-.7-1.3-1.5-1.4-1.8-.2-.3 0-.4.1-.5l.4-.5.3-.5c.1-.2 0-.4 0-.5z" fill="#fff"/></svg> Negociar no WhatsApp</button>
           </div>
+        </div>
+        <div class="hero-food" aria-hidden="true">
+          <img id="heroFoodImg" alt="" hidden>
+          <div class="hero-food-fallback" id="heroFoodFallback">🥟</div>
         </div>
       </div>
       <div class="wrap status-line"><span class="dot"></span><span id="syncStatus">Conectando ao cardápio...</span></div>
@@ -185,7 +194,7 @@
     window.CASEIRINHO_CONFIG={
       apiUrl:'https://john-cloud-api-production.up.railway.app',
       storeSlug:'caseirinho',
-      version:'9.7.0',
+      version:'9.7.1',
       mobileUxVersion:'9.4.7',
       productCardVersion:'9.5.7',
       couponAssistantVersion:'9.5.8',
@@ -206,7 +215,7 @@
   <script src="./caseirinho-cashback-v9-6-0.js?v=9600" defer></script>
   <script src="./customer-cashback-wallet-v9-6-3.js?v=9630" defer></script>
   <script src="./cashback-auto-refresh-v9-6-7.js?v=9670" defer></script>
-  <script src="./app.js?v=9700" defer></script>
+  <script src="./app.js?v=9710" defer></script>
   <script src="./pwa-install-v9-6-6.js?v=9660" defer></script>
   <script src="./cashback-order-yield-v9-6-4.js?v=9650" defer></script>
   <script src="./commerce-engine-v9-3-0.js?v=9600" defer></script>

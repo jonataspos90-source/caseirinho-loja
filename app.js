@@ -319,21 +319,76 @@ function renderCategories(){
     cs.map(c=>`<button class="cat-chip ${S(activeCategory)===S(c.id)?'active':''}" data-cat="${esc(c.id)}">${esc(c.emoji||'✨')} ${esc(c.nome)}</button>`).join('');
   E('categories').querySelectorAll('[data-cat]').forEach(b=>b.onclick=()=>{
     activeCategory=b.dataset.cat||'';
+    if(E('search'))E('search').value='';
+    hideSearchResults();
     renderCategories();renderProducts();
   });
+}
+function productSearchText(p){
+  const cat=productCategory(p);
+  return [
+    p?.codigo,p?.nome,p?.descricao,p?.categoria,cat?.nome,
+    p?.gradeNome,p?.variacaoLabel,p?.gradeTituloOpcao
+  ].filter(Boolean).join(' ');
+}
+function searchEntries(query){
+  const q=norm(query);
+  if(!q)return[];
+  return visualEntries(A(catalog.produtos).filter(p=>norm(productSearchText(p)).includes(q)));
 }
 function filteredProducts(){
   const q=norm(E('search')?.value);
   return A(catalog.produtos).filter(p=>{
     if(activeCategory&&S(productCategory(p).id)!==S(activeCategory))return false;
-    if(q&&!norm(`${p.codigo} ${p.nome} ${p.descricao} ${p.categoria} ${p.gradeNome||''} ${p.variacaoLabel||''}`).includes(q))return false;
+    if(q&&!norm(productSearchText(p)).includes(q))return false;
     return true;
   });
+}
+function hideSearchResults(){
+  const box=E('searchResults'),input=E('search');
+  if(box){box.hidden=true;box.innerHTML=''}
+  if(input)input.setAttribute('aria-expanded','false');
+}
+function renderSearchSuggestions(){
+  const box=E('searchResults'),input=E('search');
+  if(!box||!input)return;
+  const raw=S(input.value).trim();
+  if(!raw){hideSearchResults();return}
+  const entries=searchEntries(raw);
+  input.setAttribute('aria-expanded','true');
+  box.hidden=false;
+  if(!entries.length){
+    box.innerHTML='<div class="search-empty">Nenhum produto encontrado. Tente outro nome.</div>';
+    return;
+  }
+  const top=entries.slice(0,6);
+  box.innerHTML=top.map(entry=>{
+    const p=entry.rep,vars=entry.variants,grouped=entry.grouped;
+    const title=grouped?(p.gradeNome||p.nome):p.nome;
+    const im=images(p)[0];
+    const prices=vars.map(v=>N(v.preco)).filter(v=>v>=0);
+    const min=prices.length?Math.min(...prices):N(p.preco);
+    return '<button type="button" class="search-result" data-search-view="'+esc(p.id)+'" role="option">'+
+      '<span class="search-result-pic">'+(im?'<img src="'+esc(im)+'" alt="" loading="lazy">':'🍽️')+'</span>'+
+      '<span class="search-result-copy"><b>'+esc(title)+'</b><small>'+esc(productCategory(p).nome)+' · '+(grouped?'A partir de ':'')+money(min)+'</small></span>'+
+      '<span class="search-result-arrow">›</span></button>';
+  }).join('')+
+  '<button type="button" class="search-all" data-search-all>Ver todos os '+entries.length+' resultado(s)</button>';
+  box.querySelectorAll('[data-search-view]').forEach(b=>b.onclick=()=>{
+    hideSearchResults();
+    showProduct(b.dataset.searchView);
+  });
+  const all=box.querySelector('[data-search-all]');
+  if(all)all.onclick=()=>{
+    hideSearchResults();
+    E('catalogSection')?.scrollIntoView({behavior:'smooth',block:'start'});
+  };
 }
 function renderProducts(){
   const entries=visualEntries(filteredProducts());
   const cat=categories().find(c=>S(c.id)===S(activeCategory));
-  E('catalogTitle').textContent=cat?.nome||'Todos os produtos';
+  const raw=S(E('search')?.value).trim();
+  E('catalogTitle').textContent=raw?('Resultados para “'+raw+'”'):(cat?.nome||'Todos os produtos');
   E('catalogCount').textContent=entries.length+' produto(s)';
   E('products').innerHTML=entries.map(cardHtml).join('')||'<div class="empty">Nenhum produto encontrado.</div>';
   wireProductCards(E('products'));
@@ -372,15 +427,38 @@ function applyStoreManifest(){
   }catch(e){console.warn('[Loja] manifest dinâmico:',e)}
 }
 
+function mountHeroFood(){
+  const img=E('heroFoodImg'),fallback=E('heroFoodFallback');
+  if(!img)return;
+  const keys=['salgado','coxinha','risoles','risole','bolinha de queijo'];
+  const p=A(catalog.produtos).find(item=>{
+    if(!images(item)[0])return false;
+    const text=norm([item?.nome,item?.categoria,item?.descricao].filter(Boolean).join(' '));
+    return keys.some(k=>text.includes(norm(k)));
+  });
+  const src=p?images(p)[0]:'';
+  if(src){
+    img.src=src;
+    img.hidden=false;
+    img.onerror=()=>{img.hidden=true;if(fallback)fallback.hidden=false};
+    if(fallback)fallback.hidden=true;
+  }else{
+    img.hidden=true;
+    if(fallback)fallback.hidden=false;
+  }
+}
 function mount(){
   const storeName=catalog.loja?.nome||STORE||'Loja';
   E('storeName').textContent=storeName;
   E('footerName').textContent=storeName;
-  E('storeSub').textContent=catalog.loja?.subtitulo||'Feito com carinho para você.';
+  const storeSub=E('storeSub');
+  if(storeSub&&storeSub.dataset.fixed!=='promo')storeSub.textContent=catalog.loja?.subtitulo||'Feito com carinho para você.';
   document.title=storeName+' · Loja Online';
   applyStoreManifest();
-  renderCategories();renderFeatured();renderProducts();renderCart();renderCheckoutConfig();applyCustomerProfile();
+  mountHeroFood();
+  renderCategories();renderFeatured();renderProducts();renderSearchSuggestions();renderCart();renderCheckoutConfig();applyCustomerProfile();
 }
+
 async function loadCatalog(silent=false){
   if(catalogBusy)return;
   catalogBusy=true;
@@ -1131,15 +1209,35 @@ function showPrivacy(){
   const l=catalog.loja?.lgpd||{};
   openSimple('Política de Privacidade / LGPD',`<p><b>Controlador:</b> ${esc(l.controlador||catalog.loja?.nome||STORE||'Loja')}</p><p>${esc(l.politica||'Os dados informados são utilizados para atendimento, cadastro, processamento do pedido, entrega e contato relacionados à compra.')}</p><p><b>Retenção:</b> ${esc(l.retencao||'Os dados são mantidos pelo período necessário às finalidades informadas e às obrigações legais aplicáveis.')}</p>`);
 }
-function whatsapp(){
+function whatsapp(message=''){
   const n=S(catalog.loja?.whatsapp).replace(/\D/g,'');
   if(!n)return toast('WhatsApp da loja não informado.');
-  window.open('https://wa.me/'+(n.startsWith('55')?n:'55'+n),'_blank','noopener');
+  const base='https://wa.me/'+(n.startsWith('55')?n:'55'+n);
+  const url=message?base+'?text='+encodeURIComponent(message):base;
+  window.open(url,'_blank','noopener');
+}
+function promoWhatsapp(){
+  whatsapp('Olá! 🎉 Quero encomendar salgados fritos do Caseirinho para uma festa. Gostaria de conhecer as opções, valores e condições para quantidades maiores. Pode me ajudar?');
 }
 
 function wire(){
-  E('search').oninput=renderProducts;
-  E('clearFilter').onclick=()=>{activeCategory='';E('search').value='';renderCategories();renderProducts()};
+  E('search').oninput=()=>{
+    const hasQuery=!!S(E('search').value).trim();
+    if(hasQuery&&activeCategory){activeCategory='';renderCategories()}
+    renderProducts();
+    renderSearchSuggestions();
+  };
+  E('search').onfocus=renderSearchSuggestions;
+  E('search').onkeydown=e=>{
+    if(e.key==='Enter'&&S(E('search').value).trim()){
+      e.preventDefault();
+      hideSearchResults();
+      E('catalogSection')?.scrollIntoView({behavior:'smooth',block:'start'});
+    }else if(e.key==='Escape'){
+      hideSearchResults();
+    }
+  };
+  E('clearFilter').onclick=()=>{activeCategory='';E('search').value='';hideSearchResults();renderCategories();renderProducts()};
   E('homeBtn').onclick=E('navMenu').onclick=E('shopBtn').onclick=()=>E('catalogSection').scrollIntoView({behavior:'smooth'});
   E('cartTop').onclick=E('navCart').onclick=()=>openOverlay(E('cartDrawer'));
   E('cartClose').onclick=()=>closeOverlay(E('cartDrawer'));
@@ -1161,9 +1259,11 @@ function wire(){
   E('date').onchange=()=>{if(!allowedDate(E('date').value,E('mode').value))toast('Escolha um dos dias disponíveis.')};
   E('checkout').onsubmit=submitOrder;
   E('navOrders').onclick=showOrders;E('navStore').onclick=showStore;
-  E('navWhats').onclick=E('whatsHero').onclick=whatsapp;
+  E('navWhats').onclick=()=>whatsapp();
+  E('whatsHero').onclick=promoWhatsapp;
   E('privacyBtn').onclick=showPrivacy;
-  document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeOverlay(E('productOverlay'));closeOverlay(E('simpleOverlay'));closeOverlay(E('cartDrawer'))}});
+  document.addEventListener('click',e=>{if(E('searchBox')&&!E('searchBox').contains(e.target))hideSearchResults()});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'){hideSearchResults();closeOverlay(E('productOverlay'));closeOverlay(E('simpleOverlay'));closeOverlay(E('cartDrawer'))}});
 }
 
 function installPwa(){
