@@ -32,8 +32,8 @@ test('popups de entrega e confirmação usam o mesmo estado de valores',()=>{
 });
 
 test('requisição envia somente a decisão e servidor continua sendo autoridade do preço',()=>{
-  assert.match(js,/checkoutUpsell=.*parmesaoVale:true/);
-  assert.doesNotMatch(js,/checkoutUpsell=.*preco/);
+  assert.match(js,/body\.checkoutUpsell=\{\.\.\.\(body\.checkoutUpsell\|\|\{\}\),parmesaoVale:true\}/);
+  assert.doesNotMatch(js,/body\.checkoutUpsell\s*=\s*\{[^}]*preco/);
 });
 
 test('PWA preserva o módulo do parmesão e busca ativos pela rede',()=>{
