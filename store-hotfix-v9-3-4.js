@@ -1,6 +1,10 @@
 (()=>{'use strict';
 if(window.__CASEIRINHO_STORE_HOTFIX_934__)return;
 window.__CASEIRINHO_STORE_HOTFIX_934__=true;
+// Emergência V9.7.0: neutraliza o decorador premium antes que ele observe/mute o DOM.
+// Mantém o checkout estável anterior sem alterar pedidos, catálogo ou integração ERP.
+window.__CASEIRINHO_PREMIUM_CHECKOUT_970__=true;
+try{document.body?.classList.remove('caseirinho-premium-ui')}catch(_){}
 const VERSION='9.3.5';
 const CFG=window.CASEIRINHO_CONFIG||{};
 const qs=new URLSearchParams(location.search);
