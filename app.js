@@ -427,15 +427,38 @@ function applyStoreManifest(){
   }catch(e){console.warn('[Loja] manifest dinâmico:',e)}
 }
 
+function mountHeroFood(){
+  const img=E('heroFoodImg'),fallback=E('heroFoodFallback');
+  if(!img)return;
+  const keys=['salgado','coxinha','risoles','risole','bolinha de queijo'];
+  const p=A(catalog.produtos).find(item=>{
+    if(!images(item)[0])return false;
+    const text=norm([item?.nome,item?.categoria,item?.descricao].filter(Boolean).join(' '));
+    return keys.some(k=>text.includes(norm(k)));
+  });
+  const src=p?images(p)[0]:'';
+  if(src){
+    img.src=src;
+    img.hidden=false;
+    img.onerror=()=>{img.hidden=true;if(fallback)fallback.hidden=false};
+    if(fallback)fallback.hidden=true;
+  }else{
+    img.hidden=true;
+    if(fallback)fallback.hidden=false;
+  }
+}
 function mount(){
   const storeName=catalog.loja?.nome||STORE||'Loja';
   E('storeName').textContent=storeName;
   E('footerName').textContent=storeName;
-  E('storeSub').textContent=catalog.loja?.subtitulo||'Feito com carinho para você.';
+  const storeSub=E('storeSub');
+  if(storeSub&&storeSub.dataset.fixed!=='promo')storeSub.textContent=catalog.loja?.subtitulo||'Feito com carinho para você.';
   document.title=storeName+' · Loja Online';
   applyStoreManifest();
-  renderCategories();renderFeatured();renderProducts();renderCart();renderCheckoutConfig();applyCustomerProfile();
+  mountHeroFood();
+  renderCategories();renderFeatured();renderProducts();renderSearchSuggestions();renderCart();renderCheckoutConfig();applyCustomerProfile();
 }
+
 async function loadCatalog(silent=false){
   if(catalogBusy)return;
   catalogBusy=true;
