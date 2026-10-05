@@ -322,18 +322,71 @@ function renderCategories(){
     renderCategories();renderProducts();
   });
 }
+function productSearchText(p){
+  const cat=productCategory(p);
+  return [
+    p?.codigo,p?.nome,p?.descricao,p?.categoria,cat?.nome,
+    p?.gradeNome,p?.variacaoLabel,p?.gradeTituloOpcao
+  ].filter(Boolean).join(' ');
+}
+function searchEntries(query){
+  const q=norm(query);
+  if(!q)return[];
+  return visualEntries(A(catalog.produtos).filter(p=>norm(productSearchText(p)).includes(q)));
+}
 function filteredProducts(){
   const q=norm(E('search')?.value);
   return A(catalog.produtos).filter(p=>{
     if(activeCategory&&S(productCategory(p).id)!==S(activeCategory))return false;
-    if(q&&!norm(`${p.codigo} ${p.nome} ${p.descricao} ${p.categoria} ${p.gradeNome||''} ${p.variacaoLabel||''}`).includes(q))return false;
+    if(q&&!norm(productSearchText(p)).includes(q))return false;
     return true;
   });
+}
+function hideSearchResults(){
+  const box=E('searchResults'),input=E('search');
+  if(box){box.hidden=true;box.innerHTML=''}
+  if(input)input.setAttribute('aria-expanded','false');
+}
+function renderSearchSuggestions(){
+  const box=E('searchResults'),input=E('search');
+  if(!box||!input)return;
+  const raw=S(input.value).trim();
+  if(!raw){hideSearchResults();return}
+  const entries=searchEntries(raw);
+  input.setAttribute('aria-expanded','true');
+  box.hidden=false;
+  if(!entries.length){
+    box.innerHTML='<div class="search-empty">Nenhum produto encontrado. Tente outro nome.</div>';
+    return;
+  }
+  const top=entries.slice(0,6);
+  box.innerHTML=top.map(entry=>{
+    const p=entry.rep,vars=entry.variants,grouped=entry.grouped;
+    const title=grouped?(p.gradeNome||p.nome):p.nome;
+    const im=images(p)[0];
+    const prices=vars.map(v=>N(v.preco)).filter(v=>v>=0);
+    const min=prices.length?Math.min(...prices):N(p.preco);
+    return '<button type="button" class="search-result" data-search-view="'+esc(p.id)+'" role="option">'+
+      '<span class="search-result-pic">'+(im?'<img src="'+esc(im)+'" alt="" loading="lazy">':'🍽️')+'</span>'+
+      '<span class="search-result-copy"><b>'+esc(title)+'</b><small>'+esc(productCategory(p).nome)+' · '+(grouped?'A partir de ':'')+money(min)+'</small></span>'+
+      '<span class="search-result-arrow">›</span></button>';
+  }).join('')+
+  '<button type="button" class="search-all" data-search-all>Ver todos os '+entries.length+' resultado(s)</button>';
+  box.querySelectorAll('[data-search-view]').forEach(b=>b.onclick=()=>{
+    hideSearchResults();
+    showProduct(b.dataset.searchView);
+  });
+  const all=box.querySelector('[data-search-all]');
+  if(all)all.onclick=()=>{
+    hideSearchResults();
+    E('catalogSection')?.scrollIntoView({behavior:'smooth',block:'start'});
+  };
 }
 function renderProducts(){
   const entries=visualEntries(filteredProducts());
   const cat=categories().find(c=>S(c.id)===S(activeCategory));
-  E('catalogTitle').textContent=cat?.nome||'Todos os produtos';
+  const raw=S(E('search')?.value).trim();
+  E('catalogTitle').textContent=raw?('Resultados para “'+raw+'”'):(cat?.nome||'Todos os produtos');
   E('catalogCount').textContent=entries.length+' produto(s)';
   E('products').innerHTML=entries.map(cardHtml).join('')||'<div class="empty">Nenhum produto encontrado.</div>';
   wireProductCards(E('products'));
