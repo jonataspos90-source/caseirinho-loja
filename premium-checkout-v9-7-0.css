@@ -1,0 +1,274 @@
+:root{
+  --caseirinho-wine:#7b1438;
+  --caseirinho-wine-2:#9a204a;
+  --caseirinho-green:#173f35;
+  --caseirinho-cream:#fffaf3;
+  --caseirinho-cream-2:#f8efe2;
+  --caseirinho-gold:#c7964d;
+  --caseirinho-ink:#172033;
+  --caseirinho-muted:#6b7280;
+}
+
+body.caseirinho-premium-ui{
+  background:linear-gradient(180deg,#fffdf9 0,#fffaf3 58%,#f8efe2 100%);
+}
+
+body.caseirinho-premium-ui .drawer-panel{
+  background:linear-gradient(180deg,#fff 0,#fffdf9 58%,#fff8ef 100%);
+  border-left:1px solid rgba(123,20,56,.08);
+  box-shadow:-24px 0 80px rgba(43,23,29,.18);
+}
+
+body.caseirinho-premium-ui .drawer-head{
+  position:relative;
+  padding-bottom:16px;
+  border-bottom:1px solid rgba(123,20,56,.09);
+}
+body.caseirinho-premium-ui .drawer-head h2{
+  color:var(--caseirinho-ink);
+  letter-spacing:-.025em;
+}
+body.caseirinho-premium-ui .drawer-head small{color:#7c6d68}
+body.caseirinho-premium-ui #cartClose{
+  background:#fff;
+  border:1px solid #eadfe2;
+  box-shadow:0 8px 18px rgba(56,33,40,.06);
+}
+
+.caseirinho-checkout-intro{
+  margin:16px 0 14px;
+  padding:14px 15px;
+  border:1px solid rgba(199,150,77,.26);
+  border-radius:18px;
+  background:linear-gradient(135deg,#fffaf2,#fff 70%);
+  box-shadow:0 10px 28px rgba(99,61,35,.07);
+  display:flex;
+  gap:12px;
+  align-items:center;
+}
+.caseirinho-checkout-intro .mark{
+  width:42px;height:42px;border-radius:14px;
+  display:grid;place-items:center;
+  background:linear-gradient(135deg,#8f173f,#65102e);
+  color:#fff;font-size:21px;
+  box-shadow:0 8px 20px rgba(123,20,56,.22);
+  flex:0 0 auto;
+}
+.caseirinho-checkout-intro b{display:block;color:#6f1835;font-size:14px;margin-bottom:2px}
+.caseirinho-checkout-intro span{display:block;color:#796b66;font-size:12px;line-height:1.45}
+
+body.caseirinho-premium-ui .cart-items{display:grid;gap:12px}
+body.caseirinho-premium-ui .cart-item,
+body.caseirinho-premium-ui .cart-row{
+  border-radius:18px!important;
+  border-color:#eee2e4!important;
+  background:#fff!important;
+  box-shadow:0 10px 28px rgba(32,24,27,.055)!important;
+}
+body.caseirinho-premium-ui .cart-item img,
+body.caseirinho-premium-ui .cart-row img{border-radius:14px!important}
+
+body.caseirinho-premium-ui .totals{
+  margin-top:16px;
+  border:1px solid #eadfe2;
+  border-radius:18px;
+  overflow:hidden;
+  background:#fff;
+  box-shadow:0 12px 32px rgba(50,27,34,.065);
+}
+body.caseirinho-premium-ui .totals>div{
+  padding:11px 14px!important;
+  border-bottom:1px solid #f0e7e9;
+}
+body.caseirinho-premium-ui .totals>div:last-child{border-bottom:0}
+body.caseirinho-premium-ui .totals .grand{
+  background:linear-gradient(135deg,#86183f,#a72253);
+  color:#fff;
+  font-size:18px;
+  padding:14px!important;
+}
+body.caseirinho-premium-ui .totals .grand b{color:#fff!important;font-size:22px}
+body.caseirinho-premium-ui #parmesaoTotalRow{
+  background:linear-gradient(90deg,#fff9ed,#fff);
+  color:#7b1438!important;
+}
+body.caseirinho-premium-ui #parmesaoTotalRow b{color:#7b1438!important}
+
+body.caseirinho-premium-ui .checkout{
+  margin-top:18px;
+  padding-top:3px;
+}
+body.caseirinho-premium-ui .checkout h3{
+  color:var(--caseirinho-ink);
+  letter-spacing:-.02em;
+  margin-bottom:13px;
+}
+body.caseirinho-premium-ui .checkout label{color:#2f3441;font-weight:750}
+body.caseirinho-premium-ui .checkout input,
+body.caseirinho-premium-ui .checkout select,
+body.caseirinho-premium-ui .checkout textarea{
+  border-radius:14px!important;
+  border-color:#e5dde0!important;
+  background:#fff!important;
+  min-height:48px;
+  box-shadow:0 5px 16px rgba(35,28,30,.035);
+}
+body.caseirinho-premium-ui .checkout input:focus,
+body.caseirinho-premium-ui .checkout select:focus,
+body.caseirinho-premium-ui .checkout textarea:focus{
+  border-color:#a62b55!important;
+  box-shadow:0 0 0 4px rgba(123,20,56,.08)!important;
+}
+body.caseirinho-premium-ui .checkout .submit,
+body.caseirinho-premium-ui .primary.submit{
+  min-height:54px;
+  border-radius:16px!important;
+  background:linear-gradient(135deg,#7b1438,#a82253)!important;
+  box-shadow:0 12px 28px rgba(123,20,56,.25)!important;
+  font-size:16px;
+  letter-spacing:.005em;
+}
+
+body.caseirinho-premium-ui .parmesao-upsell{
+  border-radius:18px!important;
+  background:linear-gradient(135deg,#fff9ed,#fffdf8)!important;
+  border-color:#ead2aa!important;
+  box-shadow:0 10px 28px rgba(125,83,34,.08)!important;
+}
+body.caseirinho-premium-ui .parmesao-upsell-choice{
+  border-radius:13px!important;
+  background:#fff!important;
+}
+
+/* Resumo final antes de enviar */
+body.caseirinho-premium-ui .dm954-confirm{
+  background:rgba(24,15,19,.58)!important;
+  backdrop-filter:blur(8px);
+}
+body.caseirinho-premium-ui .dm954-card{
+  border-radius:26px!important;
+  padding:24px!important;
+  border:1px solid rgba(255,255,255,.72);
+  background:linear-gradient(180deg,#fff 0,#fffaf3 100%)!important;
+  box-shadow:0 30px 90px rgba(33,18,24,.32)!important;
+}
+body.caseirinho-premium-ui .dm954-card:before{
+  content:'📋';
+  width:56px;height:56px;border-radius:50%;
+  display:grid;place-items:center;
+  margin:0 auto 12px;
+  font-size:25px;
+  background:#fff0e5;
+  border:1px solid #f0ddcf;
+}
+body.caseirinho-premium-ui .dm954-card h2{
+  text-align:center;color:#7b1438;font-size:25px;letter-spacing:-.025em
+}
+body.caseirinho-premium-ui .dm954-card>.dm954-note:first-of-type{text-align:center;color:#776b67}
+body.caseirinho-premium-ui .dm954-summary{
+  border-radius:16px!important;
+  border-color:#eadfe2!important;
+  background:#fff!important;
+}
+body.caseirinho-premium-ui .dm954-row{padding:12px 14px!important}
+body.caseirinho-premium-ui .dm954-row.total{
+  background:linear-gradient(90deg,#fff0e8,#fff7ef)!important;
+  color:#6f1835;
+}
+body.caseirinho-premium-ui .dm954-row.total b{font-size:20px}
+body.caseirinho-premium-ui .dm954-actions button{
+  min-height:49px;border-radius:14px!important
+}
+body.caseirinho-premium-ui .dm954-yes{
+  background:linear-gradient(135deg,#7b1438,#a82253)!important;
+  border-color:#7b1438!important;
+  box-shadow:0 10px 24px rgba(123,20,56,.20)
+}
+
+/* Popup emocional do cliente */
+body.caseirinho-premium-ui .customer-experience-overlay{
+  background:rgba(24,15,19,.58)!important;
+  backdrop-filter:blur(8px);
+}
+body.caseirinho-premium-ui .customer-experience-card{
+  border-radius:28px!important;
+  background:linear-gradient(180deg,#fff 0,#fffaf3 100%)!important;
+  border:1px solid rgba(255,255,255,.75)!important;
+  box-shadow:0 30px 90px rgba(33,18,24,.32)!important;
+}
+body.caseirinho-premium-ui .customer-experience-icon{
+  width:62px!important;height:62px!important;border-radius:50%!important;
+  display:grid!important;place-items:center!important;
+  margin:-4px auto 8px!important;
+  background:linear-gradient(135deg,#fff0e4,#fff8f2)!important;
+  border:1px solid #efd8c8!important;
+  font-size:29px!important;
+}
+body.caseirinho-premium-ui #customerExperienceTitle{
+  color:#7b1438!important;
+  text-align:center!important;
+  font-size:26px!important;
+  letter-spacing:-.025em;
+}
+body.caseirinho-premium-ui #customerExperienceBody{color:#4a4f5b}
+body.caseirinho-premium-ui #customerExperienceBody .cx-highlight{
+  border-radius:16px!important;
+  background:linear-gradient(135deg,#eafbf1,#f4fff8)!important;
+  border:1px solid #bfe8ce!important;
+  color:#16633e!important;
+  padding:15px!important;
+  font-size:17px!important;
+}
+body.caseirinho-premium-ui #customerExperienceBody .cx-note{
+  border-radius:15px!important;
+  background:#fff!important;
+  border:1px solid #e9e2e4!important;
+  padding:13px!important;
+}
+body.caseirinho-premium-ui .customer-experience-actions button{
+  min-height:49px!important;border-radius:14px!important;font-weight:850!important
+}
+body.caseirinho-premium-ui .customer-experience-actions button.primary,
+body.caseirinho-premium-ui .customer-experience-actions button[data-primary="1"]{
+  background:linear-gradient(135deg,#7b1438,#a82253)!important;
+  box-shadow:0 10px 24px rgba(123,20,56,.20)!important;
+}
+body.caseirinho-premium-ui .parmesao-unified-summary{
+  border-radius:16px!important;
+  border-color:#eadfe2!important;
+  box-shadow:0 8px 24px rgba(50,27,34,.05);
+}
+body.caseirinho-premium-ui .parmesao-unified-summary .total{
+  color:#7b1438!important;
+  background:linear-gradient(90deg,#fff1e8,#fff8f1)!important;
+}
+
+.premium-delivery-total{
+  margin:11px 0 0;
+  padding:13px 14px;
+  border-radius:15px;
+  background:linear-gradient(135deg,#fff0ea,#fff7ef);
+  border:1px solid #f0d3c8;
+  display:flex;justify-content:space-between;align-items:center;gap:12px;
+  color:#721735;font-weight:850;
+}
+.premium-delivery-total b{font-size:19px}
+
+.premium-trust-row{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:8px;
+  margin:12px 0 4px;
+}
+.premium-trust-row span{
+  display:flex;align-items:center;justify-content:center;text-align:center;
+  min-height:46px;padding:7px;border-radius:12px;
+  background:#fff;border:1px solid #eee4e6;color:#74645f;
+  font-size:10px;font-weight:750;line-height:1.25;
+}
+
+@media(max-width:520px){
+  body.caseirinho-premium-ui .drawer-panel{width:100%!important}
+  .caseirinho-checkout-intro{margin-top:12px}
+  .premium-trust-row{grid-template-columns:1fr 1fr 1fr}
+  body.caseirinho-premium-ui .dm954-card{padding:20px 18px!important}
+  body.caseirinho-premium-ui .dm954-actions{grid-template-columns:1fr 1.1fr!important}
+}
