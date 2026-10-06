@@ -1,3 +1,10 @@
+Loja Online V9.8.4 — Banner com porção sortida frita
+Build: 2026-10-06
+
+NOVIDADES V9.8.4
+- Banner do app atualizado com a foto enviada da porção sortida frita: coxinha, risoles almofadinha e bolinha de queijo.
+- Nova imagem local pré-carregada pelo PWA e cache atualizado para V9.8.4.
+
 Loja Online V9.7.3 — Banner de salgados com imagem fixa
 Build: 2026-10-06
 
