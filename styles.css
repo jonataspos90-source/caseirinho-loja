@@ -237,3 +237,120 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}.wrap{width:min(
   .search-result-copy b{font-size:12.5px}
   .search-result-meta strong{font-size:10.5px}
 }
+
+/* V9.7.4 · Banner mobile compacto + foto fixa + proteção das ações */
+.hero-food{
+  background-color:#7b1438;
+  background-image:url("./assets/banner-salgados-fritos.jpg?v=9740");
+  background-position:center center;
+  background-size:cover;
+  background-repeat:no-repeat;
+}
+.hero-food img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  object-position:center center;
+  display:block;
+}
+.hero-food-fallback[hidden]{display:none!important}
+
+@media(max-width:720px){
+  .hero{padding:10px 0 6px}
+  .hero-card.hero-promo{
+    min-height:0;
+    padding:20px 16px 16px;
+    border-radius:22px;
+  }
+  .hero-promo .pill{
+    padding:6px 9px;
+    font-size:10px;
+  }
+  .hero-promo h1{
+    max-width:72%;
+    margin:14px 0 9px;
+    font-size:clamp(29px,8.4vw,37px);
+    line-height:1;
+    letter-spacing:-.035em;
+  }
+  .hero-promo #storeSub{
+    max-width:64%;
+    margin:0;
+    font-size:13.5px;
+    line-height:1.42;
+  }
+  .hero-food{
+    top:58px;
+    right:0;
+    width:43%;
+    height:188px;
+    min-height:0;
+    border:0;
+    border-radius:24px 0 0 24px;
+    opacity:1;
+    box-shadow:none;
+    background-color:#7b1438;
+    background-image:url("./assets/banner-salgados-fritos.jpg?v=9740");
+    background-position:center center;
+    background-size:cover;
+    background-repeat:no-repeat;
+  }
+  .hero-food::after{
+    background:linear-gradient(90deg,rgba(78,16,38,.58) 0%,rgba(78,16,38,.12) 34%,transparent 68%);
+  }
+  .hero-food img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    object-position:center center;
+    transform:none;
+    filter:saturate(1.06) contrast(1.03);
+  }
+  .promo-offer{
+    margin-top:14px;
+    padding:10px 12px;
+    border-radius:14px;
+  }
+  .promo-offer strong{
+    font-size:15px;
+    line-height:1.18;
+  }
+  .promo-offer small{
+    margin-top:4px;
+    font-size:10.5px;
+  }
+  .hero-actions{
+    margin-top:12px;
+    gap:8px;
+  }
+  .hero-actions button{
+    min-height:44px;
+    padding:9px 12px;
+    font-size:14px;
+  }
+}
+
+@media(max-width:430px){
+  .hero-card.hero-promo{padding:18px 14px 14px}
+  .hero-promo h1{
+    max-width:70%;
+    font-size:clamp(28px,8.6vw,35px);
+  }
+  .hero-promo #storeSub{
+    max-width:62%;
+    font-size:13px;
+    line-height:1.4;
+  }
+  .hero-food{
+    top:55px;
+    width:44%;
+    height:176px;
+    border-radius:22px 0 0 22px;
+  }
+  .promo-offer{margin-top:12px;padding:9px 11px}
+  .promo-offer strong{font-size:14.5px}
+  .promo-offer small{font-size:10px}
+  .hero-actions{margin-top:10px}
+  .hero-actions button{min-height:42px}
+}
+
