@@ -368,3 +368,74 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}.wrap{width:min(
 .hero-food::after{z-index:1;pointer-events:none}
 .hero-food-fallback{position:absolute;inset:0;z-index:0}
 
+/* V9.7.6 · Banner aprovado: arte fixa integral com CTAs funcionais */
+.hero-approved{
+  padding:24px 0 10px;
+}
+.hero-approved-card{
+  position:relative;
+  width:min(100%,720px);
+  margin:0 auto;
+  padding:0;
+  overflow:hidden;
+  border-radius:30px;
+  line-height:0;
+  box-shadow:0 28px 80px rgba(78,16,38,.27);
+  background:#7b1438;
+}
+.hero-approved-art{
+  display:block;
+  width:100%;
+  height:auto;
+  object-fit:contain;
+  user-select:none;
+  -webkit-user-drag:none;
+  pointer-events:none;
+}
+.hero-approved-hotspot{
+  position:absolute;
+  z-index:4;
+  left:5.4%;
+  right:5.4%;
+  border:0;
+  padding:0;
+  margin:0;
+  border-radius:18px;
+  background:rgba(255,255,255,.001);
+  color:transparent;
+  font-size:0;
+  cursor:pointer;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+}
+.hero-approved-hotspot:focus-visible{
+  outline:4px solid #ffe477;
+  outline-offset:-4px;
+}
+.hero-approved-app{
+  top:72.5%;
+  height:11.2%;
+}
+.hero-approved-whatsapp{
+  top:85.7%;
+  height:10.1%;
+}
+@media(max-width:720px){
+  .hero-approved{
+    padding:12px 0 8px;
+  }
+  .hero-approved-card{
+    border-radius:22px;
+    width:100%;
+    box-shadow:0 20px 52px rgba(78,16,38,.22);
+  }
+  .hero-approved-hotspot{
+    border-radius:15px;
+  }
+}
+@media(max-width:430px){
+  .hero-approved-card{
+    border-radius:20px;
+  }
+}
+
