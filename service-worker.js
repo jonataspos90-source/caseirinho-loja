@@ -1,4 +1,4 @@
-const CACHE='caseirinho-loja-v9.7.3-banner-salgados-fixo';
+const CACHE='caseirinho-loja-v9.7.4-banner-mobile-fixo';
 const HOTFIX931='./store-hotfix-v9-3-1.js';
 const HOTFIX932='./store-hotfix-v9-3-2.js';
 const HOTFIX933='./store-hotfix-v9-3-3.js';
@@ -47,7 +47,7 @@ const DELIVERYMODE955_TAG='<script src="./delivery-mode-v9-5-5.js?v=9550" defer>
 const DESKTOPCSS956_TAG='<link rel="stylesheet" href="./desktop-ux-v9-5-6.css?v=9560">';
 const VARIANTCSS957_TAG='<link rel="stylesheet" href="./mobile-variant-carousel-v9-5-7.css?v=9570">';
 const VARIANTJS957_TAG='<script src="./mobile-variant-carousel-v9-5-7.js?v=9570" defer></'+'script>';
-const COUPONJS958_TAG='<script src="./caseirinho-coupon-assistant-v9-5-8.js?v=9580" defer></'+'script>';
+const COUPONJS958_TAG='<script src="./caseirinho-coupon-assistant-v9-5-8.js?v=9581" defer></'+'script>';
 const JOHNJS959_TAG='<script src="./caseirinho-john-coupon-v9-5-9.js?v=9590" defer></'+'script>';
 const CASHBACKJS960_TAG='<script src="./caseirinho-cashback-v9-6-0.js?v=9600" defer></'+'script>';
 const ENGAGEMENTJS961_TAG='<script src="./commerce-engagement-v9-6-1.js?v=9610" defer></'+'script>';
