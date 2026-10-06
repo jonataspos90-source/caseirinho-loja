@@ -1,3 +1,15 @@
+Loja Online V9.7.2 — Busca em cascata + banner de salgados
+Build: 2026-10-06
+
+NOVIDADES V9.7.2
+- Corrigida a busca do cardápio no celular: os resultados agora aparecem em cascata vertical, um produto por linha.
+- Corrigido o conflito de CSS que posicionava os textos dos resultados uns sobre os outros dentro da caixa de busca.
+- Cada resultado exibe foto, nome, categoria e preço; toda a linha é clicável.
+- A caixa de resultados tem rolagem interna, altura limitada e botão “Ver todos” fixado na base.
+- Banner de salgados mantém “Ver cardápio” e “Negociar no WhatsApp”.
+- Foto do banner passa a priorizar produtos de salgados fritos/coxinha/risoles/bolinha de queijo e fica mais destacada no mobile.
+- Cache do PWA atualizado para V9.7.2.
+
 Loja Online V9.5.8 — Assistente Caseirinho / CASEIRINHO10 / WhatsApp / Primeira Compra
 Build: 2026-10-02
 API esperada: 1.19.2
