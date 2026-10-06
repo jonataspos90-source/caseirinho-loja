@@ -1,4 +1,4 @@
-const CACHE='caseirinho-loja-v9.8.4-salgados-sortidos';
+const CACHE='caseirinho-loja-v9.8.5-categoria-navigation';
 const HOTFIX931='./store-hotfix-v9-3-1.js';
 const HOTFIX932='./store-hotfix-v9-3-2.js';
 const HOTFIX933='./store-hotfix-v9-3-3.js';

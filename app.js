@@ -360,20 +360,26 @@ function markActiveCategory(id,centerChip=false){
 function scrollToCategory(id){
   const root=E('products');
   const target=root&&[...root.querySelectorAll('[data-category-section]')].find(x=>S(x.dataset.categorySection)===S(id));
-  if(!target)return;
+  if(!target)return false;
   markActiveCategory(id,true);
-  target.scrollIntoView({behavior:'smooth',block:'start'});
+  const margin=parseFloat(getComputedStyle(target).scrollMarginTop)||155;
+  const top=Math.max(0,window.scrollY+target.getBoundingClientRect().top-margin);
+  window.scrollTo({top,behavior:'smooth'});
+  return true;
 }
 function renderCategories(){
   const groups=catalogGroups();
   if(groups.length&&!groups.some(g=>S(g.cat.id)===S(activeCategory)))activeCategory=S(groups[0].cat.id);
   if(!groups.length)activeCategory='';
-  E('categories').innerHTML=groups.map(g=>`<button class="cat-chip ${S(activeCategory)===S(g.cat.id)?'active':''}" data-cat="${esc(g.cat.id)}">${esc(g.cat.emoji||'✨')} ${esc(g.cat.nome)}</button>`).join('');
+  E('categories').innerHTML=groups.map(g=>`<button type="button" class="cat-chip ${S(activeCategory)===S(g.cat.id)?'active':''}" data-cat="${esc(g.cat.id)}">${esc(g.cat.emoji||'✨')} ${esc(g.cat.nome)}</button>`).join('');
   E('categories').querySelectorAll('[data-cat]').forEach(b=>b.onclick=()=>{
+    const id=S(b.dataset.cat);
+    const wasSearching=!!S(E('search')?.value).trim();
     if(E('search'))E('search').value='';
     hideSearchResults();
-    renderProducts();
-    requestAnimationFrame(()=>scrollToCategory(b.dataset.cat));
+    if(wasSearching)renderProducts();
+    markActiveCategory(id,true);
+    requestAnimationFrame(()=>requestAnimationFrame(()=>scrollToCategory(id)));
   });
   updateCategoryHeader();
 }

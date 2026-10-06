@@ -1,3 +1,11 @@
+Loja Online V9.8.5 — Navegação correta entre categorias
+Build: 2026-10-06
+
+NOVIDADES V9.8.5
+- Corrigido o toque nas categorias do cardápio no celular: ao selecionar Panqueca, Talharim ou outra categoria, a loja destaca a opção escolhida e rola até seus produtos.
+- O clique não recria a lista inteira quando a busca está vazia, evitando que a navegação volte para a primeira categoria.
+- A navegação a partir de uma busca limpa os resultados antes de abrir a categoria selecionada.
+
 Loja Online V9.8.4 — Banner com porção sortida frita
 Build: 2026-10-06
 
