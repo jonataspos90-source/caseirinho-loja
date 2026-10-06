@@ -676,3 +676,128 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}.wrap{width:min(
   .party-actions button{min-height:60px;font-size:18px}
 }
 
+/* V9.7.9 · Banner mobile compacto mantendo todas as informações */
+@media(max-width:720px){
+  .hero-party{padding:12px 0 8px}
+  .party-banner{
+    min-height:560px;
+    border-radius:24px;
+  }
+  .party-copy{
+    width:100%;
+    min-height:560px;
+    padding:28px 20px 20px;
+  }
+  .party-pill{
+    font-size:11px;
+    padding:6px 10px;
+  }
+  .party-copy h1{
+    width:62%;
+    margin:18px 0 14px;
+    font-size:clamp(34px,8vw,44px);
+    line-height:.98;
+  }
+  .party-copy>p{
+    width:52%;
+    margin:0;
+    font-size:15px;
+    line-height:1.34;
+  }
+  .party-visual{
+    right:-18%;
+    top:15%;
+    width:58%;
+    height:34%;
+    border-radius:48% 0 0 48%;
+  }
+  .party-offer{
+    margin-top:auto;
+    margin-right:0;
+    min-height:110px;
+    padding:12px 14px;
+    gap:12px;
+    border-radius:18px;
+  }
+  .party-gift{
+    width:58px;
+    flex-basis:58px;
+    padding-right:10px;
+    font-size:36px;
+  }
+  .party-offer strong{
+    font-size:16px;
+    line-height:1.05;
+  }
+  .party-offer small{
+    margin-top:6px;
+    font-size:13px;
+  }
+  .party-offer small b{
+    padding:4px 10px;
+    font-size:13px;
+  }
+  .party-actions{
+    margin:14px 0 0;
+    gap:10px;
+  }
+  .party-actions button{
+    min-height:54px;
+    font-size:17px;
+    border-radius:16px;
+  }
+}
+
+@media(max-width:430px){
+  .party-banner{
+    min-height:520px;
+    border-radius:22px;
+  }
+  .party-copy{
+    min-height:520px;
+    padding:24px 18px 18px;
+  }
+  .party-copy h1{
+    width:64%;
+    margin:16px 0 12px;
+    font-size:clamp(31px,8.6vw,40px);
+  }
+  .party-copy>p{
+    width:53%;
+    font-size:14px;
+    line-height:1.32;
+  }
+  .party-visual{
+    right:-20%;
+    top:16%;
+    width:60%;
+    height:33%;
+  }
+  .party-offer{
+    min-height:100px;
+    padding:10px 12px;
+    gap:10px;
+  }
+  .party-gift{
+    width:52px;
+    flex-basis:52px;
+    padding-right:8px;
+    font-size:32px;
+  }
+  .party-offer strong{font-size:15px}
+  .party-offer small{font-size:12px}
+  .party-offer small b{
+    font-size:12px;
+    padding:4px 8px;
+  }
+  .party-actions{
+    gap:9px;
+    margin-top:12px;
+  }
+  .party-actions button{
+    min-height:50px;
+    font-size:16px;
+    border-radius:15px;
+  }
+}
+
