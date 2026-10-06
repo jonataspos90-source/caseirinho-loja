@@ -241,7 +241,7 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}.wrap{width:min(
 /* V9.7.4 · Banner mobile compacto + foto fixa + proteção das ações */
 .hero-food{
   background-color:#7b1438;
-  background-image:url("./assets/banner-salgados-fritos.jpg?v=9740");
+  background-image:none;
   background-position:center center;
   background-size:cover;
   background-repeat:no-repeat;
@@ -290,7 +290,7 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}.wrap{width:min(
     opacity:1;
     box-shadow:none;
     background-color:#7b1438;
-    background-image:url("./assets/banner-salgados-fritos.jpg?v=9740");
+    background-image:none;
     background-position:center center;
     background-size:cover;
     background-repeat:no-repeat;
@@ -353,4 +353,18 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}.wrap{width:min(
   .hero-actions{margin-top:10px}
   .hero-actions button{min-height:42px}
 }
+
+/* V9.7.5 · Foto promocional embutida no app: sem dependência de arquivo externo/ERP */
+.hero-food{isolation:isolate}
+.hero-food img{
+  position:absolute;
+  inset:0;
+  z-index:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  object-position:center center;
+}
+.hero-food::after{z-index:1;pointer-events:none}
+.hero-food-fallback{position:absolute;inset:0;z-index:0}
 
