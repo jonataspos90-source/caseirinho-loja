@@ -439,3 +439,240 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}.wrap{width:min(
   }
 }
 
+/* V9.7.8 · Banner de salgados reconstruído no padrão visual aprovado */
+.hero-party{padding:24px 0 10px}
+.party-banner{
+  position:relative;
+  min-height:600px;
+  overflow:hidden;
+  border-radius:30px;
+  color:#fff;
+  background:
+    radial-gradient(circle at 84% 78%,rgba(255,112,154,.38),transparent 25%),
+    linear-gradient(145deg,#5b0e2e 0%,#8f1647 55%,#cb3f73 100%);
+  box-shadow:0 28px 80px rgba(78,16,38,.27);
+}
+.party-banner::before{
+  content:"";
+  position:absolute;inset:0;
+  background:
+    radial-gradient(circle at 88% 11%,rgba(255,255,255,.12) 0 7%,transparent 8%),
+    radial-gradient(circle at 94% 70%,rgba(255,194,216,.12) 0 14%,transparent 15%);
+  pointer-events:none;
+}
+.party-copy{
+  position:relative;z-index:3;
+  width:61%;
+  min-height:600px;
+  padding:46px 0 28px 38px;
+  display:flex;
+  flex-direction:column;
+}
+.party-pill{
+  align-self:flex-start;
+  padding:8px 14px;
+  border-radius:999px;
+  background:rgba(255,255,255,.12);
+  font-size:14px;
+  font-weight:900;
+}
+.party-copy h1{
+  margin:28px 0 18px;
+  font-size:clamp(42px,6.3vw,72px);
+  line-height:.98;
+  letter-spacing:-.045em;
+}
+.party-copy h1 span{display:block;color:#ffe36a}
+.party-copy>p{
+  max-width:520px;
+  margin:0;
+  font-size:22px;
+  line-height:1.42;
+  color:#fff;
+}
+.party-visual{
+  position:absolute;
+  z-index:2;
+  right:-8%;
+  top:12%;
+  width:58%;
+  height:55%;
+  overflow:hidden;
+  border-radius:48% 0 0 48%;
+  transform:rotate(-1deg);
+  filter:drop-shadow(0 22px 24px rgba(0,0,0,.28));
+}
+.party-visual::after{
+  content:"";
+  position:absolute;inset:0;
+  background:linear-gradient(90deg,#76123f 0%,rgba(118,18,63,.7) 9%,transparent 35%);
+}
+.party-visual img{
+  width:100%;height:100%;
+  object-fit:cover;
+  object-position:center center;
+  display:block;
+  transform:scale(1.08);
+}
+.party-offer{
+  margin-top:auto;
+  margin-right:24px;
+  min-height:128px;
+  padding:17px 23px;
+  border:1px solid rgba(255,255,255,.35);
+  border-radius:22px;
+  background:linear-gradient(135deg,rgba(255,255,255,.10),rgba(255,255,255,.035));
+  display:flex;
+  gap:22px;
+  align-items:center;
+  backdrop-filter:blur(6px);
+}
+.party-gift{
+  width:86px;
+  flex:0 0 86px;
+  padding-right:20px;
+  border-right:1px solid rgba(255,255,255,.45);
+  font-size:58px;
+  line-height:1;
+  text-align:center;
+}
+.party-offer strong{
+  display:block;
+  font-size:24px;
+  line-height:1.05;
+}
+.party-offer em{
+  color:#ffe36a;
+  font-style:normal;
+  font-size:1.6em;
+}
+.party-offer small{
+  display:block;
+  margin-top:8px;
+  font-size:18px;
+}
+.party-offer small b{
+  display:inline-flex;
+  margin-left:6px;
+  padding:5px 12px;
+  border-radius:999px;
+  background:#5a1230;
+  color:#ffe36a;
+  letter-spacing:.02em;
+}
+.party-actions{
+  margin:18px 24px 0 0;
+  display:grid;
+  grid-template-columns:1fr;
+  gap:14px;
+}
+.party-actions button{
+  width:100%;
+  min-height:70px;
+  border-radius:20px;
+  font-size:22px;
+  font-weight:950;
+}
+.party-app-btn{
+  border:0;
+  background:#fff;
+  color:#861a46;
+}
+.party-whats-btn{
+  border:1px solid rgba(255,255,255,.36);
+  background:rgba(255,255,255,.07);
+  color:#fff;
+}
+.party-whats-btn svg{vertical-align:middle;margin-right:8px}
+
+@media(max-width:720px){
+  .hero-party{padding:12px 0 8px}
+  .party-banner{
+    min-height:760px;
+    border-radius:24px;
+  }
+  .party-copy{
+    width:100%;
+    min-height:760px;
+    padding:34px 24px 26px;
+  }
+  .party-pill{
+    font-size:12px;
+    padding:7px 11px;
+  }
+  .party-copy h1{
+    width:67%;
+    margin:25px 0 18px;
+    font-size:clamp(42px,9vw,58px);
+    position:relative;
+    z-index:4;
+  }
+  .party-copy>p{
+    width:59%;
+    font-size:19px;
+    line-height:1.4;
+    position:relative;
+    z-index:4;
+  }
+  .party-visual{
+    right:-16%;
+    top:13%;
+    width:69%;
+    height:47%;
+    border-radius:50% 0 0 50%;
+  }
+  .party-visual::after{
+    background:linear-gradient(90deg,#76123f 0%,rgba(118,18,63,.76) 12%,transparent 42%);
+  }
+  .party-offer{
+    margin-top:auto;
+    margin-right:0;
+    min-height:136px;
+    padding:16px 18px;
+    gap:15px;
+  }
+  .party-gift{
+    width:88px;
+    flex-basis:88px;
+    font-size:50px;
+  }
+  .party-offer strong{font-size:22px}
+  .party-offer small{font-size:17px}
+  .party-actions{margin:18px 0 0}
+  .party-actions button{min-height:68px;font-size:21px}
+}
+@media(max-width:430px){
+  .party-banner{min-height:704px;border-radius:22px}
+  .party-copy{min-height:704px;padding:30px 20px 22px}
+  .party-copy h1{
+    width:68%;
+    font-size:clamp(39px,10vw,48px);
+  }
+  .party-copy>p{
+    width:61%;
+    font-size:16.5px;
+  }
+  .party-visual{
+    top:14%;
+    right:-22%;
+    width:74%;
+    height:44%;
+  }
+  .party-offer{
+    min-height:124px;
+    padding:14px 14px;
+    gap:12px;
+  }
+  .party-gift{
+    width:68px;
+    flex-basis:68px;
+    padding-right:12px;
+    font-size:42px;
+  }
+  .party-offer strong{font-size:18px}
+  .party-offer small{font-size:14px}
+  .party-offer em{font-size:1.55em}
+  .party-actions{gap:11px;margin-top:14px}
+  .party-actions button{min-height:60px;font-size:18px}
+}
+
