@@ -368,10 +368,11 @@ function renderSearchSuggestions(){
     const im=images(p)[0];
     const prices=vars.map(v=>N(v.preco)).filter(v=>v>=0);
     const min=prices.length?Math.min(...prices):N(p.preco);
-    return '<button type="button" class="search-result" data-search-view="'+esc(p.id)+'" role="option">'+
+    const priceLabel=(grouped?'A partir de ':'')+money(min);
+    return '<button type="button" class="search-result" data-search-view="'+esc(p.id)+'" role="option" aria-label="'+esc(title+' · '+priceLabel)+'">'+
       '<span class="search-result-pic">'+(im?'<img src="'+esc(im)+'" alt="" loading="lazy">':'🍽️')+'</span>'+
-      '<span class="search-result-copy"><b>'+esc(title)+'</b><small>'+esc(productCategory(p).nome)+' · '+(grouped?'A partir de ':'')+money(min)+'</small></span>'+
-      '<span class="search-result-arrow">›</span></button>';
+      '<span class="search-result-copy"><b>'+esc(title)+'</b><span class="search-result-meta"><small>'+esc(productCategory(p).nome)+'</small><strong>'+esc(priceLabel)+'</strong></span></span>'+
+      '<span class="search-result-arrow" aria-hidden="true">›</span></button>';
   }).join('')+
   '<button type="button" class="search-all" data-search-all>Ver todos os '+entries.length+' resultado(s)</button>';
   box.querySelectorAll('[data-search-view]').forEach(b=>b.onclick=()=>{
@@ -430,15 +431,34 @@ function applyStoreManifest(){
 function mountHeroFood(){
   const img=E('heroFoodImg'),fallback=E('heroFoodFallback');
   if(!img)return;
-  const keys=['salgado','coxinha','risoles','risole','bolinha de queijo'];
-  const p=A(catalog.produtos).find(item=>{
-    if(!images(item)[0])return false;
+
+  const scoreProduct=item=>{
+    if(!images(item)[0])return -Infinity;
     const text=norm([item?.nome,item?.categoria,item?.descricao].filter(Boolean).join(' '));
-    return keys.some(k=>text.includes(norm(k)));
-  });
+    let score=0;
+    if(text.includes('salgados fritos'))score+=140;
+    if(text.includes('salgado frito'))score+=130;
+    if(text.includes('coxinha'))score+=115;
+    if(text.includes('risoles')||text.includes('risole'))score+=95;
+    if(text.includes('bolinha de queijo'))score+=90;
+    if(text.includes('salgado'))score+=70;
+    if(text.includes('frito')||text.includes('frita'))score+=35;
+    if(text.includes('festa'))score+=20;
+    if(text.includes('congelad'))score-=30;
+    if(item?.destaque||item?.novidade)score+=8;
+    return score;
+  };
+
+  const p=A(catalog.produtos)
+    .map(item=>({item,score:scoreProduct(item)}))
+    .filter(x=>Number.isFinite(x.score)&&x.score>0)
+    .sort((a,b)=>b.score-a.score)[0]?.item;
+
   const src=p?images(p)[0]:'';
   if(src){
     img.src=src;
+    img.loading='eager';
+    try{img.fetchPriority='high'}catch(_){}
     img.hidden=false;
     img.onerror=()=>{img.hidden=true;if(fallback)fallback.hidden=false};
     if(fallback)fallback.hidden=true;
