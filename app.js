@@ -251,6 +251,15 @@ function configuredCategory(p){
 function visibleCatalogProducts(){
   return A(catalog.produtos).filter(p=>!!configuredCategory(p));
 }
+function productsForCategory(cat){
+  return visibleCatalogProducts().filter(p=>S(configuredCategory(p)?.id)===S(cat?.id));
+}
+function catalogGroups(){
+  return categories().map(cat=>({
+    cat,
+    entries:visualEntries(productsForCategory(cat))
+  })).filter(group=>group.entries.length);
+}
 function productCategory(p){
   return configuredCategory(p)||{id:'',nome:'Categoria não publicada',emoji:'✨'};
 }
@@ -328,17 +337,66 @@ function wireProductCards(root){
   root.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>showProduct(b.dataset.view));
   root.querySelectorAll('[data-add]').forEach(b=>b.onclick=e=>{e.stopPropagation();quickAdd(b.dataset.add)});
 }
+function updateCategoryHeader(){
+  const group=catalogGroups().find(g=>S(g.cat.id)===S(activeCategory));
+  if(!group)return;
+  if(E('catalogTitle'))E('catalogTitle').textContent=group.cat.nome||'Cardápio';
+  if(E('catalogCount'))E('catalogCount').textContent=group.entries.length+' produto(s)';
+}
+function markActiveCategory(id,centerChip=false){
+  if(!id)return;
+  activeCategory=S(id);
+  const row=E('categories');
+  if(row){
+    row.querySelectorAll('[data-cat]').forEach(b=>b.classList.toggle('active',S(b.dataset.cat)===activeCategory));
+    const btn=[...row.querySelectorAll('[data-cat]')].find(b=>S(b.dataset.cat)===activeCategory);
+    if(centerChip&&btn){
+      const left=Math.max(0,btn.offsetLeft-(row.clientWidth-btn.offsetWidth)/2);
+      try{row.scrollTo({left,behavior:'smooth'})}catch(_){row.scrollLeft=left}
+    }
+  }
+  updateCategoryHeader();
+}
+function scrollToCategory(id){
+  const root=E('products');
+  const target=root&&[...root.querySelectorAll('[data-category-section]')].find(x=>S(x.dataset.categorySection)===S(id));
+  if(!target)return;
+  markActiveCategory(id,true);
+  target.scrollIntoView({behavior:'smooth',block:'start'});
+}
 function renderCategories(){
-  const cs=categories();
-  if(cs.length&&!cs.some(c=>S(c.id)===S(activeCategory)))activeCategory=S(cs[0].id);
-  if(!cs.length)activeCategory='';
-  E('categories').innerHTML=cs.map(c=>`<button class="cat-chip ${S(activeCategory)===S(c.id)?'active':''}" data-cat="${esc(c.id)}">${esc(c.emoji||'✨')} ${esc(c.nome)}</button>`).join('');
+  const groups=catalogGroups();
+  if(groups.length&&!groups.some(g=>S(g.cat.id)===S(activeCategory)))activeCategory=S(groups[0].cat.id);
+  if(!groups.length)activeCategory='';
+  E('categories').innerHTML=groups.map(g=>`<button class="cat-chip ${S(activeCategory)===S(g.cat.id)?'active':''}" data-cat="${esc(g.cat.id)}">${esc(g.cat.emoji||'✨')} ${esc(g.cat.nome)}</button>`).join('');
   E('categories').querySelectorAll('[data-cat]').forEach(b=>b.onclick=()=>{
-    activeCategory=b.dataset.cat||'';
     if(E('search'))E('search').value='';
     hideSearchResults();
-    renderCategories();renderProducts();
+    renderProducts();
+    requestAnimationFrame(()=>scrollToCategory(b.dataset.cat));
   });
+  updateCategoryHeader();
+}
+let categorySpyRaf=0;
+function syncActiveCategoryFromScroll(){
+  categorySpyRaf=0;
+  if(S(E('search')?.value).trim())return;
+  const root=E('products');
+  if(!root)return;
+  const sections=[...root.querySelectorAll('[data-category-section]')];
+  if(!sections.length)return;
+  const marker=Math.min(220,Math.max(110,Math.round(window.innerHeight*.2)));
+  let current=sections[0];
+  for(const section of sections){
+    if(section.getBoundingClientRect().top<=marker)current=section;
+    else break;
+  }
+  const id=S(current.dataset.categorySection);
+  if(id&&id!==activeCategory)markActiveCategory(id,true);
+}
+function scheduleCategorySpy(){
+  if(categorySpyRaf)return;
+  categorySpyRaf=requestAnimationFrame(syncActiveCategoryFromScroll);
 }
 function productSearchText(p){
   const cat=productCategory(p);
@@ -354,11 +412,7 @@ function searchEntries(query){
 }
 function filteredProducts(){
   const q=norm(E('search')?.value);
-  return visibleCatalogProducts().filter(p=>{
-    if(q)return norm(productSearchText(p)).includes(q);
-    if(!activeCategory)return false;
-    return S(productCategory(p).id)===S(activeCategory);
-  });
+  return visibleCatalogProducts().filter(p=>!q||norm(productSearchText(p)).includes(q));
 }
 function hideSearchResults(){
   const box=E('searchResults'),input=E('search');
@@ -402,14 +456,31 @@ function renderSearchSuggestions(){
   };
 }
 function renderProducts(){
-  const entries=visualEntries(filteredProducts());
-  const cat=categories().find(c=>S(c.id)===S(activeCategory));
   const raw=S(E('search')?.value).trim();
-  E('catalogTitle').textContent=raw?('Resultados para “'+raw+'”'):(cat?.nome||'Cardápio');
-  E('catalogCount').textContent=entries.length+' produto(s)';
-  E('products').innerHTML=entries.map(cardHtml).join('')||
-    (categories().length?'<div class="empty">Nenhum produto nesta categoria.</div>':'<div class="empty">Nenhuma categoria publicada no momento.</div>');
-  wireProductCards(E('products'));
+  const root=E('products');
+  if(raw){
+    const entries=visualEntries(filteredProducts());
+    E('catalogTitle').textContent='Resultados para “'+raw+'”';
+    E('catalogCount').textContent=entries.length+' produto(s)';
+    root.innerHTML=entries.map(cardHtml).join('')||'<div class="empty">Nenhum produto encontrado.</div>';
+    wireProductCards(root);
+    return;
+  }
+  const groups=catalogGroups();
+  if(groups.length&&!groups.some(g=>S(g.cat.id)===S(activeCategory)))activeCategory=S(groups[0].cat.id);
+  const total=groups.reduce((sum,g)=>sum+g.entries.length,0);
+  root.innerHTML=groups.map(g=>
+    `<div class="catalog-category-break" data-category-section="${esc(g.cat.id)}"><div><b>${esc(g.cat.emoji||'✨')} ${esc(g.cat.nome)}</b><small>${g.entries.length} produto(s)</small></div></div>`+
+    g.entries.map(cardHtml).join('')
+  ).join('')||(categories().length?'<div class="empty">Nenhum produto publicado nas categorias cadastradas.</div>':'<div class="empty">Nenhuma categoria publicada no momento.</div>');
+  wireProductCards(root);
+  if(!groups.length){
+    E('catalogTitle').textContent='Cardápio';
+    E('catalogCount').textContent='0 produto(s)';
+    return;
+  }
+  updateCategoryHeader();
+  requestAnimationFrame(syncActiveCategoryFromScroll);
 }
 function renderFeatured(){
   const root=E('featured');
@@ -1246,6 +1317,7 @@ function wire(){
   E('search').oninput=()=>{
     renderProducts();
     renderSearchSuggestions();
+    if(!S(E('search').value).trim())requestAnimationFrame(syncActiveCategoryFromScroll);
   };
   E('search').onfocus=renderSearchSuggestions;
   E('search').onkeydown=e=>{
@@ -1284,6 +1356,8 @@ function wire(){
   E('privacyBtn').onclick=showPrivacy;
   document.addEventListener('click',e=>{if(E('searchBox')&&!E('searchBox').contains(e.target))hideSearchResults()});
   document.addEventListener('keydown',e=>{if(e.key==='Escape'){hideSearchResults();closeOverlay(E('productOverlay'));closeOverlay(E('simpleOverlay'));closeOverlay(E('cartDrawer'))}});
+  window.addEventListener('scroll',scheduleCategorySpy,{passive:true});
+  window.addEventListener('resize',scheduleCategorySpy,{passive:true});
 }
 
 function installPwa(){
