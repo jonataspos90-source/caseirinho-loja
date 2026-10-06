@@ -431,20 +431,23 @@ function applyStoreManifest(){
 function mountHeroFood(){
   const img=E('heroFoodImg'),fallback=E('heroFoodFallback');
   if(!img)return;
-  const src='./assets/banner-salgados-fritos.jpg?v=9740';
-  img.src=src;
-  img.loading='eager';
-  try{img.fetchPriority='high'}catch(_){}
-  img.hidden=false;
-  img.onerror=()=>{
-    img.hidden=true;
-    if(fallback)fallback.hidden=false;
-  };
-  img.onload=()=>{
+  const showImage=()=>{
     img.hidden=false;
     if(fallback)fallback.hidden=true;
   };
-  if(fallback)fallback.hidden=true;
+  const showFallback=()=>{
+    img.hidden=true;
+    if(fallback)fallback.hidden=false;
+  };
+  img.onload=showImage;
+  img.onerror=showFallback;
+  if(img.complete){
+    if(img.naturalWidth>0)showImage();
+    else showFallback();
+  }else{
+    img.hidden=false;
+    if(fallback)fallback.hidden=true;
+  }
 }
 function mount(){
   const storeName=catalog.loja?.nome||STORE||'Loja';
