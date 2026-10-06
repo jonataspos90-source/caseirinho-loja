@@ -1,3 +1,13 @@
+Loja Online V9.7.3 — Banner de salgados com imagem fixa
+Build: 2026-10-06
+
+NOVIDADES V9.7.3
+- A imagem de salgados do banner agora é um arquivo fixo do próprio site.
+- O banner não procura mais coxinha, risoles, bolinha de queijo ou qualquer imagem cadastrada no ERP.
+- A arte fixa mantém o visual de salgados fritos mostrado no modelo aprovado.
+- O arquivo do banner é pré-carregado pelo PWA para permanecer disponível mesmo após atualização do catálogo.
+- Mantidas as correções da busca em cascata da V9.7.2.
+
 Loja Online V9.7.2 — Busca em cascata + banner de salgados
 Build: 2026-10-06
 

@@ -431,41 +431,20 @@ function applyStoreManifest(){
 function mountHeroFood(){
   const img=E('heroFoodImg'),fallback=E('heroFoodFallback');
   if(!img)return;
-
-  const scoreProduct=item=>{
-    if(!images(item)[0])return -Infinity;
-    const text=norm([item?.nome,item?.categoria,item?.descricao].filter(Boolean).join(' '));
-    let score=0;
-    if(text.includes('salgados fritos'))score+=140;
-    if(text.includes('salgado frito'))score+=130;
-    if(text.includes('coxinha'))score+=115;
-    if(text.includes('risoles')||text.includes('risole'))score+=95;
-    if(text.includes('bolinha de queijo'))score+=90;
-    if(text.includes('salgado'))score+=70;
-    if(text.includes('frito')||text.includes('frita'))score+=35;
-    if(text.includes('festa'))score+=20;
-    if(text.includes('congelad'))score-=30;
-    if(item?.destaque||item?.novidade)score+=8;
-    return score;
-  };
-
-  const p=A(catalog.produtos)
-    .map(item=>({item,score:scoreProduct(item)}))
-    .filter(x=>Number.isFinite(x.score)&&x.score>0)
-    .sort((a,b)=>b.score-a.score)[0]?.item;
-
-  const src=p?images(p)[0]:'';
-  if(src){
-    img.src=src;
-    img.loading='eager';
-    try{img.fetchPriority='high'}catch(_){}
-    img.hidden=false;
-    img.onerror=()=>{img.hidden=true;if(fallback)fallback.hidden=false};
-    if(fallback)fallback.hidden=true;
-  }else{
+  const src='./assets/banner-salgados-fritos.jpg?v=9730';
+  img.src=src;
+  img.loading='eager';
+  try{img.fetchPriority='high'}catch(_){}
+  img.hidden=false;
+  img.onerror=()=>{
     img.hidden=true;
     if(fallback)fallback.hidden=false;
-  }
+  };
+  img.onload=()=>{
+    img.hidden=false;
+    if(fallback)fallback.hidden=true;
+  };
+  if(fallback)fallback.hidden=true;
 }
 function mount(){
   const storeName=catalog.loja?.nome||STORE||'Loja';
