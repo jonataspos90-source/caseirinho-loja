@@ -165,7 +165,7 @@ function injectStyle(){
   #assistant958Panel.open{display:flex;flex-direction:column}.assistant958-head{padding:13px 14px;background:#173f32;color:#fff;display:flex;align-items:center;justify-content:space-between}.assistant958-head button{border:0;background:transparent;color:#fff;font-size:20px;cursor:pointer}
   #assistant958Messages{padding:12px;overflow:auto;display:flex;flex-direction:column;gap:8px;min-height:190px}.assistant958-msg{max-width:88%;padding:9px 11px;border-radius:14px;font-size:13px;line-height:1.4;white-space:pre-wrap}.assistant958-msg.bot{align-self:flex-start;background:#f4eee5;color:#24312c}.assistant958-msg.user{align-self:flex-end;background:#7b1438;color:#fff}
   .assistant958-form{display:flex;gap:7px;padding:10px;border-top:1px solid #eee}.assistant958-form input{flex:1;min-width:0}.assistant958-form button{border:0;border-radius:12px;padding:8px 12px;background:#7b1438;color:#fff;font-weight:800}
-  @media(max-width:600px){#assistant958Toggle{bottom:82px;right:12px;padding:10px 13px}#assistant958Panel{right:8px;bottom:132px;width:calc(100vw - 16px);max-height:65vh}}
+  @media(max-width:600px){#assistant958Toggle{bottom:calc(88px + env(safe-area-inset-bottom));right:12px;padding:10px 13px;transition:opacity .18s ease,transform .18s ease}body.caseirinho-hero-actions-visible #assistant958Toggle{opacity:0;pointer-events:none;transform:translateY(8px)}#assistant958Panel{right:8px;bottom:calc(138px + env(safe-area-inset-bottom));width:calc(100vw - 16px);max-height:65vh}}
   `;document.head.appendChild(style);
 }
 function mountCouponBox(){
@@ -188,6 +188,24 @@ function mountAssistant(){
   document.body.append(toggle,panel);addChat('bot','Olá! Posso ajudar com o cardápio, seu pedido e cupons de desconto.');toggle.onclick=()=>{panel.classList.toggle('open');if(panel.classList.contains('open'))document.getElementById('assistant958Input')?.focus()};document.getElementById('assistant958Close').onclick=()=>panel.classList.remove('open');
   document.getElementById('assistant958Form').onsubmit=async e=>{e.preventDefault();const input=document.getElementById('assistant958Input'),msg=S(input.value).trim();if(!msg)return;input.value='';addChat('user',msg);const upper=normalizeCode(msg);if(upper.includes(FIRST_CODE)){const couponInput=document.getElementById('coupon958Code');if(couponInput)couponInput.value=FIRST_CODE;waitingPhone=true;addChat('bot','O CASEIRINHO10 dá 10% de desconto na primeira compra. Informe seu WhatsApp com DDD para validar.');return}if(waitingPhone){const p=sanitizePhone(msg);if(validPhone(p)){const field=document.getElementById('cPhone');if(field)field.value=formatPhone(p);await validateFirstPurchase(p,{fromChat:true});return}addChat('bot','Informe um WhatsApp válido com DDD, por exemplo: (11) 99999-9999.');return}const q=S(msg).toLowerCase();if(q.includes('cupom')||q.includes('desconto')){addChat('bot','Digite o código no campo de cupom do checkout. Cupons cadastrados no Motor Comercial são validados automaticamente; o CASEIRINHO10 é exclusivo da primeira compra.');return}if(q.includes('frete')||q.includes('entrega')){addChat('bot','Informe seu CEP no checkout. O frete será mostrado automaticamente quando houver regra disponível ou ficará pendente para cotação.');return}if(q.includes('pedido')||q.includes('compr')||q.includes('cardáp')||q.includes('cardap')){addChat('bot','Escolha os produtos, adicione ao carrinho e finalize seus dados. Se tiver cupom, aplique antes de confirmar o pedido.');return}addChat('bot','Posso ajudar com compras, entrega, acompanhamento do pedido e cupons. O que você precisa?')};
 }
+function protectHeroActions(){
+  const target=document.querySelector('.hero-actions');if(!target)return;
+  const mq=window.matchMedia('(max-width:600px)');
+  const apply=visible=>{
+    const active=!!visible&&mq.matches;
+    document.body.classList.toggle('caseirinho-hero-actions-visible',active);
+    if(active)document.getElementById('assistant958Panel')?.classList.remove('open');
+  };
+  if('IntersectionObserver'in window){
+    const observer=new IntersectionObserver(entries=>apply(entries.some(e=>e.isIntersecting)),{threshold:.05});
+    observer.observe(target);
+  }else{
+    const check=()=>{const r=target.getBoundingClientRect();apply(r.bottom>0&&r.top<window.innerHeight)};
+    window.addEventListener('scroll',check,{passive:true});window.addEventListener('resize',check,{passive:true});check();
+  }
+  const onMq=()=>{if(!mq.matches)document.body.classList.remove('caseirinho-hero-actions-visible')};
+  if(mq.addEventListener)mq.addEventListener('change',onMq);else if(mq.addListener)mq.addListener(onMq);
+}
 function watchPhone(){const p=document.getElementById('cPhone');if(!p)return;p.addEventListener('input',()=>{const st=readState();if(st?.code===FIRST_CODE&&sanitizePhone(p.value)!==st.phone)clearState('WhatsApp alterado. Valide o CASEIRINHO10 novamente.',true);scheduleTotals()})}
 function watchTotals(){const sub=document.getElementById('subtotal'),ship=document.getElementById('shipping');if(!sub||!ship)return;const observer=new MutationObserver(scheduleTotals);observer.observe(sub,{childList:true,characterData:true,subtree:true});observer.observe(ship,{childList:true,characterData:true,subtree:true});scheduleTotals()}
 
@@ -208,7 +226,7 @@ window.fetch=async function(input,opt={}){
   }catch(e){console.warn('[CUPONS] aplicação segura não concluída:',e);return response}
 };
 
-function init(){injectStyle();mountCouponBox();mountAssistant();watchPhone();watchTotals();loadCommerceConfig();setTimeout(()=>{const st=readState();if(st?.status==='GENERIC_OK')syncNativeGeneric(st.code).catch(()=>{})},700)}
+function init(){injectStyle();mountCouponBox();mountAssistant();protectHeroActions();watchPhone();watchTotals();loadCommerceConfig();setTimeout(()=>{const st=readState();if(st?.status==='GENERIC_OK')syncNativeGeneric(st.code).catch(()=>{})},700)}
 window.CaseirinhoCoupon958={sanitizePhone,validPhone,validateCoupon:validateFirstPurchase,validateFirstPurchase,applyGenericCoupon,readState,clearState,loadCommerceConfig};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
