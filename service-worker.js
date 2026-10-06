@@ -1,4 +1,4 @@
-const CACHE='caseirinho-loja-v9.7.8-banner-party-safe';
+const CACHE='caseirinho-loja-v9.7.9-banner-compacto';
 const HOTFIX931='./store-hotfix-v9-3-1.js';
 const HOTFIX932='./store-hotfix-v9-3-2.js';
 const HOTFIX933='./store-hotfix-v9-3-3.js';
