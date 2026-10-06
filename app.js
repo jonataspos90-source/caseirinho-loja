@@ -279,6 +279,14 @@ function visualEntries(list){
   }
   return out;
 }
+function isFlagOn(value){
+  if(value===true||value===1)return true;
+  const s=S(value).trim().toLowerCase();
+  return s==='true'||s==='1'||s==='sim'||s==='yes'||s==='s';
+}
+function isFeaturedProduct(p){
+  return isFlagOn(p?.destaque)||isFlagOn(p?.novidade);
+}
 function cardHtml(entry){
   const p=entry.rep,vars=entry.variants,grouped=entry.grouped,c=productCategory(p);
   const im=images(p)[0],ok=vars.some(canBuy),gm=gradeMeta(p);
@@ -292,7 +300,7 @@ function cardHtml(entry){
   return `<article class="product-card">
     <div class="product-pic" data-view="${esc(p.id)}">
       ${im?`<img src="${esc(im)}" alt="${esc(title)}" loading="lazy"><span class="image-note">Imagem meramente ilustrativa</span>`:'<div class="no-image">🍽️</div>'}
-      <div class="tags">${vars.some(v=>v.novidade)?'<span class="tag hot">NOVIDADE</span>':''}${vars.some(v=>v.destaque)?'<span class="tag">DESTAQUE</span>':''}</div>
+      <div class="tags">${vars.some(v=>isFlagOn(v.novidade))?'<span class="tag hot">NOVIDADE</span>':''}${vars.some(v=>isFlagOn(v.destaque))?'<span class="tag">DESTAQUE</span>':''}</div>
     </div>
     <div class="product-body">
       <div class="category-label">${esc(c.nome)}</div>
@@ -395,10 +403,13 @@ function renderProducts(){
   wireProductCards(E('products'));
 }
 function renderFeatured(){
-  let entries=visualEntries(A(catalog.produtos)).filter(e=>e.variants.some(v=>v.destaque||v.novidade));
-  if(!entries.length)entries=visualEntries(A(catalog.produtos)).slice(0,4);
-  E('featured').innerHTML=entries.map(cardHtml).join('')||'<div class="empty">O cardápio está sendo atualizado.</div>';
-  wireProductCards(E('featured'));
+  const root=E('featured');
+  if(!root)return;
+  const entries=visualEntries(A(catalog.produtos)).filter(e=>e.variants.some(isFeaturedProduct));
+  const section=root.closest('.section');
+  if(section)section.hidden=!entries.length;
+  root.innerHTML=entries.map(cardHtml).join('');
+  if(entries.length)wireProductCards(root);
 }
 function applyStoreManifest(){
   const link=document.querySelector('link[rel="manifest"]');
