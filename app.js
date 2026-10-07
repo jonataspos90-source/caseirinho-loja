@@ -677,7 +677,7 @@ function renderCart(){
       <div><h4>${esc(x.nome)}</h4><small>${pricing.unitPrice===0&&pricing.promotionGroupId?'<b style="color:#15803d">Unidade incluída na oferta</b>':`${money(pricing.unitPrice)} cada`}${pricing.promotionLabel&&!pricing.promotionLabel.startsWith('Leve ')?` · <b style="color:#15803d">${esc(pricing.promotionLabel)}</b>`:''}</small>
         <div class="qty"><button data-minus="${i}" type="button">−</button><b>${x.quantidade}</b><button data-plus="${i}" type="button">+</button></div>
       </div>
-      <div style="text-align:right"><b>${money(pricing.total)}</b><br><button class="remove" data-remove="${i}" type="button">Remover</button></div>
+      <div class="cart-item-price" style="text-align:right"><b>${money(pricing.total)}</b><br><button class="remove" data-remove="${i}" type="button">Remover</button></div>
     </div>`;
   const renderGroup=group=>{
     if(!group.promoted)return renderItem(group.entries[0]);
@@ -691,7 +691,7 @@ function renderCart(){
       : group.entries.length>1?'Itens participantes desta mesma promoção':'Preço especial aplicado neste produto';
     return `<section class="cart-promo-group${progress?.pending?' is-pending':''}">
       <header class="cart-promo-head"><div><b>${progress?.pending?'Promoção disponível':'Oferta'}: ${esc(label)}</b><small>${esc(summary)}</small>${group.hint?`<small class="cart-promo-hint">${esc(group.hint)}</small>`:''}</div>${savings>0?`<strong>Você economiza ${money(savings)}</strong>`:''}</header>
-      <div class="cart-promo-items">${group.entries.map(renderItem).join('')}</div>
+      <div class="cart-promo-items${group.entries.length>1||progress?' is-pack':''}">${group.entries.map(renderItem).join('')}</div>
     </section>`;
   };
   E('cartItems').innerHTML=[...groups.values()].map(renderGroup).join('')||'<div class="empty">Seu carrinho está vazio.</div>';

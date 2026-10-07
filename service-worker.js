@@ -1,6 +1,6 @@
-const CACHE='caseirinho-loja-v9.10.4-pack-progresso-carrinho';
+const CACHE='caseirinho-loja-v9.10.5-pack-visual-carrinho';
 const PROMOTIONJS='./ecommerce-promotions-v910.js';
-const PROMOTIONJS_TAG='<script src="./ecommerce-promotions-v910.js?v=91040" defer></'+'script>';
+const PROMOTIONJS_TAG='<script src="./ecommerce-promotions-v910.js?v=91050" defer></'+'script>';
 const HOTFIX931='./store-hotfix-v9-3-1.js';
 const HOTFIX932='./store-hotfix-v9-3-2.js';
 const HOTFIX933='./store-hotfix-v9-3-3.js';

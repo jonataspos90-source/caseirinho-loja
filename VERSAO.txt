@@ -1,8 +1,9 @@
-Loja Online V9.10.4 — Descontos e carrinho agrupado por promoção
+Loja Online V9.10.5 — Descontos e carrinho agrupado por promoção
 Build: 2026-10-07
 API esperada: 1.20.1
 
-NOVIDADES V9.10.4
+NOVIDADES V9.10.5
+- Itens participantes do mesmo pack aparecem lado a lado dentro de um único bloco no carrinho.
 - Pack misto incompleto fica agrupado e mostra quantos itens faltam para liberar o desconto.
 
 NOVIDADES V9.10.3
