@@ -33,3 +33,25 @@ test('quando há mais de uma regra, aplica a maior economia sem acumular descont
   assert.equal(result.total,20);
   assert.equal(result.promotionLabel,'Leve 3, pague 2');
 });
+
+test('pack misto combina produtos diferentes e cobra os itens de maior preço',()=>{
+  const deals=['palmito','frango','carne'].map((id,i)=>({
+    id,nome:id,preco:[14,12,10][i],
+    packVirtual:{id:'festa-mista',packId:'festa-mista',ativo:true,tipo:'LEVE_X_PAGUE_Y',quantidadeLeve:3,quantidadePague:2,produtoIds:['palmito','frango','carne']}
+  }));
+  const result=promo.cartTotals([
+    {produtoId:'palmito',quantidade:1},{produtoId:'frango',quantidade:1},{produtoId:'carne',quantidade:1}
+  ],deals);
+  assert.equal(result.subtotal,26);
+  assert.equal(result.savings,10);
+  assert.equal(result.lines.get('carne').total,0);
+  assert.match(result.lines.get('carne').promotionLabel,/maior valor/);
+});
+
+test('promoção fixa de um sabor não altera o preço nem o destaque do restante da grade',()=>{
+  const palmito={id:'palmito',gradeId:'panqueca',preco:13.99,promocao:{ativo:true,precoPromocional:11.99}};
+  const carne={id:'carne',gradeId:'panqueca',preco:13.99};
+  assert.deepEqual(promo.priceInfo(palmito),{regular:13.99,current:11.99,conditional:false});
+  assert.equal(promo.isFeatured(palmito,[palmito,carne]),true);
+  assert.equal(promo.isFeatured(carne,[palmito,carne]),false);
+});
