@@ -301,14 +301,21 @@ function isFlagOn(value){
   const s=S(value).trim().toLowerCase();
   return s==='true'||s==='1'||s==='sim'||s==='yes'||s==='s';
 }
+function promoApi(){return window.CaseirinhoPromotions}
+function productPriceInfo(p){return promoApi()?.priceInfo(p,catalog.produtos)||{regular:N(p?.preco),current:N(p?.preco),conditional:false}}
+function productOfferText(p){return promoApi()?.offerText(p,catalog.produtos)||''}
+function productPriceHtml(p){const x=productPriceInfo(p);return x.current<x.regular?`<s style="color:#64748b;font-size:.82em">${money(x.regular)}</s> <strong style="color:#15803d">${money(x.current)}</strong>`:money(x.current)}
 function isFeaturedProduct(p){
-  return isFlagOn(p?.destaque)||isFlagOn(p?.novidade);
+  return isFlagOn(p?.destaque)||isFlagOn(p?.novidade)||!!promoApi()?.isFeatured(p,catalog.produtos);
 }
 function cardHtml(entry){
   const p=entry.rep,vars=entry.variants,grouped=entry.grouped,c=productCategory(p);
   const im=images(p)[0],ok=vars.some(canBuy),gm=gradeMeta(p);
-  const prices=vars.map(v=>N(v.preco)).filter(v=>v>=0);
-  const min=prices.length?Math.min(...prices):N(p.preco),max=prices.length?Math.max(...prices):N(p.preco);
+  const priceInfos=vars.map(v=>productPriceInfo(v));
+  const priceInfo=priceInfos.slice().sort((a,b)=>a.current-b.current)[0]||{regular:N(p.preco),current:N(p.preco)};
+  const prices=priceInfos.map(v=>v.current),min=prices.length?Math.min(...prices):N(p.preco),max=prices.length?Math.max(...prices):N(p.preco);
+  const hasPromo=vars.some(v=>productPriceInfo(v).current<productPriceInfo(v).regular||!!promoApi()?.isFeatured(v,catalog.produtos));
+  const offerText=vars.map(productOfferText).find(Boolean)||'';
   const title=grouped?(p.gradeNome||p.nome):p.nome;
   const desc=grouped?(p.gradeDescricao||p.descricao||''):p.descricao;
   const availability=grouped
@@ -317,13 +324,14 @@ function cardHtml(entry){
   return `<article class="product-card">
     <div class="product-pic" data-view="${esc(p.id)}">
       ${im?`<img src="${esc(im)}" alt="${esc(title)}" loading="lazy"><span class="image-note">Imagem meramente ilustrativa</span>`:'<div class="no-image">🍽️</div>'}
-      <div class="tags">${vars.some(v=>isFlagOn(v.novidade))?'<span class="tag hot">NOVIDADE</span>':''}${vars.some(v=>isFlagOn(v.destaque))?'<span class="tag">DESTAQUE</span>':''}</div>
+      <div class="tags">${hasPromo?'<span class="tag" style="background:#15803d;color:#fff">PROMOÇÃO</span>':''}${vars.some(v=>isFlagOn(v.novidade))?'<span class="tag hot">NOVIDADE</span>':''}${vars.some(v=>isFlagOn(v.destaque))?'<span class="tag">DESTAQUE</span>':''}</div>
     </div>
     <div class="product-body">
       <div class="category-label">${esc(c.nome)}</div>
       <h3>${esc(title)}</h3>
       <div class="description">${esc(desc||'Produto selecionado da loja.')}</div>
-      <div class="price">${grouped&&max>min+.001?'A partir de ':''}${money(min)}</div>
+      <div class="price">${grouped&&max>min+.001?'A partir de ':''}${priceInfo.current<priceInfo.regular?`<s style="color:#64748b;font-size:.82em">${money(priceInfo.regular)}</s> <strong style="color:#15803d">${money(priceInfo.current)}</strong>`:money(min)}</div>
+      ${offerText?`<div style="margin-top:5px;color:#15803d;font-size:12px;font-weight:800">${esc(offerText)}</div>`:''}
       ${grouped?`<div class="variant-summary">${gm.icon} ${esc(gm.plural)}: ${vars.map(v=>esc(v.variacaoLabel||v.nome)).join(' · ')}</div>`:''}
       <div class="availability ${ok?'':'no'}">${esc(availability)}</div>
       <div class="actions">
@@ -599,14 +607,14 @@ function showProduct(id){
   if(grouped){
     E('variantBox').className='variant-box';
     E('variantBox').innerHTML=`<div class="variant-title">${gm.icon} Escolha ${esc(gm.title.toLowerCase())}</div><div class="variant-buttons">${
-      vars.map(v=>`<button data-variant="${esc(v.id)}" class="${S(v.id)===S(p.id)?'active':''}" ${canBuy(v)?'':'disabled'} type="button"><span>${esc(v.variacaoLabel||v.nome)}</span><strong>${money(v.preco)}</strong></button>`).join('')
+      vars.map(v=>`<button data-variant="${esc(v.id)}" class="${S(v.id)===S(p.id)?'active':''}" ${canBuy(v)?'':'disabled'} type="button"><span>${esc(v.variacaoLabel||v.nome)}</span><strong>${money(productPriceInfo(v).current)}</strong></button>`).join('')
     }</div>`;
     E('variantBox').querySelectorAll('[data-variant]').forEach(b=>b.onclick=()=>showProduct(b.dataset.variant));
   }else{
     E('variantBox').className='';E('variantBox').innerHTML='';
   }
 
-  E('modalPrice').textContent=money(p.preco);
+  E('modalPrice').innerHTML=productPriceHtml(p);
   E('modalAvailability').textContent=availabilityText(p);
   E('modalAvailability').className='availability '+(canBuy(p)?'':'no');
   E('modalQty').min=minQty(p);E('modalQty').step=stepQty(p);E('modalQty').value=minQty(p);
@@ -647,17 +655,20 @@ function renderCart(){
   const count=cart.reduce((s,x)=>s+N(x.quantidade),0);
   E('cartCount').textContent=count;E('navCartCount').textContent=count;
 
+  const promoTotals=promoApi()?.cartTotals(cart,catalog.produtos)||{lines:new Map(),subtotal:cart.reduce((s,x)=>s+N(x.quantidade)*N(x.precoUnitario),0),savings:0};
   E('cartItems').innerHTML=cart.map((x,i)=>{
     const p=A(catalog.produtos).find(y=>S(y.id)===S(x.produtoId));
     const min=p?minQty(p):1,step=p?stepQty(p):1;
+    const pricing=promoTotals.lines.get(S(x.produtoId))||{total:N(x.quantidade)*N(x.precoUnitario),unitPrice:N(x.precoUnitario),promotionLabel:''};
     return `<div class="cart-item">
       ${x.imagem?`<img src="${esc(x.imagem)}" alt="">`:'<div class="no-image" style="font-size:25px">🍽️</div>'}
-      <div><h4>${esc(x.nome)}</h4><small>${money(x.precoUnitario)} cada</small>
+      <div><h4>${esc(x.nome)}</h4><small>${money(pricing.unitPrice)} cada${pricing.promotionLabel?` · <b style="color:#15803d">${esc(pricing.promotionLabel)}</b>`:''}</small>
         <div class="qty"><button data-minus="${i}" type="button">−</button><b>${x.quantidade}</b><button data-plus="${i}" type="button">+</button></div>
       </div>
-      <div style="text-align:right"><b>${money(N(x.quantidade)*N(x.precoUnitario))}</b><br><button class="remove" data-remove="${i}" type="button">Remover</button></div>
+      <div style="text-align:right"><b>${money(pricing.total)}</b><br><button class="remove" data-remove="${i}" type="button">Remover</button></div>
     </div>`;
   }).join('')||'<div class="empty">Seu carrinho está vazio.</div>';
+  if(promoTotals.savings>0)E('cartItems').insertAdjacentHTML('afterbegin',`<div style="margin-bottom:10px;padding:10px 12px;border-radius:10px;background:#f0fdf4;color:#166534;font-weight:800">Você economiza ${money(promoTotals.savings)} nas promoções do carrinho.</div>`);
 
   E('cartItems').querySelectorAll('[data-minus]').forEach(b=>b.onclick=()=>{
     const i=N(b.dataset.minus),x=cart[i],p=A(catalog.produtos).find(y=>S(y.id)===S(x.produtoId)),min=p?minQty(p):1,step=p?stepQty(p):1;
@@ -671,7 +682,7 @@ function renderCart(){
   });
   E('cartItems').querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>{cart.splice(N(b.dataset.remove),1);renderCart()});
 
-  const sub=cart.reduce((s,x)=>s+N(x.quantidade)*N(x.precoUnitario),0);
+  const sub=promoTotals.subtotal;
   const freight=freightInfo();
   E('subtotal').textContent=money(sub);
   E('shipping').textContent=E('mode')?.value==='ENTREGA'?(freight.pending?'A cotar':money(freight.value)):money(0);
@@ -1131,7 +1142,7 @@ async function submitOrder(ev){
       ...result,
       publicToken:result.publicToken,
       savedAt:new Date().toISOString(),
-      itens:cart.map(x=>({...x,total:N(x.quantidade)*N(x.precoUnitario)}))
+      itens:cart.map(x=>{const row=promoApi()?.linePrice(x.produtoId,x.quantidade,catalog.produtos,new Map(cart.map(y=>[S(y.produtoId),N(y.quantidade)])));return{...x,precoUnitario:row?.unitPrice??N(x.precoUnitario),total:row?.total??N(x.quantidade)*N(x.precoUnitario),economia:row?.savings??0,promocaoAplicada:row?.promotionLabel||''}})
     };
 
     const orders=readJson(ORDERS_KEY,[]);

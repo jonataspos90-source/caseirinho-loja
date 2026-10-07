@@ -1,3 +1,20 @@
+Loja Online V9.10.0 — Preço promocional e Packs Virtuais
+Build: 2026-10-07
+API esperada: 1.20.0
+
+NOVIDADES V9.10.0
+- Produtos com preço promocional recebem selo verde “PROMOÇÃO” e entram na área de destaques.
+- Preço regular aparece riscado ao lado do preço promocional.
+- Pack Virtual é explicado no card; o preço do benefício cruzado informa qual quantidade de qual produto libera a oferta.
+- Carrinho aplica automaticamente preço promocional, “Leve X, pague Y” e packs cruzados elegíveis.
+- O carrinho mostra a economia por oferta e o total recalculado.
+- Cache do PWA atualizado.
+
+MANTIDO DA V9.9.0
+- John no cabeçalho e fechado até o cliente tocar.
+- Busca de produtos por nome, categoria, sabor, variação, tamanho, disponibilidade e preço.
+- Fluxos existentes de checkout, entrega, pagamento, cashback e WhatsApp.
+
 Loja Online V9.9.0 — John no cabeçalho e busca inteligente do cardápio
 Build: 2026-10-07
 
