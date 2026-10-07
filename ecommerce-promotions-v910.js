@@ -7,6 +7,13 @@
   const n=v=>Number(v)||0,round=v=>Math.round((n(v)+Number.EPSILON)*100)/100;
   const promo=p=>p?.promocao||p?.ecommerce?.promocao||{};
   const pack=p=>p?.packVirtual||p?.ecommerce?.packVirtual||{};
+  const packProductIds=(p,d=pack(p))=>{
+    const raw=d.produtoIds||d.produtosIds||d.itensProdutoIds||d.produtos;
+    const ids=Array.isArray(raw)?raw.map(x=>String(typeof x==='object'?(x.id??x.produtoId):x)).filter(Boolean):[];
+    if(!ids.includes(String(p?.id)))ids.push(String(p?.id));
+    return [...new Set(ids)];
+  };
+  const productName=p=>String(p?.nomeComercial||p?.nome||p?.descricao||'produto');
   const base=p=>Math.max(0,n(p?.precoEcommerce||p?.preco));
   function fixedPromo(p){const v=n(promo(p).precoPromocional),b=base(p);return promo(p).ativo===true&&v>0&&b>v?v:null}
   function priceInfo(p,products=[]){
@@ -16,12 +23,19 @@
   }
   function isFeatured(p,products=[]){
     if(fixedPromo(p)!==null)return true;
-    if(pack(p).ativo===true)return true;
+    if(pack(p).ativo===true&&packProductIds(p).includes(String(p?.id)))return true;
     return products.some(trigger=>{const d=pack(trigger);return d.ativo===true&&d.tipo==='COMPRA_X_LEVE_Y_POR_VALOR'&&String(d.produtoBeneficioId)===String(p?.id)});
   }
   function offerText(p,products=[]){
     const d=pack(p);
-    if(d.ativo===true&&d.tipo==='LEVE_X_PAGUE_Y')return`Leve ${Math.floor(n(d.quantidadeLeve))}, pague ${Math.floor(n(d.quantidadePague))}`;
+    if(d.ativo===true&&d.tipo==='LEVE_X_PAGUE_Y'){
+      const x=Math.floor(n(d.quantidadeLeve)),y=Math.floor(n(d.quantidadePague)),ids=packProductIds(p,d);
+      if(ids.length>1){
+        const names=ids.map(id=>products.find(x=>String(x.id)===id)).filter(Boolean).map(productName);
+        return `Leve ${x}, pague ${y}: misture ${names.join(', ')}. O pack é calculado pelos itens de maior preço.`;
+      }
+      return `Leve ${x}, pague ${y}`;
+    }
     if(d.ativo===true&&d.tipo==='COMPRA_X_LEVE_Y_POR_VALOR')return`Compre ${Math.floor(n(d.quantidadeGatilho))} ${p?.nome||'unidades'} e leve ${products.find(x=>String(x.id)===String(d.produtoBeneficioId))?.nome||'outro produto'} por R$ ${n(d.precoBeneficio).toFixed(2).replace('.',',')}`;
     const info=priceInfo(p,products);
     if(info.conditional)return`Na compra de ${Math.floor(n(info.deal.quantidadeGatilho))} ${info.triggerProduct.nome||'unidades'}, este produto sai por R$ ${info.current.toFixed(2).replace('.',',')}`;
@@ -31,7 +45,7 @@
     const map=products instanceof Map?products:new Map(products.map(p=>[String(p.id),p]));
     const id=String(productId),p=map.get(id)||{},q=Math.max(0,n(quantity)),b=base(p),regular=round(b*q),options=[{total:regular,label:''}],f=fixedPromo(p),d=pack(p);
     if(f!==null)options.push({total:round(f*q),label:'Promoção'});
-    if(d.ativo===true&&d.tipo==='LEVE_X_PAGUE_Y'){
+    if(d.ativo===true&&d.tipo==='LEVE_X_PAGUE_Y'&&packProductIds(p,d).length===1){
       const x=Math.floor(n(d.quantidadeLeve)),y=Math.floor(n(d.quantidadePague));
       if(x>1&&y>0&&y<x){const sets=Math.floor(q/x),rest=q-sets*x;options.push({total:round((sets*y+rest)*b),label:`Leve ${x}, pague ${y}`})}
     }
@@ -45,7 +59,38 @@
   }
   function cartTotals(cart,products=[]){
     const quantities=new Map(cart.map(x=>[String(x.produtoId),n(x.quantidade)]));
-    const lines=new Map(cart.map(x=>[String(x.produtoId),linePrice(x.produtoId,x.quantidade,products,quantities)]));
+    const map=products instanceof Map?products:new Map(products.map(p=>[String(p.id),p]));
+    const lines=new Map(cart.map(x=>[String(x.produtoId),linePrice(x.produtoId,x.quantidade,map,quantities)]));
+    const rules=new Map();
+    for(const product of map.values()){
+      const d=pack(product);if(d.ativo!==true||d.tipo!=='LEVE_X_PAGUE_Y')continue;
+      const ids=packProductIds(product,d).filter(id=>map.has(id));
+      const x=Math.floor(n(d.quantidadeLeve)),y=Math.floor(n(d.quantidadePague));
+      if(ids.length<2||x<2||y<1||y>=x)continue;
+      const key=String(d.packId||d.id||JSON.stringify([ids.slice().sort(),x,y]));
+      if(!rules.has(key))rules.set(key,{ids,x,y});
+    }
+    for(const rule of rules.values()){
+      const units=[];
+      for(const id of rule.ids){
+        const q=Math.floor(n(quantities.get(id))),product=map.get(id);
+        for(let i=0;i<q;i++)units.push({id,price:base(product)});
+      }
+      units.sort((a,b)=>b.price-a.price);
+      const completeSets=Math.floor(units.length/rule.x);
+      if(!completeSets)continue;
+      let packTotal=0;
+      units.forEach((unit,index)=>{const pos=index%rule.x; if(pos<rule.y)packTotal+=unit.price});
+      const currentTotal=rule.ids.reduce((sum,id)=>sum+(lines.get(id)?.total||0),0);
+      if(packTotal>=currentTotal-.001)continue;
+      const totals=new Map(rule.ids.map(id=>[id,0]));
+      units.forEach((unit,index)=>{if(index<completeSets*rule.x&&index%rule.x>=rule.y)return;totals.set(unit.id,(totals.get(unit.id)||0)+unit.price)});
+      for(const id of rule.ids){
+        const old=lines.get(id);if(!old)continue;
+        const total=round(totals.get(id)||0),q=n(quantities.get(id)),regular=round(base(map.get(id))*q);
+        lines.set(id,{total,unitPrice:q?round(total/q):0,savings:round(Math.max(0,regular-total)),promotionLabel:total<regular?'Pack misto: preço calculado pelos itens de maior valor':old.promotionLabel||'Pack misto: valor calculado pelos itens de maior preço'});
+      }
+    }
     return{lines,subtotal:round([...lines.values()].reduce((s,x)=>s+x.total,0)),savings:round([...lines.values()].reduce((s,x)=>s+x.savings,0))};
   }
   return{base,fixedPromo,priceInfo,isFeatured,offerText,linePrice,cartTotals};
