@@ -1141,12 +1141,13 @@ async function submitOrder(ev){
       {method:'POST',body:JSON.stringify(body)}
     );
 
+    const appliedPromotions=promoApi()?.cartTotals(cart,catalog.produtos);
     const saved={
       ...body,
       ...result,
       publicToken:result.publicToken,
       savedAt:new Date().toISOString(),
-      itens:cart.map(x=>{const row=promoApi()?.linePrice(x.produtoId,x.quantidade,catalog.produtos,new Map(cart.map(y=>[S(y.produtoId),N(y.quantidade)])));return{...x,precoUnitario:row?.unitPrice??N(x.precoUnitario),total:row?.total??N(x.quantidade)*N(x.precoUnitario),economia:row?.savings??0,promocaoAplicada:row?.promotionLabel||''}})
+      itens:cart.map(x=>{const row=appliedPromotions?.lines.get(S(x.produtoId));return{...x,precoUnitario:row?.unitPrice??N(x.precoUnitario),total:row?.total??N(x.quantidade)*N(x.precoUnitario),economia:row?.savings??0,promocaoAplicada:row?.promotionLabel||''}})
     };
 
     const orders=readJson(ORDERS_KEY,[]);
