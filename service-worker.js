@@ -1,4 +1,4 @@
-const CACHE='caseirinho-loja-v9.8.5-categoria-navigation';
+const CACHE='caseirinho-loja-v9.9.0-john-assistant';
 const HOTFIX931='./store-hotfix-v9-3-1.js';
 const HOTFIX932='./store-hotfix-v9-3-2.js';
 const HOTFIX933='./store-hotfix-v9-3-3.js';
@@ -47,8 +47,8 @@ const DELIVERYMODE955_TAG='<script src="./delivery-mode-v9-5-5.js?v=9550" defer>
 const DESKTOPCSS956_TAG='<link rel="stylesheet" href="./desktop-ux-v9-5-6.css?v=9560">';
 const VARIANTCSS957_TAG='<link rel="stylesheet" href="./mobile-variant-carousel-v9-5-7.css?v=9570">';
 const VARIANTJS957_TAG='<script src="./mobile-variant-carousel-v9-5-7.js?v=9570" defer></'+'script>';
-const COUPONJS958_TAG='<script src="./caseirinho-coupon-assistant-v9-5-8.js?v=9581" defer></'+'script>';
-const JOHNJS959_TAG='<script src="./caseirinho-john-coupon-v9-5-9.js?v=9590" defer></'+'script>';
+const COUPONJS958_TAG='<script src="./caseirinho-coupon-assistant-v9-5-8.js?v=9900" defer></'+'script>';
+const JOHNJS959_TAG='<script src="./caseirinho-john-coupon-v9-5-9.js?v=9901" defer></'+'script>';
 const CASHBACKJS960_TAG='<script src="./caseirinho-cashback-v9-6-0.js?v=9600" defer></'+'script>';
 const ENGAGEMENTJS961_TAG='<script src="./commerce-engagement-v9-6-1.js?v=9610" defer></'+'script>';
 const SHELL=['./order-amounts.js','./','./index.html','./styles.css',MOBILECSS947,CARDSCSS948,VARIANTCSS957,DESKTOPCSS956,COUPONJS958,JOHNJS959,CASHBACKJS960,ENGAGEMENTJS961,'./app.js','./commerce-engine-v9-3-0.js',HOTFIX931,HOTFIX932,HOTFIX933,HOTFIX934,HOTFIX935,PARMESAO936,PIX937,REV938,PIX939,RECEIPT941,DEDUPE942,MOBILEJS947,CARDSJS950,GROUPJS951,SYNCJS952,VARIANTJS957,DELIVERYJS954,DELIVERYMODE955,'./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png','./icons/apple-touch-icon.png','./assets/salgados-sortidos-fritos-v984.webp'];
@@ -64,3 +64,4 @@ async function cacheNetworkResponse(req,response){if(!response?.ok)return;const 
 self.addEventListener('install',event=>{event.waitUntil((async()=>{const cache=await caches.open(CACHE);for(const url of SHELL){try{const response=await fetch(url,{cache:'reload'});if(response.ok)await cache.put(url,response.clone())}catch(_){}}await self.skipWaiting()})())});
 self.addEventListener('activate',event=>{event.waitUntil((async()=>{const keys=await caches.keys();await Promise.all(keys.filter(k=>k.startsWith('caseirinho-loja-')&&k!==CACHE).map(k=>caches.delete(k)));await self.clients.claim()})())});
 self.addEventListener('fetch',event=>{const req=event.request;if(req.method!=='GET')return;const url=new URL(req.url);if(url.origin!==self.location.origin)return;if(req.mode==='navigate'){event.respondWith((async()=>{try{const net=await fetch(req,{cache:'no-store'});const out=await injectHotfix(net);if(out.ok)(await caches.open(CACHE)).put('./index.html',out.clone()).catch(()=>{});return out}catch(_){const cached=(await caches.match('./index.html'))||Response.error();return injectHotfix(cached)}})());return}event.respondWith((async()=>{try{const net=await fetch(req,{cache:'no-store'});cacheNetworkResponse(req,net).catch(()=>{});return net}catch(_){return (await cachedAsset(req))||Response.error()}})())});
+

@@ -1,3 +1,15 @@
+Loja Online V9.9.0 — John no cabeçalho e busca inteligente do cardápio
+Build: 2026-10-07
+
+NOVIDADES V9.9.0
+- “Fale com John” saiu da posição flutuante sobre os produtos e foi para o cabeçalho, ao lado do carrinho.
+- O chat fica fechado até o cliente tocar no botão; no celular abre sem cobrir o menu inferior.
+- John pesquisa no catálogo publicado por nome, categoria, sabor, variação, tamanho e limite de preço.
+- Resultados agrupam variações de tamanho/sabor e mostram os preços recebidos do catálogo.
+- Adicionadas perguntas rápidas para escolher produtos, buscar por orçamento e consultar preparo.
+- O assistente mantém as respostas de entrega, pagamento, pedido e cupom.
+- Cache do PWA atualizado para V9.9.0.
+
 Loja Online V9.8.5 — Navegação correta entre categorias
 Build: 2026-10-06
 
@@ -76,3 +88,4 @@ MANTIDO DA V9.5.4
 MANTIDO DAS VERSÕES ANTERIORES
 - Layout mobile em uma coluna, imagem 4:3 e proteção contra corte lateral.
 - Pedidos, avaliações, PIX, LGPD, CEP, histórico, fidelidade, combos, favoritos e demais recursos existentes.
+

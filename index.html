@@ -43,7 +43,10 @@
         <input id="search" type="search" placeholder="Buscar no cardápio..." autocomplete="off" aria-label="Buscar produtos no cardápio" aria-controls="searchResults" aria-expanded="false">
         <div class="search-results" id="searchResults" role="listbox" aria-label="Sugestões de produtos" hidden></div>
       </div>
-      <button class="head-btn" id="cartTop" type="button">🛒 <span class="desktop-only">Carrinho</span> <b id="cartCount">0</b></button>
+      <div class="head-actions" aria-label="Atendimento e carrinho">
+        <button class="head-btn assistant958-header-btn" id="assistant958Toggle" type="button" aria-label="Fale com John" aria-haspopup="dialog" aria-controls="assistant958Panel" aria-expanded="false" title="Fale com John"><span aria-hidden="true">💬</span><span class="assistant958-toggle-label">Fale com John</span></button>
+        <button class="head-btn" id="cartTop" type="button">🛒 <span class="desktop-only">Carrinho</span> <b id="cartCount">0</b></button>
+      </div>
     </div>
   </header>
 
@@ -209,11 +212,11 @@
     window.CASEIRINHO_CONFIG={
       apiUrl:'https://john-cloud-api-production.up.railway.app',
       storeSlug:'caseirinho',
-      version:'9.8.5',
+      version:'9.9.0',
       mobileUxVersion:'9.4.7',
       productCardVersion:'9.5.7',
       couponAssistantVersion:'9.5.8',
-      johnAssistantVersion:'9.5.9',
+      johnAssistantVersion:'9.9.0',
       cashbackVersion:'9.6.0',
       cashbackWalletVersion:'9.6.3',
       cashbackAutoRefreshVersion:'9.6.7',
@@ -225,8 +228,8 @@
     };
   </script>
   <script src="./store-hotfix-v9-3-4.js?v=9490"></script>
-  <script src="./caseirinho-coupon-assistant-v9-5-8.js?v=9581" defer></script>
-  <script src="./caseirinho-john-coupon-v9-5-9.js?v=9590" defer></script>
+  <script src="./caseirinho-coupon-assistant-v9-5-8.js?v=9900" defer></script>
+  <script src="./caseirinho-john-coupon-v9-5-9.js?v=9901" defer></script>
   <script src="./caseirinho-cashback-v9-6-0.js?v=9600" defer></script>
   <script src="./customer-cashback-wallet-v9-6-3.js?v=9630" defer></script>
   <script src="./cashback-auto-refresh-v9-6-7.js?v=9670" defer></script>
@@ -248,3 +251,4 @@
   <script src="./premium-checkout-v9-7-0.js?v=9700" defer></script>
 </body>
 </html>
+

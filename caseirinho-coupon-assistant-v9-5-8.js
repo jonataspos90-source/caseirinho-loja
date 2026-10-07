@@ -160,12 +160,16 @@ function injectStyle(){
   .coupon958-row{display:flex;gap:8px}.coupon958-row input{min-width:0;flex:1;text-transform:uppercase}.coupon958-row button{white-space:nowrap}
   .coupon958-status{font-size:13px;line-height:1.4;margin-top:9px}.coupon958-status.ok{color:#166534}.coupon958-status.warn{color:#92400e}.coupon958-status.err{color:#991b1b}.coupon958-status.loading{color:#334155}
   .coupon958-discount{color:#166534;font-weight:700}.coupon958-discount[hidden]{display:none!important}
-  #assistant958Toggle{position:fixed;right:18px;bottom:92px;z-index:1100;border:0;border-radius:999px;padding:12px 16px;font-weight:800;box-shadow:0 10px 28px #0002;background:#173f32;color:#fff;cursor:pointer}
-  #assistant958Panel{position:fixed;right:18px;bottom:148px;width:min(370px,calc(100vw - 28px));max-height:min(570px,70vh);z-index:1101;background:#fff;border:1px solid #ddd2c5;border-radius:18px;box-shadow:0 18px 50px #0003;display:none;overflow:hidden}
-  #assistant958Panel.open{display:flex;flex-direction:column}.assistant958-head{padding:13px 14px;background:#173f32;color:#fff;display:flex;align-items:center;justify-content:space-between}.assistant958-head button{border:0;background:transparent;color:#fff;font-size:20px;cursor:pointer}
-  #assistant958Messages{padding:12px;overflow:auto;display:flex;flex-direction:column;gap:8px;min-height:190px}.assistant958-msg{max-width:88%;padding:9px 11px;border-radius:14px;font-size:13px;line-height:1.4;white-space:pre-wrap}.assistant958-msg.bot{align-self:flex-start;background:#f4eee5;color:#24312c}.assistant958-msg.user{align-self:flex-end;background:#7b1438;color:#fff}
-  .assistant958-form{display:flex;gap:7px;padding:10px;border-top:1px solid #eee}.assistant958-form input{flex:1;min-width:0}.assistant958-form button{border:0;border-radius:12px;padding:8px 12px;background:#7b1438;color:#fff;font-weight:800}
-  @media(max-width:600px){#assistant958Toggle{bottom:calc(88px + env(safe-area-inset-bottom));right:12px;padding:10px 13px;transition:opacity .18s ease,transform .18s ease}body.caseirinho-hero-actions-visible #assistant958Toggle{opacity:0;pointer-events:none;transform:translateY(8px)}#assistant958Panel{right:8px;bottom:calc(138px + env(safe-area-inset-bottom));width:calc(100vw - 16px);max-height:65vh}}
+  .head-actions{display:flex;align-items:center;gap:7px;flex-shrink:0;margin-left:auto}
+  #assistant958Toggle{display:inline-flex;align-items:center;justify-content:center;gap:7px;background:#173f32;color:#fff;border:0;border-radius:13px;padding:10px 12px;font-weight:850;box-shadow:0 5px 16px #173f3226;white-space:nowrap}
+  #assistant958Toggle:hover{background:#225847}#assistant958Toggle:focus-visible,#assistant958Close:focus-visible,.assistant958-suggestions button:focus-visible{outline:3px solid #d8b36a;outline-offset:2px}
+  #assistant958Panel{position:fixed;right:12px;top:84px;bottom:auto;width:min(370px,calc(100vw - 20px));max-height:min(570px,calc(100dvh - 120px));z-index:1101;background:#fff;border:1px solid #ddd2c5;border-radius:18px;box-shadow:0 18px 50px #0003;display:none;overflow:hidden}
+  #assistant958Panel.open{display:flex;flex-direction:column}.assistant958-head{flex:0 0 auto;padding:13px 14px;background:#173f32;color:#fff;display:flex;align-items:center;justify-content:space-between}.assistant958-head button{border:0;background:transparent;color:#fff;font-size:22px;cursor:pointer;width:34px;height:34px;border-radius:50%}
+  #assistant958Messages{padding:12px;overflow:auto;display:flex;flex-direction:column;gap:8px;min-height:150px;flex:1 1 auto}.assistant958-msg{max-width:92%;padding:9px 11px;border-radius:14px;font-size:13px;line-height:1.45;white-space:pre-wrap}.assistant958-msg.bot{align-self:flex-start;background:#f4eee5;color:#24312c}.assistant958-msg.user{align-self:flex-end;background:#7b1438;color:#fff}
+  .assistant958-suggestions{display:flex;flex-wrap:wrap;gap:6px;padding:0 10px 10px}.assistant958-suggestions button{border:1px solid #d9e5df;border-radius:999px;padding:7px 9px;background:#f5faf7;color:#173f32;font-size:11px;font-weight:750}
+  .assistant958-form{display:flex;gap:7px;padding:10px;border-top:1px solid #eee;flex:0 0 auto}.assistant958-form input{flex:1;min-width:0}.assistant958-form button{border:0;border-radius:12px;padding:8px 12px;background:#7b1438;color:#fff;font-weight:800}
+  @media(max-width:720px){.head-actions{gap:6px}.head-actions .head-btn{padding:8px 9px}.assistant958-toggle-label{font-size:0}.assistant958-toggle-label::after{content:"John";font-size:12px}}
+  @media(max-width:600px){#assistant958Panel{left:10px;right:10px;width:auto;max-height:calc(100dvh - 145px);border-radius:18px}}
   `;document.head.appendChild(style);
 }
 function mountCouponBox(){
@@ -181,12 +185,37 @@ function mountCouponBox(){
 }
 
 function addChat(role,text){const box=document.getElementById('assistant958Messages');if(!box)return;const el=document.createElement('div');el.className='assistant958-msg '+role;el.textContent=text;box.appendChild(el);box.scrollTop=box.scrollHeight}
+function positionAssistantPanel(){
+  const toggle=document.getElementById('assistant958Toggle'),panel=document.getElementById('assistant958Panel');
+  if(!toggle||!panel?.classList.contains('open'))return;
+  const anchor=toggle.getBoundingClientRect(),mobile=window.innerWidth<=600;
+  if(mobile){panel.style.left='10px';panel.style.right='10px';panel.style.width='auto'}
+  else{panel.style.left='auto';panel.style.width='min(370px, calc(100vw - 20px))';panel.style.right=Math.max(10,window.innerWidth-anchor.right)+'px'}
+  const nav=document.querySelector('.bottom-nav'),navTop=nav&&getComputedStyle(nav).display!=='none'?nav.getBoundingClientRect().top:window.innerHeight;
+  const panelHeight=panel.getBoundingClientRect().height;
+  panel.style.top=Math.max(8,Math.min(anchor.bottom+8,navTop-panelHeight-8))+'px';
+}
+function setAssistantOpen(open,restoreFocus){
+  const toggle=document.getElementById('assistant958Toggle'),panel=document.getElementById('assistant958Panel');
+  if(!toggle||!panel)return;
+  panel.classList.toggle('open',open);panel.setAttribute('aria-hidden',String(!open));toggle.setAttribute('aria-expanded',String(open));
+  if(open){requestAnimationFrame(positionAssistantPanel);document.getElementById('assistant958Input')?.focus()}
+  else if(restoreFocus)toggle.focus();
+}
 function mountAssistant(){
-  if(document.getElementById('assistant958Toggle'))return;
-  const toggle=document.createElement('button');toggle.id='assistant958Toggle';toggle.type='button';toggle.textContent='💬 Ajuda';toggle.setAttribute('aria-label','Abrir assistente do Caseirinho');
-  const panel=document.createElement('div');panel.id='assistant958Panel';panel.innerHTML=`<div class="assistant958-head"><div><b>Assistente Caseirinho</b><br><small>Compras e cupons</small></div><button id="assistant958Close" type="button" aria-label="Fechar">×</button></div><div id="assistant958Messages"></div><form class="assistant958-form" id="assistant958Form"><input id="assistant958Input" autocomplete="off" placeholder="Digite sua dúvida..."><button type="submit">Enviar</button></form>`;
-  document.body.append(toggle,panel);addChat('bot','Olá! Posso ajudar com o cardápio, seu pedido e cupons de desconto.');toggle.onclick=()=>{panel.classList.toggle('open');if(panel.classList.contains('open'))document.getElementById('assistant958Input')?.focus()};document.getElementById('assistant958Close').onclick=()=>panel.classList.remove('open');
+  let toggle=document.getElementById('assistant958Toggle');
+  const cart=document.getElementById('cartTop'),actions=document.querySelector('.head-actions');
+  if(!toggle){toggle=document.createElement('button');toggle.id='assistant958Toggle';toggle.className='head-btn assistant958-header-btn';toggle.type='button';toggle.innerHTML='<span aria-hidden="true">💬</span><span class="assistant958-toggle-label">Fale com John</span>';toggle.setAttribute('aria-label','Fale com John');toggle.setAttribute('aria-haspopup','dialog');toggle.setAttribute('aria-controls','assistant958Panel');toggle.setAttribute('aria-expanded','false');if(actions)actions.insertBefore(toggle,cart||null)}
+  const panel=document.createElement('div');panel.id='assistant958Panel';panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','false');panel.setAttribute('aria-labelledby','assistant958Title');panel.setAttribute('aria-hidden','true');panel.innerHTML='<div class="assistant958-head"><div><b id="assistant958Title">John</b><br><small>Assistente do Caseirinho</small></div><button id="assistant958Close" type="button" aria-label="Fechar conversa">×</button></div><div id="assistant958Messages" aria-live="polite"></div><div class="assistant958-suggestions" aria-label="Sugestões de perguntas"><button type="button" data-john-prompt="Me ajude a escolher um produto">✨ Me ajude a escolher</button><button type="button" data-john-prompt="Quais opções tenho até R$ 30?">💰 Até R$ 30</button><button type="button" data-john-prompt="Como preparo o nhoque?">🍽️ Como preparar</button></div><form class="assistant958-form" id="assistant958Form"><input id="assistant958Input" autocomplete="off" placeholder="Ex.: nhoque de 500 g até R$ 25" aria-label="Digite sua pergunta para John"><button type="submit">Enviar</button></form>';
+  document.body.append(panel);
+  addChat('bot','Olá! Sou o John. Posso ajudar a escolher produtos e consultar preços, opções, entrega, pagamento ou seu pedido.');
+  toggle.setAttribute('aria-label','Fale com John');toggle.title='Fale com John';toggle.setAttribute('aria-haspopup','dialog');toggle.setAttribute('aria-controls','assistant958Panel');toggle.setAttribute('aria-expanded','false');
+  toggle.onclick=()=>setAssistantOpen(!panel.classList.contains('open'));
+  document.getElementById('assistant958Close').onclick=()=>setAssistantOpen(false,true);
   document.getElementById('assistant958Form').onsubmit=async e=>{e.preventDefault();const input=document.getElementById('assistant958Input'),msg=S(input.value).trim();if(!msg)return;input.value='';addChat('user',msg);const upper=normalizeCode(msg);if(upper.includes(FIRST_CODE)){const couponInput=document.getElementById('coupon958Code');if(couponInput)couponInput.value=FIRST_CODE;waitingPhone=true;addChat('bot','O CASEIRINHO10 dá 10% de desconto na primeira compra. Informe seu WhatsApp com DDD para validar.');return}if(waitingPhone){const p=sanitizePhone(msg);if(validPhone(p)){const field=document.getElementById('cPhone');if(field)field.value=formatPhone(p);await validateFirstPurchase(p,{fromChat:true});return}addChat('bot','Informe um WhatsApp válido com DDD, por exemplo: (11) 99999-9999.');return}const q=S(msg).toLowerCase();if(q.includes('cupom')||q.includes('desconto')){addChat('bot','Digite o código no campo de cupom do checkout. Cupons cadastrados no Motor Comercial são validados automaticamente; o CASEIRINHO10 é exclusivo da primeira compra.');return}if(q.includes('frete')||q.includes('entrega')){addChat('bot','Informe seu CEP no checkout. O frete será mostrado automaticamente quando houver regra disponível ou ficará pendente para cotação.');return}if(q.includes('pedido')||q.includes('compr')||q.includes('cardáp')||q.includes('cardap')){addChat('bot','Escolha os produtos, adicione ao carrinho e finalize seus dados. Se tiver cupom, aplique antes de confirmar o pedido.');return}addChat('bot','Posso ajudar com compras, entrega, acompanhamento do pedido e cupons. O que você precisa?')};
+  document.querySelectorAll('[data-john-prompt]').forEach(button=>button.onclick=()=>{const input=document.getElementById('assistant958Input');input.value=button.dataset.johnPrompt;document.getElementById('assistant958Form').requestSubmit()});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&panel.classList.contains('open'))setAssistantOpen(false,true)});
+  window.addEventListener('resize',positionAssistantPanel,{passive:true});window.addEventListener('scroll',positionAssistantPanel,{passive:true});
 }
 function protectHeroActions(){
   const target=document.querySelector('.hero-actions');if(!target)return;
@@ -226,7 +255,8 @@ window.fetch=async function(input,opt={}){
   }catch(e){console.warn('[CUPONS] aplicação segura não concluída:',e);return response}
 };
 
-function init(){injectStyle();mountCouponBox();mountAssistant();protectHeroActions();watchPhone();watchTotals();loadCommerceConfig();setTimeout(()=>{const st=readState();if(st?.status==='GENERIC_OK')syncNativeGeneric(st.code).catch(()=>{})},700)}
+function init(){injectStyle();mountCouponBox();mountAssistant();watchPhone();watchTotals();loadCommerceConfig();setTimeout(()=>{const st=readState();if(st?.status==='GENERIC_OK')syncNativeGeneric(st.code).catch(()=>{})},700)}
 window.CaseirinhoCoupon958={sanitizePhone,validPhone,validateCoupon:validateFirstPurchase,validateFirstPurchase,applyGenericCoupon,readState,clearState,loadCommerceConfig};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
+
