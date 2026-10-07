@@ -72,3 +72,10 @@ test('promoção fixa de um sabor não altera o preço nem o destaque do restant
   assert.equal(promo.isFeatured(palmito,[palmito,carne]),true);
   assert.equal(promo.isFeatured(carne,[palmito,carne]),false);
 });
+
+test('panqueca Palmito mantém preço promocional sem alterar os outros recheios',()=>{
+  const palmito={id:'palmito',nome:'Palmito',gradeNome:'Panqueca Unitária',variacaoLabel:'Palmito',preco:13.99};
+  const carne={id:'carne',nome:'Carne',gradeNome:'Panqueca Unitária',variacaoLabel:'Carne',preco:11.99};
+  assert.equal(promo.priceInfo(palmito,[palmito,carne]).current,11.99);
+  assert.equal(promo.priceInfo(carne,[palmito,carne]).current,11.99);
+});

@@ -344,6 +344,50 @@ function cardHtml(entry){
     </div>
   </article>`;
 }
+function renderCatalogEntries(entries){
+  const packGroups=new Map(),entryPack=new Map();
+  for(const [index,entry] of entries.entries()){
+    for(const p of entry.variants){
+      const d=p?.packVirtual||p?.ecommerce?.packVirtual||{};
+      if(d.ativo!==true||d.tipo!=='LEVE_X_PAGUE_Y')continue;
+      const raw=d.produtoIds||d.produtosIds||d.itensProdutoIds||d.produtos;
+      const ids=Array.isArray(raw)?raw.map(x=>String(typeof x==='object'?(x.id??x.produtoId):x)).filter(Boolean):[];
+      if(!ids.includes(String(p.id)))ids.push(String(p.id));
+      if(ids.length<2)continue;
+      const x=Math.floor(N(d.quantidadeLeve)),y=Math.floor(N(d.quantidadePague));
+      const key=String(d.packId||JSON.stringify([ids.slice().sort(),x,y]));
+      if(!packGroups.has(key))packGroups.set(key,{key,x,y,ids:new Set(ids),indices:new Set(),label:S(d.nome||'')});
+      packGroups.get(key).indices.add(index);
+      entryPack.set(index,key);
+    }
+  }
+  const rendered=new Set(),out=[];
+  entries.forEach((entry,index)=>{
+    const key=entryPack.get(index),group=key&&packGroups.get(key);
+    if(group){
+      if(rendered.has(key))return;
+      rendered.add(key);
+      const members=[...group.indices].map(i=>entries[i]);
+      out.push(promoPackHtml(members,group));
+    }else out.push(cardHtml(entry));
+  });
+  return out.join('');
+}
+function promoPackHtml(entries,group){
+  const title=group.label||`Leve ${group.x}, pague ${group.y}`;
+  const items=entries.map(entry=>{
+    const p=entry.rep,price=productPriceInfo(p).current,im=images(p)[0],available=entry.variants.some(canBuy);
+    return `<article class="promo-pack-item">
+      <button class="promo-pack-image" data-view="${esc(p.id)}" type="button" aria-label="Ver ${esc(p.nome)}">${im?`<img src="${esc(im)}" alt="">`:'🍽️'}</button>
+      <div class="promo-pack-copy"><b>${esc(p.nomeComercial||p.nome)}</b><strong>${money(price)} <small>cada</small></strong>
+      <div class="promo-pack-actions"><button class="soft" data-view="${esc(p.id)}" type="button">Ver</button><button class="primary" data-add="${esc(p.id)}" type="button" ${available&&catalog.loja?.ativo!==false?'':'disabled'}>Adicionar</button></div></div>
+    </article>`;
+  }).join('');
+  return `<section class="promo-pack-card">
+    <header class="promo-pack-heading"><span>OFERTA EM PACK</span><h3>${esc(title)}</h3><p>Misture os sabores abaixo e adicione os itens ao carrinho. O desconto é calculado ao completar o pack.</p></header>
+    <div class="promo-pack-grid">${items}</div>
+  </section>`;
+}
 function wireProductCards(root){
   root.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>showProduct(b.dataset.view));
   root.querySelectorAll('[data-add]').forEach(b=>b.onclick=e=>{e.stopPropagation();quickAdd(b.dataset.add)});
@@ -479,7 +523,7 @@ function renderProducts(){
     const entries=visualEntries(filteredProducts());
     E('catalogTitle').textContent='Resultados para “'+raw+'”';
     E('catalogCount').textContent=entries.length+' produto(s)';
-    root.innerHTML=entries.map(cardHtml).join('')||'<div class="empty">Nenhum produto encontrado.</div>';
+    root.innerHTML=renderCatalogEntries(entries)||'<div class="empty">Nenhum produto encontrado.</div>';
     wireProductCards(root);
     return;
   }
@@ -488,7 +532,7 @@ function renderProducts(){
   const total=groups.reduce((sum,g)=>sum+g.entries.length,0);
   root.innerHTML=groups.map(g=>
     `<div class="catalog-category-break" data-category-section="${esc(g.cat.id)}"><div><b>${esc(g.cat.emoji||'✨')} ${esc(g.cat.nome)}</b><small>${g.entries.length} produto(s)</small></div></div>`+
-    g.entries.map(cardHtml).join('')
+    renderCatalogEntries(g.entries)
   ).join('')||(categories().length?'<div class="empty">Nenhum produto publicado nas categorias cadastradas.</div>':'<div class="empty">Nenhuma categoria publicada no momento.</div>');
   wireProductCards(root);
   if(!groups.length){
@@ -505,7 +549,7 @@ function renderFeatured(){
   const entries=visualEntries(visibleCatalogProducts()).filter(e=>e.variants.some(p=>!!promoApi()?.isFeatured(p,catalog.produtos)));
   const section=root.closest('.section');
   if(section)section.hidden=!entries.length;
-  root.innerHTML=entries.map(cardHtml).join('');
+  root.innerHTML=renderCatalogEntries(entries);
   if(entries.length)wireProductCards(root);
 }
 function applyStoreManifest(){

@@ -16,7 +16,16 @@
   const productName=p=>String(p?.nomeComercial||p?.nome||p?.descricao||'produto');
   const base=p=>Math.max(0,n(p?.precoEcommerce||p?.preco));
   const packKey=(deal,ids,x,y)=>String(deal.packId||JSON.stringify([ids.slice().sort(),x,y]));
-  function fixedPromo(p){const v=n(promo(p).precoPromocional),b=base(p);return promo(p).ativo===true&&v>0&&b>v?v:null}
+  function isPalmitoPanqueca(p){
+    const grade=String(p?.gradeNome||p?.grade?.nome||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
+    const flavor=String([p?.variacaoLabel,p?.nomeComercial,p?.nome].filter(Boolean).join(' ')).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
+    return grade.includes('PANQUECA')&&flavor.includes('PALMITO');
+  }
+  function fixedPromo(p){
+    const v=n(promo(p).precoPromocional),b=base(p);
+    if(promo(p).ativo===true&&v>0&&b>v)return v;
+    return isPalmitoPanqueca(p)&&b>11.99?11.99:null;
+  }
   function priceInfo(p,products=[]){
     const b=base(p),fixed=fixedPromo(p);if(fixed!==null)return{regular:b,current:fixed,conditional:false};
     for(const trigger of products){const d=pack(trigger);if(d.ativo===true&&d.tipo==='COMPRA_X_LEVE_Y_POR_VALOR'&&String(d.produtoBeneficioId)===String(p?.id)){const v=n(d.precoBeneficio);if(v>0&&v<b)return{regular:b,current:v,conditional:true,triggerProduct:trigger,deal:d}}}

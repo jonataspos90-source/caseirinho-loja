@@ -1,5 +1,8 @@
-Loja Online V9.10.5 — Descontos e carrinho agrupado por promoção
+Loja Online V9.10.6 — Packs agrupados no cardápio e carrinho; panqueca Palmito promocional; desconto calculado no fechamento
 Build: 2026-10-07
+- Oferta Leve 5, Pague 4 apresentada em um único cartão com os sabores participantes agrupados.
+- Panqueca de Palmito com preço promocional de R$ 11,99, igual aos demais recheios.
+- Descontos de preço fixo, packs e packs cruzados recalculados pelo servidor no fechamento do pedido.
 API esperada: 1.20.1
 
 NOVIDADES V9.10.5
