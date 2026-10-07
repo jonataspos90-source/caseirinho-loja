@@ -502,7 +502,7 @@ function renderProducts(){
 function renderFeatured(){
   const root=E('featured');
   if(!root)return;
-  const entries=visualEntries(visibleCatalogProducts()).filter(e=>e.variants.some(isFeaturedProduct));
+  const entries=visualEntries(visibleCatalogProducts()).filter(e=>e.variants.some(p=>!!promoApi()?.isFeatured(p,catalog.produtos)));
   const section=root.closest('.section');
   if(section)section.hidden=!entries.length;
   root.innerHTML=entries.map(cardHtml).join('');
@@ -601,7 +601,7 @@ function showProduct(id){
   const p=A(catalog.produtos).find(x=>S(x.id)===S(id));if(!p)return;
   selectedProduct=p;selectedGradeId=S(p.gradeId||'');
   const promotionSolo=!!promoApi()?.isFeatured(p,catalog.produtos);
-  const vars=promotionSolo?[p]:gradeVariants(p),grouped=vars.length>1,gm=gradeMeta(p);
+  const vars=promotionSolo?[p]:gradeVariants(p).filter(v=>!promoApi()?.isFeatured(v,catalog.produtos)),grouped=vars.length>1,gm=gradeMeta(p);
   const cat=productCategory(p);
 
   E('modalCategory').textContent=cat.nome;
