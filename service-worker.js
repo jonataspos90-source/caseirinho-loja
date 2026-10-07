@@ -1,6 +1,6 @@
-const CACHE='caseirinho-loja-v9.10.1-promocoes';
+const CACHE='caseirinho-loja-v9.10.2-promocoes-fix';
 const PROMOTIONJS='./ecommerce-promotions-v910.js';
-const PROMOTIONJS_TAG='<script src="./ecommerce-promotions-v910.js?v=91010" defer></'+'script>';
+const PROMOTIONJS_TAG='<script src="./ecommerce-promotions-v910.js?v=91020" defer></'+'script>';
 const HOTFIX931='./store-hotfix-v9-3-1.js';
 const HOTFIX932='./store-hotfix-v9-3-2.js';
 const HOTFIX933='./store-hotfix-v9-3-3.js';
@@ -41,7 +41,7 @@ const DEDUPE942_TAG='<script src="./order-actions-dedupe-v9-4-2.js?v=9490"></'+'
 const MOBILECSS947_TAG='<link rel="stylesheet" href="./mobile-ux-v9-4-7.css?v=9490">';
 const MOBILEJS947_TAG='<script src="./mobile-ux-v9-4-7.js?v=9490" defer></'+'script>';
 const CARDSCSS948_TAG='<link rel="stylesheet" href="./product-cards-mobile-v9-4-8.css?v=9510">';
-const CARDSJS950_TAG='<script src="./product-cards-mobile-v9-5-0.js?v=9500" defer></'+'script>';
+const CARDSJS950_TAG='<script src="./product-cards-mobile-v9-5-0.js?v=9501" defer></'+'script>';
 const GROUPJS951_TAG='<script src="./variant-grouping-v9-5-1.js?v=9510" defer></'+'script>';
 const SYNCJS952_TAG='<script src="./variant-selection-sync-v9-5-2.js?v=9520" defer></'+'script>';
 const DELIVERYJS954_TAG='<script src="./delivery-moto-v9-5-4.js?v=9611" defer></'+'script>';
