@@ -44,7 +44,7 @@ const CARDSCSS948_TAG='<link rel="stylesheet" href="./product-cards-mobile-v9-4-
 const CARDSJS950_TAG='<script src="./product-cards-mobile-v9-5-0.js?v=9501" defer></'+'script>';
 const GROUPJS951_TAG='<script src="./variant-grouping-v9-5-1.js?v=9510" defer></'+'script>';
 const SYNCJS952_TAG='<script src="./variant-selection-sync-v9-5-2.js?v=9520" defer></'+'script>';
-const DELIVERYJS954_TAG='<script src="./delivery-moto-v9-5-4.js?v=9611" defer></'+'script>';
+const DELIVERYJS954_TAG='<script src="./delivery-moto-v9-5-4.js?v=9612" defer></'+'script>';
 const DELIVERYMODE955_TAG='<script src="./delivery-mode-v9-5-5.js?v=9550" defer></'+'script>';
 const DESKTOPCSS956_TAG='<link rel="stylesheet" href="./desktop-ux-v9-5-6.css?v=9560">';
 const VARIANTCSS957_TAG='<link rel="stylesheet" href="./mobile-variant-carousel-v9-5-7.css?v=9570">';
