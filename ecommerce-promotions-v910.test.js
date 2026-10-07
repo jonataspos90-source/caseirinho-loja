@@ -45,7 +45,9 @@ test('pack misto combina produtos diferentes e cobra os itens de maior preço',(
   assert.equal(result.subtotal,26);
   assert.equal(result.savings,10);
   assert.equal(result.lines.get('carne').total,0);
-  assert.match(result.lines.get('carne').promotionLabel,/maior valor/);
+  assert.match(result.lines.get('carne').promotionLabel,/maiores preços cobrados/);
+  assert.equal(result.lines.get('palmito').promotionGroupId,result.lines.get('carne').promotionGroupId);
+  assert.match(result.lines.get('palmito').promotionLabel,/Leve 3, pague 2/);
 });
 
 test('promoção fixa de um sabor não altera o preço nem o destaque do restante da grade',()=>{

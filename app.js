@@ -660,18 +660,37 @@ function renderCart(){
   E('cartCount').textContent=count;E('navCartCount').textContent=count;
 
   const promoTotals=promoApi()?.cartTotals(cart,catalog.produtos)||{lines:new Map(),subtotal:cart.reduce((s,x)=>s+N(x.quantidade)*N(x.precoUnitario),0),savings:0};
-  E('cartItems').innerHTML=cart.map((x,i)=>{
+  const entries=cart.map((x,i)=>{
     const p=A(catalog.produtos).find(y=>S(y.id)===S(x.produtoId));
     const min=p?minQty(p):1,step=p?stepQty(p):1;
     const pricing=promoTotals.lines.get(S(x.produtoId))||{total:N(x.quantidade)*N(x.precoUnitario),unitPrice:N(x.precoUnitario),promotionLabel:''};
-    return `<div class="cart-item">
+    return {x,i,p,min,step,pricing};
+  });
+  const groups=new Map();
+  entries.forEach(entry=>{
+    const key=entry.pricing.promotionGroupId||`item:${entry.i}`;
+    if(!groups.has(key))groups.set(key,{key,promoted:!!entry.pricing.promotionGroupId,entries:[]});
+    groups.get(key).entries.push(entry);
+  });
+  const renderItem=({x,i,min,step,pricing})=>`<div class="cart-item">
       ${x.imagem?`<img src="${esc(x.imagem)}" alt="">`:'<div class="no-image" style="font-size:25px">🍽️</div>'}
-      <div><h4>${esc(x.nome)}</h4><small>${money(pricing.unitPrice)} cada${pricing.promotionLabel?` · <b style="color:#15803d">${esc(pricing.promotionLabel)}</b>`:''}</small>
+      <div><h4>${esc(x.nome)}</h4><small>${pricing.unitPrice===0&&pricing.promotionGroupId?'<b style="color:#15803d">Unidade incluída na oferta</b>':`${money(pricing.unitPrice)} cada`}${pricing.promotionLabel&&!pricing.promotionLabel.startsWith('Leve ')?` · <b style="color:#15803d">${esc(pricing.promotionLabel)}</b>`:''}</small>
         <div class="qty"><button data-minus="${i}" type="button">−</button><b>${x.quantidade}</b><button data-plus="${i}" type="button">+</button></div>
       </div>
       <div style="text-align:right"><b>${money(pricing.total)}</b><br><button class="remove" data-remove="${i}" type="button">Remover</button></div>
     </div>`;
-  }).join('')||'<div class="empty">Seu carrinho está vazio.</div>';
+  const renderGroup=group=>{
+    if(!group.promoted)return renderItem(group.entries[0]);
+    const savings=roundMoney(group.entries.reduce((sum,e)=>sum+N(e.pricing.savings),0));
+    const labels=[...new Set(group.entries.map(e=>S(e.pricing.promotionLabel)).filter(Boolean))];
+    const packLabel=labels.find(x=>x.startsWith('Leve '));
+    const label=packLabel?packLabel.split(' · ')[0]:labels[0]||'Promoção aplicada';
+    return `<section class="cart-promo-group">
+      <header class="cart-promo-head"><div><b>Oferta: ${esc(label)}</b><small>${group.entries.length>1?'Itens participantes desta mesma promoção':'Preço especial aplicado neste produto'}</small></div>${savings>0?`<strong>Você economiza ${money(savings)}</strong>`:''}</header>
+      <div class="cart-promo-items">${group.entries.map(renderItem).join('')}</div>
+    </section>`;
+  };
+  E('cartItems').innerHTML=[...groups.values()].map(renderGroup).join('')||'<div class="empty">Seu carrinho está vazio.</div>';
   if(promoTotals.savings>0)E('cartItems').insertAdjacentHTML('afterbegin',`<div style="margin-bottom:10px;padding:10px 12px;border-radius:10px;background:#f0fdf4;color:#166534;font-weight:800">Você economiza ${money(promoTotals.savings)} nas promoções do carrinho.</div>`);
 
   E('cartItems').querySelectorAll('[data-minus]').forEach(b=>b.onclick=()=>{
@@ -693,6 +712,7 @@ function renderCart(){
   E('grandTotal').textContent=freight.pending?money(sub)+' + frete':money(sub+freight.value);
   updateDateMin();
 }
+function roundMoney(value){return Math.round((N(value)+Number.EPSILON)*100)/100}
 function normalizePhone(v){
   let d=S(v).replace(/\D/g,'');
   if(d.startsWith('55')&&d.length===13)d=d.slice(2);

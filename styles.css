@@ -36,6 +36,17 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}.wrap{width:min(
   .form-grid{grid-template-columns:1fr}.form-grid .full{grid-column:auto}.footer-grid{display:grid}.bottom-nav{bottom:7px}
 }
 @media(max-width:430px){.product-grid{grid-template-columns:1fr}.product-card{display:grid;grid-template-columns:132px 1fr}.product-pic{height:100%;aspect-ratio:auto}.product-body{min-width:0}.tags{display:none}.description{min-height:0}.variant-buttons{grid-template-columns:1fr 1fr}}
+.cart-promo-group{overflow:hidden;border:1.5px solid #86efac;border-radius:17px;background:linear-gradient(145deg,#f4fff7,#fff);box-shadow:0 5px 18px rgba(22,101,52,.08)}
+.cart-promo-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 12px;background:#e9f9ee;color:#166534}
+.cart-promo-head>div{display:grid;gap:3px;min-width:0}
+.cart-promo-head b{font-size:12px;line-height:1.3}
+.cart-promo-head small{font-size:10px;color:#287447}
+.cart-promo-head strong{font-size:11px;text-align:right;white-space:nowrap}
+.cart-promo-items{display:grid}
+.cart-promo-items .cart-item{border:0;border-top:1px solid #d9efdf;border-radius:0;background:transparent;box-shadow:none}
+.cart-promo-items .cart-item:first-child{border-top:0}
+.cart-promo-items .cart-item h4{line-height:1.25}
+@media(max-width:430px){.cart-promo-head{align-items:flex-start}.cart-promo-head strong{white-space:normal;max-width:104px}.cart-promo-items .cart-item{grid-template-columns:50px minmax(0,1fr) auto;gap:8px;padding:8px}.cart-promo-items .cart-item img{width:50px;height:50px}}
 
 
 /* ===== EXPERIÊNCIA DO CLIENTE V9.1.0 ===== */

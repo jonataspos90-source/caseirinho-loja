@@ -1,6 +1,17 @@
-Loja Online V9.10.0 — Preço promocional e Packs Virtuais
+Loja Online V9.10.3 — Descontos e carrinho agrupado por promoção
 Build: 2026-10-07
-API esperada: 1.20.0
+API esperada: 1.20.1
+
+NOVIDADES V9.10.3
+- Corrigido o cálculo do pack misto “Leve X, pague Y” para descontar também no subtotal confirmado pelo servidor.
+- Produtos participantes da mesma promoção ficam dentro de um único bloco identificado no carrinho, com a economia do pack.
+- O preço e a quantidade de cada produto continuam separados para conferência, remoção e controle de estoque.
+- Cache do PWA atualizado para carregar esta versão da loja.
+
+MANTIDO DA V9.10.0
+- Preço promocional individual e packs virtuais.
+- Não acumula promoção individual com pack; aplica a melhor oferta.
+- Preço e disponibilidade revalidados pelo servidor no fechamento do pedido.
 
 NOVIDADES V9.10.0
 - Produtos com preço promocional recebem selo verde “PROMOÇÃO” e entram na área de destaques.
