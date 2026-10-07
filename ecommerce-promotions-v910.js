@@ -51,8 +51,8 @@
     }
     for(const trigger of map.values()){
       const x=pack(trigger);if(x.ativo!==true||x.tipo!=='COMPRA_X_LEVE_Y_POR_VALOR'||String(x.produtoBeneficioId)!==id)continue;
-      const threshold=Math.floor(n(x.quantidadeGatilho)),sets=threshold>0?Math.floor(n(quantities.get(String(trigger.id)))/threshold):0,v=n(x.precoBeneficio);
-      if(sets>0&&v>=0&&v<b){const count=Math.min(q,sets);options.push({total:round(count*v+(q-count)*b),label:`Pack ${trigger.nome||'virtual'}`})}
+      const threshold=Math.floor(n(x.quantidadeGatilho)),triggerQty=n(quantities.get(String(trigger.id))),sameProduct=String(trigger.id)===id,sets=threshold>0?Math.floor(triggerQty/(threshold+(sameProduct?1:0))):0,v=n(x.precoBeneficio);
+      if(sets>0&&v>=0&&v<b){const count=sameProduct?sets:Math.min(q,sets);options.push({total:round(count*v+(q-count)*b),label:`Pack ${trigger.nome||'virtual'}`})}
     }
     options.sort((a,b)=>a.total-b.total);const best=options[0],total=round(best.total);
     return{total,unitPrice:q?round(total/q):0,savings:round(Math.max(0,regular-total)),promotionLabel:best.label};
