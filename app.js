@@ -285,12 +285,15 @@ function gradeVariants(p){
     .sort((a,b)=>N(a.variacaoOrdem)-N(b.variacaoOrdem)||S(a.variacaoLabel).localeCompare(S(b.variacaoLabel),'pt-BR'));
 }
 function visualEntries(list){
-  const out=[],seen=new Set();
+  const out=[],seen=new Set(),visibleIds=new Set(list.map(p=>S(p.id)));
   for(const p of list){
     if(!p.gradeId){out.push({rep:p,variants:[p],grouped:false});continue}
+    const isPromotion=!!promoApi()?.isFeatured(p,catalog.produtos);
+    if(isPromotion){out.push({rep:p,variants:[p],grouped:false,promotionSolo:true});continue}
     if(seen.has(S(p.gradeId)))continue;
     seen.add(S(p.gradeId));
-    const vars=gradeVariants(p);
+    const vars=gradeVariants(p).filter(v=>visibleIds.has(S(v.id))&&!promoApi()?.isFeatured(v,catalog.produtos));
+    if(!vars.length)continue;
     const cover=vars.find(v=>S(v.id)===S(p.gradeProdutoCapaId))||vars.find(canBuy)||vars[0];
     out.push({rep:cover,variants:vars,grouped:vars.length>1});
   }
@@ -304,7 +307,7 @@ function isFlagOn(value){
 function promoApi(){return window.CaseirinhoPromotions}
 function productPriceInfo(p){return promoApi()?.priceInfo(p,catalog.produtos)||{regular:N(p?.preco),current:N(p?.preco),conditional:false}}
 function productOfferText(p){return promoApi()?.offerText(p,catalog.produtos)||''}
-function productPriceHtml(p){const x=productPriceInfo(p);return x.current<x.regular?`<s style="color:#64748b;font-size:.82em">${money(x.regular)}</s> <strong style="color:#15803d">${money(x.current)}</strong>`:money(x.current)}
+function productPriceHtml(p){const x=productPriceInfo(p);return x.current<x.regular?`<span style="font-size:.8em;color:#64748b">De </span><s style="color:#64748b;font-size:.82em">${money(x.regular)}</s> <strong style="color:#15803d">Por ${money(x.current)}</strong>`:money(x.current)}
 function isFeaturedProduct(p){
   return isFlagOn(p?.destaque)||isFlagOn(p?.novidade)||!!promoApi()?.isFeatured(p,catalog.produtos);
 }
@@ -330,7 +333,7 @@ function cardHtml(entry){
       <div class="category-label">${esc(c.nome)}</div>
       <h3>${esc(title)}</h3>
       <div class="description">${esc(desc||'Produto selecionado da loja.')}</div>
-      <div class="price">${grouped&&max>min+.001?'A partir de ':''}${priceInfo.current<priceInfo.regular?`<s style="color:#64748b;font-size:.82em">${money(priceInfo.regular)}</s> <strong style="color:#15803d">${money(priceInfo.current)}</strong>`:money(min)}</div>
+      <div class="price">${grouped&&max>min+.001?'A partir de ':''}${priceInfo.current<priceInfo.regular?`<span style="font-size:.8em;color:#64748b">De </span><s style="color:#64748b;font-size:.82em">${money(priceInfo.regular)}</s> <strong style="color:#15803d">Por ${money(priceInfo.current)}</strong>`:money(min)}</div>
       ${offerText?`<div style="margin-top:5px;color:#15803d;font-size:12px;font-weight:800">${esc(offerText)}</div>`:''}
       ${grouped?`<div class="variant-summary">${gm.icon} ${esc(gm.plural)}: ${vars.map(v=>esc(v.variacaoLabel||v.nome)).join(' · ')}</div>`:''}
       <div class="availability ${ok?'':'no'}">${esc(availability)}</div>
@@ -597,7 +600,8 @@ async function loadCatalog(silent=false){
 function showProduct(id){
   const p=A(catalog.produtos).find(x=>S(x.id)===S(id));if(!p)return;
   selectedProduct=p;selectedGradeId=S(p.gradeId||'');
-  const vars=gradeVariants(p),grouped=vars.length>1,gm=gradeMeta(p);
+  const promotionSolo=!!promoApi()?.isFeatured(p,catalog.produtos);
+  const vars=promotionSolo?[p]:gradeVariants(p),grouped=vars.length>1,gm=gradeMeta(p);
   const cat=productCategory(p);
 
   E('modalCategory').textContent=cat.nome;
