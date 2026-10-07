@@ -47,12 +47,17 @@ function canBuy(p){
   const d=norm(p?.disponibilidadeEfetiva||p?.disponibilidade||'AMBOS');
   return d==='SOB_ENCOMENDA'||d==='AMBOS'||N(p?.saldoDisponivel)>0;
 }
-function priceOf(p){return N(p?.preco??p?.precoVenda)}
+function promoApi(){return window.CaseirinhoPromotions}
+function isPromotion(p){return !!promoApi()?.isFeatured(p,catalog().produtos)}
+function priceOf(p){return N(promoApi()?.priceInfo(p,catalog().produtos)?.current??p?.preco??p?.precoVenda)}
+function priceMarkup(p){const x=promoApi()?.priceInfo(p,catalog().produtos);if(x&&x.current<x.regular)return '<span style="font-size:.8em;color:#64748b">De </span><s style="color:#64748b;font-size:.82em">'+money(x.regular)+'</s> <strong style="color:#15803d">Por '+money(x.current)+'</strong>';return money(priceOf(p))}
 function images(p){const xs=A(p?.imagens).filter(Boolean);return xs.length?xs:(p?.imagem?[p.imagem]:[])}
 function productById(id){return A(catalog().produtos).find(p=>S(p?.id)===S(id))||null}
 function variantsFor(p){
   if(!p?.gradeId)return[p].filter(Boolean);
-  return A(catalog().produtos).filter(x=>S(x?.gradeId)===S(p.gradeId)).sort((a,b)=>N(a?.variacaoOrdem)-N(b?.variacaoOrdem)||S(a?.variacaoLabel||a?.nome).localeCompare(S(b?.variacaoLabel||b?.nome),'pt-BR'));
+  if(isPromotion(p))return[p];
+  const variants=A(catalog().produtos).filter(x=>S(x?.gradeId)===S(p.gradeId)&&!isPromotion(x)).sort((a,b)=>N(a?.variacaoOrdem)-N(b?.variacaoOrdem)||S(a?.variacaoLabel||a?.nome).localeCompare(S(b?.variacaoLabel||b?.nome),'pt-BR'));
+  return variants.length?variants:[p];
 }
 function representativeId(card){return card.querySelector('.product-pic[data-view]')?.dataset.view||card.querySelector('.view-btn[data-view]')?.dataset.view||''}
 function primaryLabel(v){return clean(v?.variacaoLabel||v?.nome||'Opção')||'Opção'}
@@ -142,7 +147,7 @@ function setSelected(card,id,p,vars,meta){
   const selectedProduct=productById(id);if(!selectedProduct)return;
   card.dataset.selectedProductId=S(id);
   card.querySelectorAll('.card-grade-option').forEach(b=>b.classList.toggle('active',S(b.dataset.productId)===S(id)));
-  const price=card.querySelector('.price');if(price)price.textContent=money(priceOf(selectedProduct));
+  const price=card.querySelector('.price');if(price)price.innerHTML=priceMarkup(selectedProduct);
   const selected=card.querySelector('.card-selected-choice');if(selected)selected.textContent='Selecionado: '+optionLabel(selectedProduct,p,vars,meta);
   const add=card.querySelector('.card-add-selected');
   if(add){add.dataset.productId=S(id);add.disabled=!canBuy(selectedProduct)||catalog().loja?.ativo===false;add.textContent=add.disabled?'Indisponível':'+ Adicionar ao carrinho'}
@@ -221,7 +226,7 @@ function enhanceModal(){
     const d=document.getElementById('modalDescription');if(d&&meta.hasSecondDimension)d.textContent=`Escolha ${meta.title.toLowerCase()} abaixo. O item selecionado ficará destacado antes de adicionar ao carrinho.`;
   }else{
     buttons.forEach(b=>b.classList.toggle('active',S(b.dataset.variant)===S(explicit.id)));
-    if(price)price.textContent=money(priceOf(explicit));
+    if(price)price.innerHTML=priceMarkup(explicit);
     add.disabled=!canBuy(explicit)||catalog().loja?.ativo===false;add.textContent=add.disabled?'Indisponível no momento':'Adicionar ao carrinho';
     const d=document.getElementById('modalDescription');if(d)d.textContent=clean(explicit.descricao||'Produto selecionado da loja.');
   }
