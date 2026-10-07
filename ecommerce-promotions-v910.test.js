@@ -50,6 +50,21 @@ test('pack misto combina produtos diferentes e cobra os itens de maior preço',(
   assert.match(result.lines.get('palmito').promotionLabel,/Leve 3, pague 2/);
 });
 
+test('pack misto agrupa os itens e explica quanto falta antes de liberar a promoção',()=>{
+  const ids=['palmito','frango','camarao','carne','escarola'];
+  const products=ids.map((id,i)=>({id,nome:id,preco:[14,10,12,11,9][i],packVirtual:{id:'empadas-5-por-4',packId:'empadas-5-por-4',ativo:true,tipo:'LEVE_X_PAGUE_Y',quantidadeLeve:5,quantidadePague:4,produtoIds:ids}}));
+  products.push({id:'panqueca',nome:'Panqueca',preco:13.99});
+  const cart=[...ids.slice(0,4).map(produtoId=>({produtoId,quantidade:1})),{produtoId:'panqueca',quantidade:1}];
+  const result=promo.cartTotals(cart,products);
+  assert.equal(result.subtotal,60.99);
+  assert.equal(result.savings,0);
+  const empadaLines=ids.slice(0,4).map(id=>result.lines.get(id));
+  assert.equal(new Set(empadaLines.map(line=>line.promotionGroupId)).size,1);
+  assert.equal(result.lines.get('panqueca').promotionGroupId,'');
+  assert.deepEqual(empadaLines[0].promotionGroupProgress,{eligible:4,required:5,remaining:1,pending:true});
+  assert.match(empadaLines[0].promotionGroupHint,/Faltam 1/);
+});
+
 test('promoção fixa de um sabor não altera o preço nem o destaque do restante da grade',()=>{
   const palmito={id:'palmito',gradeId:'panqueca',preco:13.99,promocao:{ativo:true,precoPromocional:11.99}};
   const carne={id:'carne',gradeId:'panqueca',preco:13.99};

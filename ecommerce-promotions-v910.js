@@ -80,7 +80,14 @@
       }
       units.sort((a,b)=>b.price-a.price);
       const completeSets=Math.floor(units.length/rule.x);
-      if(!completeSets)continue;
+      if(!completeSets){
+        const eligible=units.length,remaining=rule.x-eligible;
+        for(const id of rule.ids){
+          const old=lines.get(id);if(!old)continue;
+          lines.set(id,{...old,promotionGroupId:`pack:${rule.key}`,promotionGroupLabel:`Leve ${rule.x}, pague ${rule.y}`,promotionGroupHint:`Faltam ${remaining} item(ns) participante(s) para liberar o desconto.`,promotionGroupProgress:{eligible,required:rule.x,remaining,pending:true}});
+        }
+        continue;
+      }
       let packTotal=0;
       units.forEach((unit,index)=>{const pos=index%rule.x;if(pos<rule.y)packTotal+=unit.price});
       const currentTotal=rule.ids.reduce((sum,id)=>sum+(lines.get(id)?.total||0),0);
@@ -90,7 +97,7 @@
       for(const id of rule.ids){
         const old=lines.get(id);if(!old)continue;
         const total=round(totals.get(id)||0),q=n(quantities.get(id)),regular=round(base(map.get(id))*q);
-        lines.set(id,{total,unitPrice:q?round(total/q):0,savings:round(Math.max(0,regular-total)),promotionLabel:total<regular?`Leve ${rule.x}, pague ${rule.y} · Pack misto: maiores preços cobrados`:old.promotionLabel||`Leve ${rule.x}, pague ${rule.y} · Pack misto`,promotionGroupId:`pack:${rule.key}`});
+        lines.set(id,{total,unitPrice:q?round(total/q):0,savings:round(Math.max(0,regular-total)),promotionLabel:total<regular?`Leve ${rule.x}, pague ${rule.y} · Pack misto: maiores preços cobrados`:old.promotionLabel||`Leve ${rule.x}, pague ${rule.y} · Pack misto`,promotionGroupId:`pack:${rule.key}`,promotionGroupLabel:`Leve ${rule.x}, pague ${rule.y}`,promotionGroupHint:'Oferta aplicada: o sistema cobra os itens de maior preço e desconta os de menor preço.',promotionGroupProgress:{eligible:units.length%rule.x||rule.x,required:rule.x,remaining:0,pending:false}});
       }
     }
     return{lines,subtotal:round([...lines.values()].reduce((s,x)=>s+x.total,0)),savings:round([...lines.values()].reduce((s,x)=>s+x.savings,0))};

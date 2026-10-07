@@ -669,7 +669,7 @@ function renderCart(){
   const groups=new Map();
   entries.forEach(entry=>{
     const key=entry.pricing.promotionGroupId||`item:${entry.i}`;
-    if(!groups.has(key))groups.set(key,{key,promoted:!!entry.pricing.promotionGroupId,entries:[]});
+    if(!groups.has(key))groups.set(key,{key,promoted:!!entry.pricing.promotionGroupId,label:entry.pricing.promotionGroupLabel||'',hint:entry.pricing.promotionGroupHint||'',progress:entry.pricing.promotionGroupProgress||null,entries:[]});
     groups.get(key).entries.push(entry);
   });
   const renderItem=({x,i,min,step,pricing})=>`<div class="cart-item">
@@ -684,9 +684,13 @@ function renderCart(){
     const savings=roundMoney(group.entries.reduce((sum,e)=>sum+N(e.pricing.savings),0));
     const labels=[...new Set(group.entries.map(e=>S(e.pricing.promotionLabel)).filter(Boolean))];
     const packLabel=labels.find(x=>x.startsWith('Leve '));
-    const label=packLabel?packLabel.split(' · ')[0]:labels[0]||'Promoção aplicada';
-    return `<section class="cart-promo-group">
-      <header class="cart-promo-head"><div><b>Oferta: ${esc(label)}</b><small>${group.entries.length>1?'Itens participantes desta mesma promoção':'Preço especial aplicado neste produto'}</small></div>${savings>0?`<strong>Você economiza ${money(savings)}</strong>`:''}</header>
+    const label=group.label||(packLabel?packLabel.split(' · ')[0]:labels[0]||'Promoção aplicada');
+    const progress=group.progress;
+    const summary=progress?.pending
+      ? `${progress.eligible}/${progress.required} itens no carrinho · faltam ${progress.remaining}`
+      : group.entries.length>1?'Itens participantes desta mesma promoção':'Preço especial aplicado neste produto';
+    return `<section class="cart-promo-group${progress?.pending?' is-pending':''}">
+      <header class="cart-promo-head"><div><b>${progress?.pending?'Promoção disponível':'Oferta'}: ${esc(label)}</b><small>${esc(summary)}</small>${group.hint?`<small class="cart-promo-hint">${esc(group.hint)}</small>`:''}</div>${savings>0?`<strong>Você economiza ${money(savings)}</strong>`:''}</header>
       <div class="cart-promo-items">${group.entries.map(renderItem).join('')}</div>
     </section>`;
   };

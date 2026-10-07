@@ -46,6 +46,11 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}.wrap{width:min(
 .cart-promo-items .cart-item{border:0;border-top:1px solid #d9efdf;border-radius:0;background:transparent;box-shadow:none}
 .cart-promo-items .cart-item:first-child{border-top:0}
 .cart-promo-items .cart-item h4{line-height:1.25}
+.cart-promo-group.is-pending{border-color:#fbbf24;background:linear-gradient(145deg,#fffbeb,#fff);box-shadow:0 5px 18px rgba(180,83,9,.07)}
+.cart-promo-group.is-pending .cart-promo-head{background:#fef3c7;color:#92400e}
+.cart-promo-group.is-pending .cart-promo-head small{color:#a16207}
+.cart-promo-group.is-pending .cart-promo-items .cart-item{border-color:#f3e5b2}
+.cart-promo-head .cart-promo-hint{font-weight:600;line-height:1.35}
 @media(max-width:430px){.cart-promo-head{align-items:flex-start}.cart-promo-head strong{white-space:normal;max-width:104px}.cart-promo-items .cart-item{grid-template-columns:50px minmax(0,1fr) auto;gap:8px;padding:8px}.cart-promo-items .cart-item img{width:50px;height:50px}}
 
 

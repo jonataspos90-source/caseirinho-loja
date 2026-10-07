@@ -1,6 +1,9 @@
-Loja Online V9.10.3 — Descontos e carrinho agrupado por promoção
+Loja Online V9.10.4 — Descontos e carrinho agrupado por promoção
 Build: 2026-10-07
 API esperada: 1.20.1
+
+NOVIDADES V9.10.4
+- Pack misto incompleto fica agrupado e mostra quantos itens faltam para liberar o desconto.
 
 NOVIDADES V9.10.3
 - Corrigido o cálculo do pack misto “Leve X, pague Y” para descontar também no subtotal confirmado pelo servidor.
