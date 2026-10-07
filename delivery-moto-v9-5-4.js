@@ -5,6 +5,7 @@ const CFG=window.CASEIRINHO_CONFIG||{};
 const API=String(CFG.apiUrl||'').replace(/\/+$/,'');
 const STORE=String(new URLSearchParams(location.search).get('empresa')||new URLSearchParams(location.search).get('loja')||CFG.storeSlug||'caseirinho').trim()||'caseirinho';
 const CART_KEY='john_store_'+STORE+'_cart_v1';
+const CATALOG_KEY='john_store_'+STORE+'_catalog_v1';
 const E=id=>document.getElementById(id),S=v=>String(v??''),N=v=>Number(v)||0;
 const money=v=>N(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const round2=v=>Math.round((N(v)+Number.EPSILON)*100)/100;
@@ -14,7 +15,7 @@ let deliveryConfig=null,quote=null,timer=0,quoting=false,lastAddress='',syncing=
 function css(){if(E('deliveryMoto954Style'))return;const s=document.createElement('style');s.id='deliveryMoto954Style';s.textContent=`
 .dm954-box{margin-top:10px;border:1px solid #dbe5df;border-radius:14px;padding:12px;background:#f8fbf9}.dm954-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}.dm954-badge{display:inline-flex;align-items:center;gap:6px;background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:900}.dm954-price{font-size:20px;font-weight:950;color:#7b1438}.dm954-detail{margin-top:7px;font-size:12px;line-height:1.45;color:#475569}.dm954-box.warn{background:#fff7ed;border-color:#fed7aa}.dm954-box.bad{background:#fef2f2;border-color:#fecaca}
 `;document.head.appendChild(s)}
-function cartSubtotal(){let items=[];try{items=JSON.parse(localStorage.getItem(CART_KEY)||'[]')}catch(_){}return items.reduce((sum,x)=>sum+N(x.total??N(x.precoUnitario??x.preco)*N(x.quantidade||1)),0)}
+function cartSubtotal(){let items=[],catalog={};try{items=JSON.parse(localStorage.getItem(CART_KEY)||'[]');catalog=JSON.parse(localStorage.getItem(CATALOG_KEY)||'{}')}catch(_){}try{const totals=window.CaseirinhoPromotions?.cartTotals(items,Array.isArray(catalog.produtos)?catalog.produtos:[]);if(Number.isFinite(Number(totals?.subtotal)))return N(totals.subtotal)}catch(e){console.warn('[Entrega Moto] promoção no total:',e)}return items.reduce((sum,x)=>sum+N(x.total??N(x.precoUnitario??x.preco)*N(x.quantidade||1)),0)}
 function mode(){return S(E('mode')?.value).toUpperCase()}
 function address(){return{cep:S(E('cep')?.value).trim(),logradouro:S(E('street')?.value).trim(),numero:S(E('number')?.value).trim(),complemento:S(E('comp')?.value).trim(),bairro:S(E('district')?.value).trim(),cidade:S(E('city')?.value).trim(),uf:S(E('uf')?.value).trim().toUpperCase()}}
 function addressKey(a=address()){return[a.cep,a.logradouro,a.numero,a.complemento,a.bairro,a.cidade,a.uf].join('|')}
@@ -33,5 +34,5 @@ function scheduleQuote(){clearTimeout(timer);lastAddress='';timer=setTimeout(quo
 function afterCartAction(){setTimeout(()=>{keepCheckoutEnabled();renderBox();syncTotals()},0)}
 function boot(){css();ensureBox();loadConfig().then(()=>scheduleQuote());['cep','number','street','district','city','uf','comp'].forEach(id=>{const el=E(id);if(el){el.addEventListener('input',scheduleQuote);el.addEventListener('change',scheduleQuote)}});E('mode')?.addEventListener('change',()=>{requestSeq++;quote=null;quoting=false;lastAddress='';keepCheckoutEnabled();renderBox();if(mode()==='ENTREGA')scheduleQuote()});E('cartItems')?.addEventListener('click',afterCartAction);window.addEventListener('storage',e=>{if(e.key===CART_KEY)afterCartAction()});setInterval(()=>{keepCheckoutEnabled();renderBox();syncTotals()},1800)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,220),{once:true});else setTimeout(boot,220);
-window.CaseirinhoDeliveryMoto954={version:'9.5.5-fix',quoteNow,scheduleQuote,loadConfig,get quote(){return quote}};
+window.CaseirinhoDeliveryMoto954={version:'9.5.6-promotions-total',quoteNow,scheduleQuote,loadConfig,get quote(){return quote}};
 })();
