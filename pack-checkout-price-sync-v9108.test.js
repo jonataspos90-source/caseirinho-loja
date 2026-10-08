@@ -40,7 +40,7 @@ test('6 empadas: preço cheio 65,94, desconto 9,99 e valor líquido 55,95',()=>{
  update();
  assert.equal(elements.subtotal.textContent,brl(55.95));
  assert.equal(elements.originalProductsValue.textContent,brl(65.94));
- assert.equal(elements.packDiscountTotal.textContent,'- '+brl(9.99));
+ assert.equal(elements.packDiscountTotal.textContent,brl(9.99));
  assert.match(elements.packDiscountLabel.textContent,/Leve 5, pague 4/);
  assert.equal(elements.packDiscountLine.hidden,false);
  assert.equal(elements.originalProductsLine.hidden,false);
@@ -65,9 +65,9 @@ test('linha de economia é de apresentação e não entra em descontos de cupom/
  const html=fs.readFileSync(__dirname+'/index.html','utf8');
  const app=fs.readFileSync(__dirname+'/app.js','utf8');
  const sw=fs.readFileSync(__dirname+'/service-worker.js','utf8');
- assert.match(html,/<strong id="packDiscountTotal">- R\$\s*0,00<\/strong>/);
+ assert.match(html,/<strong id="packDiscountTotal">R\$\s*0,00<\/strong>/);
  assert.doesNotMatch(html,/<b id="packDiscountTotal">/);
  assert.match(app,/observer\.observe\(subtotal,\{childList:true,subtree:true,characterData:true\}\)/);
- assert.match(html,/\.\/app\.js\?v=91080/);
- assert.match(sw,/caseirinho-loja-v9\.10\.8-pack-total-sincronizado/);
+ assert.match(html,/\.\/app\.js\?v=91090/);
+ assert.match(sw,/caseirinho-loja-v9\.10\.9-desconto-sem-duplicacao/);
 });
