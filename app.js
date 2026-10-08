@@ -772,13 +772,16 @@ function syncPackPriceRows(pricing){
   const subtotal=E('subtotal');
   const grossRow=E('originalProductsLine');
   const discountRow=E('packDiscountLine');
+  // Linhas demonstrativas nunca entram na soma de cupons ou cashback.
+  if(discountRow)discountRow.dataset.discountIncluded='true';
   const updateText=(id,text)=>{const el=E(id);if(el&&el.textContent!==text)el.textContent=text;};
   // O valor cobrado é sempre o preço já promocionado, não o original.
   if(subtotal&&subtotal.textContent!==money(net))subtotal.textContent=money(net);
   if(grossRow&&grossRow.hidden!==(saved<=0))grossRow.hidden=saved<=0;
   if(discountRow&&discountRow.hidden!==(saved<=0))discountRow.hidden=saved<=0;
   updateText('originalProductsValue',money(original));
-  updateText('packDiscountTotal','- '+money(saved));
+  // O sinal de menos é exclusivo do CSS para não duplicá-lo em HTML legado.
+  updateText('packDiscountTotal',money(saved));
   const offers=new Set();
   for(const item of cart){
     const detail=p.lines?.get(S(item.produtoId));

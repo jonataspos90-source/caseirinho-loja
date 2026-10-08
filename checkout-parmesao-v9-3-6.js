@@ -31,7 +31,8 @@ function addonAmount(){return selected&&cartHasItems()?PRICE:0}
 function visibleDiscountTotal(){
   const totals=document.querySelector('.totals');if(!totals)return 0;
   return round2([...totals.children].reduce((sum,row)=>{
-    if(!row||row.hidden||row.id==='parmesaoTotalRow'||row.classList?.contains('grand'))return sum;
+    // Packs já estão embutidos no subtotal líquido: jamais abatê-los outra vez.
+    if(!row||row.hidden||['parmesaoTotalRow','packDiscountLine','originalProductsLine'].includes(S(row.id))||row.dataset?.discountIncluded==='true'||row.classList?.contains('grand'))return sum;
     const value=row.querySelector?.('b');if(!value)return sum;
     const raw=S(value.textContent).trim();
     const known=['coupon958DiscountRow','cashback960DiscountRow'].includes(S(row.id));
