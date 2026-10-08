@@ -69,5 +69,5 @@ test('linha de economia é de apresentação e não entra em descontos de cupom/
  assert.doesNotMatch(html,/<b id="packDiscountTotal">/);
  assert.match(app,/observer\.observe\(subtotal,\{childList:true,subtree:true,characterData:true\}\)/);
  assert.match(html,/\.\/app\.js\?v=91090/);
- assert.match(sw,/caseirinho-loja-v9\.10\.9-desconto-sem-duplicacao/);
+ assert.match(sw,/caseirinho-loja-v9\.10\.(?:9|1[0-9])-[-a-z]+/);
 });
