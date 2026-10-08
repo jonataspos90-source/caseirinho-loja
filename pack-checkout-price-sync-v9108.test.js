@@ -68,6 +68,6 @@ test('linha de economia é de apresentação e não entra em descontos de cupom/
  assert.match(html,/<strong id="packDiscountTotal">R\$\s*0,00<\/strong>/);
  assert.doesNotMatch(html,/<b id="packDiscountTotal">/);
  assert.match(app,/observer\.observe\(subtotal,\{childList:true,subtree:true,characterData:true\}\)/);
- assert.match(html,/\.\/app\.js\?v=91090/);
+ assert.match(html,/\.\/app\.js\?v=910110/);
  assert.match(sw,/caseirinho-loja-v9\.10\.10-pan-palmito-1199/);
 });
