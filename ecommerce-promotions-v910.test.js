@@ -79,3 +79,14 @@ test('panqueca Palmito mantém preço promocional sem alterar os outros recheios
   assert.equal(promo.priceInfo(palmito,[palmito,carne]).current,11.99);
   assert.equal(promo.priceInfo(carne,[palmito,carne]).current,11.99);
 });
+
+test('panqueca Palmito sem grade é identificada para preço de R$ 11,99',()=>{
+ const p={id:'pan',nome:'Panqueca Palmito',precoEcommerce:13.99};
+ const regular={id:'carne',nome:'Panqueca Carne',precoEcommerce:13.99};
+ assert.equal(promo.fixedPromo(p),11.99);
+ assert.equal(promo.priceInfo(p,[p,regular]).current,11.99);
+ assert.equal(promo.priceInfo(regular,[p,regular]).current,13.99);
+ const totals=promo.cartTotals([{produtoId:'pan',quantidade:1}], [p,regular]);
+ assert.equal(totals.subtotal,11.99);
+ assert.equal(totals.savings,2);
+});
