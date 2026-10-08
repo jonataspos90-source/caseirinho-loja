@@ -226,6 +226,9 @@ function canonicalAvailability(p){
   return norm(p?.disponibilidade||'AMBOS');
 }
 function canBuy(p){
+  // O cache de emergência é apenas para consulta; estoque e preço devem
+  // ser confirmados pela API antes de permitir nova compra.
+  if(!catalogConnected)return false;
   if(typeof p?.podeComprar==='boolean')return p.podeComprar;
   const d=canonicalAvailability(p);
   return d==='SOB_ENCOMENDA'||d==='AMBOS'||N(p?.saldoDisponivel)>0;
@@ -623,10 +626,8 @@ function mount(){
 }
 
 async function catalogBackup(){
-  for(const key of [CATALOG_KEY,'john_ecommerce_public_v1']){
-    const saved=readJson(key,null);
-    if(saved&&A(saved.produtos).length)return saved;
-  }
+  // Por segurança, não utilizamos o antigo localStorage como autoridade.
+  // Só mantemos snapshot recente da resposta pública confirmado pela API.
   if(!('caches'in window)||!API)return null;
   try{
     const hit=await (await caches.open(CATALOG_BACKUP_CACHE)).match(API+CATALOG_PATH);
@@ -688,17 +689,17 @@ async function loadCatalog(silent=false){
       return old&&images(old).length?{...p,imagem:images(old)[0],imagens:images(old)}:p;
     });
     catalog=cloud;
-    writeJson(CATALOG_KEY,catalog);
     saveCatalogBackup(catalog).catch(console.warn);
     if(catalogRecoveryTimer){clearTimeout(catalogRecoveryTimer);catalogRecoveryTimer=null}
     catalogRecoveryCount=0;
     setCatalogConnectionStatus(true,`Loja conectada · ${A(catalog.produtos).length} produto(s) · atualizado ${catalog.publicadoEm?new Date(catalog.publicadoEm).toLocaleString('pt-BR'):'agora'}`);
     mount();
   }catch(err){
-    const cached=await catalogBackup();
+    const cached=A(catalog.produtos).length?catalog:await catalogBackup();
     if(cached&&A(cached.produtos).length){
-      catalog=cached;mount();
-      setCatalogConnectionStatus(false,'Conexão instável · exibindo último cardápio salvo neste aparelho. Tentando reconectar...');
+      catalog=cached;
+      setCatalogConnectionStatus(false,'Conexão instável · cardápio salvo disponível para consulta. Compras pausadas até reconectar.');
+      mount();
       if(!silent)toast('Conexão temporariamente indisponível. Cardápio salvo exibido.');
     }else{
       setCatalogConnectionStatus(false,'Cardápio indisponível no momento. Tentando reconectar automaticamente...');
@@ -1256,7 +1257,10 @@ async function pollCustomerOrders(){
 async function submitOrder(ev){
   ev.preventDefault();
   E('checkoutResult').innerHTML='';
-
+  if(!catalogConnected){
+    E('checkoutResult').textContent='Sem conexão com a loja. Aguarde o cardápio atualizar antes de finalizar o pedido.';
+    return toast('Aguarde a conexão com a loja para confirmar preços e disponibilidade.');
+  }
   if(!cart.length)return toast('Seu carrinho está vazio.');
   if(!validPhone(E('cPhone').value)){
     E('cPhone').focus();
