@@ -19,7 +19,7 @@
   function isPalmitoPanqueca(p){
     const grade=String(p?.gradeNome||p?.grade?.nome||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
     const flavor=String([p?.variacaoLabel,p?.nomeComercial,p?.nome].filter(Boolean).join(' ')).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
-    return grade.includes('PANQUECA')&&flavor.includes('PALMITO');
+    return flavor.includes('PALMITO')&&(grade.includes('PANQUECA')||flavor.includes('PANQUECA'));
   }
   function fixedPromo(p){
     const v=n(promo(p).precoPromocional),b=base(p);
@@ -54,7 +54,7 @@
   function linePrice(productId,quantity,products=[],quantities=new Map()){
     const map=products instanceof Map?products:new Map(products.map(p=>[String(p.id),p]));
     const id=String(productId),p=map.get(id)||{},q=Math.max(0,n(quantity)),b=base(p),regular=round(b*q),options=[{total:regular,label:'',groupId:''}],f=fixedPromo(p),d=pack(p);
-    if(f!==null)options.push({total:round(f*q),label:'Promoção',groupId:`promo:${promo(p).id||id}`});
+    if(f!==null)options.push({total:round(f*q),label:isPalmitoPanqueca(p)?'Promoção Panqueca Palmito':'Promoção',groupId:`promo:${promo(p).id||id}`});
     if(d.ativo===true&&d.tipo==='LEVE_X_PAGUE_Y'&&packProductIds(p,d).length===1){
       const x=Math.floor(n(d.quantidadeLeve)),y=Math.floor(n(d.quantidadePague));
       if(x>1&&y>0&&y<x){const sets=Math.floor(q/x),rest=q-sets*x;options.push({total:round((sets*y+rest)*b),label:`Leve ${x}, pague ${y}`,groupId:`pack:${packKey(d,[id],x,y)}`})}
