@@ -36,7 +36,12 @@ function make(overrides={}){
     mount:()=>{ctx.mounts=(ctx.mounts||0)+1},
     money
   };
-  ctx.window={};
+  const store={open:async()=>({
+   match:async()=>overrides.backup?{json:async()=>overrides.backup}:null,
+   put:async()=>{}
+  })};
+  ctx.window={caches:store};
+  ctx.caches=store;
   vm.createContext(ctx);
   vm.runInContext(snippet('async function catalogBackup(){','function showProduct('),ctx);
   return{ctx,elements,queue};
@@ -68,7 +73,7 @@ test('falha transitória, segunda tentativa retorna produtos e oculta botão',as
 test('API indisponível mostra cópia local e agenda uma nova tentativa',async()=>{
  let attempts=0;const snapshot={loja:{nome:'Caseirinho'},produtos:[{id:'empada',nome:'Empada Palmito'}]};
  const {ctx,elements,queue}=make({api:async()=>{attempts++;throw new TypeError('Failed to fetch')},
- cache:{john_store_caseirinho_catalog_v1:snapshot}});
+ backup:snapshot});
  await ctx.loadCatalog();
  assert.equal(attempts,3);
  assert.equal(ctx.catalogConnected,false);
@@ -77,6 +82,14 @@ test('API indisponível mostra cópia local e agenda uma nova tentativa',async()
  assert.equal(ctx.mounts,1);
  assert.equal(queue.length,1);
  assert.equal(queue[0].ms,5000);
+});
+test('cache de emergência é apenas para consulta e desabilita novas compras',()=>{
+ const ctx={catalogConnected:false,norm:v=>String(v),N:v=>Number(v)||0};
+ vm.createContext(ctx);
+ vm.runInContext(snippet('function canBuy(p){','function availabilityText('),ctx);
+ assert.equal(ctx.canBuy({podeComprar:true,disponibilidade:'AMBOS'}),false);
+ ctx.catalogConnected=true;
+ assert.equal(ctx.canBuy({podeComprar:true,disponibilidade:'AMBOS'}),true);
 });
 test('sem cache, nunca finge que a loja está online e permite nova tentativa',async()=>{
  const{ctx,elements}=make({api:async()=>{throw new Error('Failed to fetch')}});
