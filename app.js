@@ -756,12 +756,16 @@ function renderCart(){
   const sub=promoTotals.subtotal;
   const savings=roundMoney(promoTotals.savings||0);
   const discountLine=E('packDiscountLine');
+  const grossLine=E('originalProductsLine');
+  if(grossLine){grossLine.hidden=savings<=0;E('originalProductsValue').textContent=money(roundMoney(sub+savings));}
   if(discountLine){
     discountLine.hidden=savings<=0;
-    E('packDiscountTotal').textContent='− '+money(savings);
+    // Valor líquido já contém a promoção; o traço negativo é apenas visual.
+    // Não duplicar desconto nos módulos de cupom, cashback, entrega e parmesão.
+    E('packDiscountTotal').textContent=money(savings);
   }
   const freight=freightInfo();
-  E('subtotal').textContent=money(roundMoney(sub+savings));
+  E('subtotal').textContent=money(sub);
   E('shipping').textContent=E('mode')?.value==='ENTREGA'?(freight.pending?'A cotar':money(freight.value)):money(0);
   E('grandTotal').textContent=freight.pending?money(sub)+' + frete':money(sub+freight.value);
   updateDateMin();
