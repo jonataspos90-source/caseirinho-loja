@@ -1,4 +1,4 @@
-const CACHE='caseirinho-loja-v9.10.6-pack-agrupado-descontos';
+const CACHE='caseirinho-loja-v9.10.7-resumo-pack-economia';
 const PROMOTIONJS='./ecommerce-promotions-v910.js';
 const PROMOTIONJS_TAG='<script src="./ecommerce-promotions-v910.js?v=91060" defer></'+'script>';
 const HOTFIX931='./store-hotfix-v9-3-1.js';
