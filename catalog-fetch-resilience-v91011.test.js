@@ -26,7 +26,7 @@ function make(overrides={}){
     images:p=>p.imagens||[],
     readJson:(key,alt)=>overrides.cache?.[key]||alt,
     writeJson:(key,v)=>{(overrides.writes||(overrides.writes=[])).push([key,v])},
-    api:overrides.api||async()=>({loja:{nome:'Caseirinho'},produtos:[{id:'pao',nome:'Pão'}]}),
+    api:overrides.api||(async()=>({loja:{nome:'Caseirinho'},produtos:[{id:'pao',nome:'Pão'}]})),
     window:{},
     document:{hidden:false},
     caches:null,
