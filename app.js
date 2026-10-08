@@ -753,24 +753,51 @@ function renderCart(){
   });
   E('cartItems').querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>{cart.splice(N(b.dataset.remove),1);renderCart()});
 
-  const sub=promoTotals.subtotal;
-  const savings=roundMoney(promoTotals.savings||0);
-  const discountLine=E('packDiscountLine');
-  const grossLine=E('originalProductsLine');
-  if(grossLine){grossLine.hidden=savings<=0;E('originalProductsValue').textContent=money(roundMoney(sub+savings));}
-  if(discountLine){
-    discountLine.hidden=savings<=0;
-    // Valor líquido já contém a promoção; o traço negativo é apenas visual.
-    // Não duplicar desconto nos módulos de cupom, cashback, entrega e parmesão.
-    E('packDiscountTotal').textContent=money(savings);
-  }
+  const sub=roundMoney(promoTotals.subtotal);
   const freight=freightInfo();
   E('subtotal').textContent=money(sub);
   E('shipping').textContent=E('mode')?.value==='ENTREGA'?(freight.pending?'A cotar':money(freight.value)):money(0);
-  E('grandTotal').textContent=freight.pending?money(sub)+' + frete':money(sub+freight.value);
+  E('grandTotal').textContent=freight.pending?money(sub)+' + frete':money(roundMoney(sub+freight.value));
+  // Atualize a discriminação por último: outras camadas também observam o subtotal.
+  syncPackPriceRows(promoTotals);
   updateDateMin();
 }
 function roundMoney(value){return Math.round((N(value)+Number.EPSILON)*100)/100}
+function syncPackPriceRows(pricing){
+  const p=pricing||promoApi()?.cartTotals(cart,catalog.produtos);
+  if(!p||!Number.isFinite(Number(p.subtotal)))return;
+  const net=roundMoney(p.subtotal);
+  const saved=roundMoney(Math.max(0,N(p.savings)));
+  const original=roundMoney(net+saved);
+  const subtotal=E('subtotal');
+  const grossRow=E('originalProductsLine');
+  const discountRow=E('packDiscountLine');
+  const updateText=(id,text)=>{const el=E(id);if(el&&el.textContent!==text)el.textContent=text;};
+  // O valor cobrado é sempre o preço já promocionado, não o original.
+  if(subtotal&&subtotal.textContent!==money(net))subtotal.textContent=money(net);
+  if(grossRow&&grossRow.hidden!==(saved<=0))grossRow.hidden=saved<=0;
+  if(discountRow&&discountRow.hidden!==(saved<=0))discountRow.hidden=saved<=0;
+  updateText('originalProductsValue',money(original));
+  updateText('packDiscountTotal','- '+money(saved));
+  const offers=new Set();
+  for(const item of cart){
+    const detail=p.lines?.get(S(item.produtoId));
+    if(!detail||N(detail.savings)<=0)continue;
+    const label=S(detail.promotionGroupLabel||detail.promotionLabel).split(' · ')[0].trim();
+    if(label)offers.add(label);
+  }
+  const offerText=[...offers].slice(0,2).join(' + ');
+  updateText('packDiscountLabel',offerText?'🎁 Desconto '+offerText+' (já aplicado)':'🎁 Desconto das promoções (já aplicado)');
+}
+// Corrige valores de um script/cache antigo que tente reescrever o subtotal,
+// sem mexer nas linhas de cupom, cashback, parmesão ou entrega.
+function watchPackPriceRows(){
+  const subtotal=E('subtotal');
+  if(!subtotal||!window.MutationObserver||subtotal.dataset.packPricingObserved==='1')return;
+  subtotal.dataset.packPricingObserved='1';
+  const observer=new MutationObserver(()=>syncPackPriceRows());
+  observer.observe(subtotal,{childList:true,subtree:true,characterData:true});
+}
 function normalizePhone(v){
   let d=S(v).replace(/\D/g,'');
   if(d.startsWith('55')&&d.length===13)d=d.slice(2);
@@ -1487,6 +1514,7 @@ async function checkCatalogVersion(){
 }
 function start(){
   wire();
+  watchPackPriceRows();
   renderCart();
   loadCatalog().then(()=>{
     lastCatalogMarker=S(catalog?.publicadoEm||'');
