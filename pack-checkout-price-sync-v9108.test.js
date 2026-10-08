@@ -17,7 +17,7 @@ const cart=[
 const brl=n=>n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 function fakeContext(chosenCart=cart){
  const ids=['subtotal','originalProductsLine','originalProductsValue','packDiscountLine','packDiscountTotal','packDiscountLabel'];
- const elements=Object.fromEntries(ids.map(id=>[id,{id,textContent:'',hidden:true}]));
+ const elements=Object.fromEntries(ids.map(id=>[id,{id,textContent:'',hidden:true,dataset:{}}]));
  const source=fs.readFileSync(__dirname+'/app.js','utf8');
  const begin=source.indexOf('function syncPackPriceRows(pricing){');
  const end=source.indexOf('// Corrige valores de um script/cache antigo',begin);
