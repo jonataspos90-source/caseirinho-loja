@@ -13,6 +13,8 @@ const STORE=String(
 
 const STORE_SCOPE='john_store_'+STORE+'_';
 const CATALOG_KEY=STORE_SCOPE+'catalog_v1';
+const CATALOG_PATH='/api/v1/public/store/'+encodeURIComponent(STORE)+'/catalog';
+const CATALOG_BACKUP_CACHE='john-storefront-catalog-backup-v1';
 const CART_KEY=STORE_SCOPE+'cart_v1';
 const ORDERS_KEY=STORE_SCOPE+'orders_v1';
 const PENDING_ORDER_KEY=STORE_SCOPE+'pending_order_v1';
@@ -35,6 +37,9 @@ let selectedGradeId='';
 let currentImages=[];
 let cepResolved=false;
 let catalogBusy=false;
+let catalogConnected=false;
+let catalogRecoveryTimer=null;
+let catalogRecoveryCount=0;
 let profileHydrated=false;
 let pollBusy=false;
 let historySyncBusy=null;
@@ -203,10 +208,14 @@ function toast(msg){
   clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('show'),2300);
 }
 async function api(path,opt={}){
+  const method=S(opt.method||'GET').toUpperCase();
+  // GET com cabeçalhos simples evita o preflight OPTIONS para o cardápio público.
+  // cache:no-store e a URL única já impedem leituras antigas, sem Cache-Control customizado.
+  const headers={...(method==='GET'||method==='HEAD'?{}:{'Content-Type':'application/json'}),...(opt.headers||{})};
   const r=await fetch(API+path+(path.includes('?')?'&':'?')+'_t='+Date.now(),{
     cache:'no-store',
     ...opt,
-    headers:{'Content-Type':'application/json','Cache-Control':'no-cache',...(opt.headers||{})}
+    headers
   });
   let data={};try{data=await r.json()}catch(_){}
   if(!r.ok)throw new Error(data.error||('Erro HTTP '+r.status));
@@ -217,6 +226,9 @@ function canonicalAvailability(p){
   return norm(p?.disponibilidade||'AMBOS');
 }
 function canBuy(p){
+  // O cache de emergência é apenas para consulta; estoque e preço devem
+  // ser confirmados pela API antes de permitir nova compra.
+  if(!catalogConnected)return false;
   if(typeof p?.podeComprar==='boolean')return p.podeComprar;
   const d=canonicalAvailability(p);
   return d==='SOB_ENCOMENDA'||d==='AMBOS'||N(p?.saldoDisponivel)>0;
@@ -613,31 +625,88 @@ function mount(){
   renderCategories();renderFeatured();renderProducts();renderSearchSuggestions();renderCart();renderCheckoutConfig();applyCustomerProfile();
 }
 
+async function catalogBackup(){
+  // Por segurança, não utilizamos o antigo localStorage como autoridade.
+  // Só mantemos snapshot recente da resposta pública confirmado pela API.
+  if(!('caches'in window)||!API)return null;
+  try{
+    const hit=await (await caches.open(CATALOG_BACKUP_CACHE)).match(API+CATALOG_PATH);
+    if(!hit)return null;
+    const saved=await hit.json();
+    return saved&&A(saved.produtos).length?saved:null;
+  }catch(_){return null}
+}
+async function saveCatalogBackup(data){
+  if(!('caches'in window)||!API||!A(data?.produtos).length)return;
+  try{
+    const backup=await caches.open(CATALOG_BACKUP_CACHE);
+    await backup.put(API+CATALOG_PATH,new Response(JSON.stringify(data),{
+      headers:{'Content-Type':'application/json'}
+    }));
+  }catch(error){console.warn('[Caseirinho] backup local do cardápio:',error)}
+}
+function setCatalogConnectionStatus(online,message){
+  catalogConnected=online;
+  const status=E('syncStatus');
+  if(status)status.textContent=message;
+  const root=E('catalogStatusLine');
+  if(root)root.dataset.connection=online?'online':'offline';
+  const retry=E('retryCatalog');
+  if(retry)retry.hidden=online;
+}
+function scheduleCatalogRecovery(){
+  if(catalogRecoveryTimer||document.hidden)return;
+  const wait=Math.min(60000,5000*Math.pow(2,Math.min(catalogRecoveryCount++,3)));
+  catalogRecoveryTimer=setTimeout(()=>{
+    catalogRecoveryTimer=null;
+    if(!catalogConnected&&!document.hidden)loadCatalog(true);
+  },wait);
+}
+async function fetchCatalogWithRetry(){
+  let lastError;
+  for(let attempt=0;attempt<3;attempt++){
+    try{
+      const result=await api(CATALOG_PATH);
+      if(!result||!Array.isArray(result.produtos))throw new Error('Resposta inválida do catálogo.');
+      return result;
+    }catch(error){
+      lastError=error;
+      if(attempt<2)await new Promise(resolve=>setTimeout(resolve,350*(attempt+1)));
+    }
+  }
+  throw lastError;
+}
 async function loadCatalog(silent=false){
   if(catalogBusy)return;
   catalogBusy=true;
   try{
-    const cloud=await api('/api/v1/public/store/'+encodeURIComponent(STORE)+'/catalog');
-    const cached=readJson(CATALOG_KEY,{produtos:[]});
+    const cloud=await fetchCatalogWithRetry();
+    const cached=await catalogBackup()||{produtos:[]};
     const oldMap=new Map(A(cached.produtos).map(p=>[S(p.id),p]));
     cloud.produtos=A(cloud.produtos).map(p=>{
       if(images(p).length)return p;
       const old=oldMap.get(S(p.id));
       return old&&images(old).length?{...p,imagem:images(old)[0],imagens:images(old)}:p;
     });
-    catalog=cloud;writeJson(CATALOG_KEY,catalog);
-    E('syncStatus').textContent=`Loja conectada · ${A(catalog.produtos).length} produto(s) · atualizado ${catalog.publicadoEm?new Date(catalog.publicadoEm).toLocaleString('pt-BR'):'agora'}`;
+    catalog=cloud;
+    saveCatalogBackup(catalog).catch(console.warn);
+    if(catalogRecoveryTimer){clearTimeout(catalogRecoveryTimer);catalogRecoveryTimer=null}
+    catalogRecoveryCount=0;
+    setCatalogConnectionStatus(true,`Loja conectada · ${A(catalog.produtos).length} produto(s) · atualizado ${catalog.publicadoEm?new Date(catalog.publicadoEm).toLocaleString('pt-BR'):'agora'}`);
     mount();
   }catch(err){
-    const cached=readJson(CATALOG_KEY,null);
+    const cached=A(catalog.produtos).length?catalog:await catalogBackup();
     if(cached&&A(cached.produtos).length){
-      catalog=cached;mount();
-      E('syncStatus').textContent='Sem conexão momentânea · exibindo último cardápio sincronizado.';
-      if(!silent)toast('Conexão temporariamente indisponível.');
+      catalog=cached;
+      setCatalogConnectionStatus(false,'Conexão instável · cardápio salvo disponível para consulta. Compras pausadas até reconectar.');
+      mount();
+      if(!silent)toast('Conexão temporariamente indisponível. Cardápio salvo exibido.');
     }else{
-      E('syncStatus').textContent='Não foi possível carregar o cardápio: '+err.message;
-      E('products').innerHTML='<div class="empty">Não conseguimos carregar o cardápio agora.</div>';
+      setCatalogConnectionStatus(false,'Cardápio indisponível no momento. Tentando reconectar automaticamente...');
+      E('products').innerHTML='<div class="empty">Não foi possível carregar o cardápio. Toque em Tentar novamente.</div>';
+      console.warn('[Caseirinho] tentativa de carregar cardápio:',err);
     }
+    scheduleCatalogRecovery();
   }finally{catalogBusy=false}
 }
 
@@ -1188,7 +1257,10 @@ async function pollCustomerOrders(){
 async function submitOrder(ev){
   ev.preventDefault();
   E('checkoutResult').innerHTML='';
-
+  if(!catalogConnected){
+    E('checkoutResult').textContent='Sem conexão com a loja. Aguarde o cardápio atualizar antes de finalizar o pedido.';
+    return toast('Aguarde a conexão com a loja para confirmar preços e disponibilidade.');
+  }
   if(!cart.length)return toast('Seu carrinho está vazio.');
   if(!validPhone(E('cPhone').value)){
     E('cPhone').focus();
@@ -1517,6 +1589,7 @@ async function checkCatalogVersion(){
 }
 function start(){
   wire();
+  E('retryCatalog')?.addEventListener('click',()=>loadCatalog(false));
   watchPackPriceRows();
   renderCart();
   loadCatalog().then(()=>{
@@ -1529,9 +1602,9 @@ function start(){
   setInterval(()=>{if(!document.hidden)checkCatalogVersion()},30000);
   setInterval(()=>{if(!document.hidden)pollCustomerOrders()},4000);
   setTimeout(()=>pollCustomerOrders(),1200);
-  window.addEventListener('focus',()=>{checkCatalogVersion();pollCustomerOrders()});
-  window.addEventListener('online',()=>{checkCatalogVersion();pollCustomerOrders()});
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden){checkCatalogVersion();pollCustomerOrders()}});
+  window.addEventListener('focus',()=>{if(!catalogConnected)loadCatalog(true);checkCatalogVersion();pollCustomerOrders()});
+  window.addEventListener('online',()=>{if(!catalogConnected)loadCatalog(true);checkCatalogVersion();pollCustomerOrders()});
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden){if(!catalogConnected)loadCatalog(true);checkCatalogVersion();pollCustomerOrders()}});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 

@@ -21,5 +21,6 @@ test('hotfix de autoridade carrega antes do app da loja',()=>{
 
 test('consulta do catálogo continua sem cache HTTP',()=>{
   assert.match(app,/cache:'no-store'/);
-  assert.match(app,/'Cache-Control':'no-cache'/);
+  assert.match(app,/const headers=\{/);
+  assert.doesNotMatch(app,/'Cache-Control':'no-cache'/);
 });
