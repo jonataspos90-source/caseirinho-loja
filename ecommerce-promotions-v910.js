@@ -19,7 +19,8 @@
   function isPalmitoPanqueca(p){
     const grade=String(p?.gradeNome||p?.grade?.nome||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
     const flavor=String([p?.variacaoLabel,p?.nomeComercial,p?.nome].filter(Boolean).join(' ')).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
-    return grade.includes('PANQUECA')&&flavor.includes('PALMITO');
+    return (grade.includes('PANQUECA')&&flavor.includes('PALMITO'))
+      ||(flavor.includes('PANQUECA')&&flavor.includes('PALMITO'));
   }
   function fixedPromo(p){
     const v=n(promo(p).precoPromocional),b=base(p);
