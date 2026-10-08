@@ -79,3 +79,26 @@ test('panqueca Palmito mantém preço promocional sem alterar os outros recheios
   assert.equal(promo.priceInfo(palmito,[palmito,carne]).current,11.99);
   assert.equal(promo.priceInfo(carne,[palmito,carne]).current,11.99);
 });
+
+
+test('promoção Panqueca Palmito é reconhecida pelo nome sem grade e economiza R$ 2,00',()=>{
+ const palmito={id:'palmito',nome:'Panqueca Palmito',preco:13.99};
+ const carne={id:'carne',nome:'Panqueca Carne',preco:13.99};
+ assert.equal(promo.priceInfo(palmito).current,11.99);
+ assert.equal(promo.priceInfo(carne).current,13.99);
+ const r=promo.cartTotals([{produtoId:'palmito',quantidade:1},{produtoId:'carne',quantidade:1}],[palmito,carne]);
+ assert.equal(r.subtotal,25.98);
+ assert.equal(r.savings,2);
+ assert.equal(r.lines.get('palmito').promotionLabel,'Promoção Panqueca Palmito');
+});
+test('carrinho empadas+panqueca mantém pack e preço individual sem descontos duplicados',()=>{
+ const ids=['empada-palmito','empada-carne','empada-camarao','empada-frango','empada-escarola'];
+ const ps=ids.map((id,i)=>({id,nome:id,preco:[9.99,11.99,11.99,9.99,11.99][i],
+  packVirtual:{ativo:true,tipo:'LEVE_X_PAGUE_Y',packId:'empadas-5-por-4',quantidadeLeve:5,quantidadePague:4,produtoIds:ids}}));
+ ps.push({id:'panqueca-palmito',nome:'Panqueca Palmito',preco:13.99});
+ const x=promo.cartTotals([...ids.map(produtoId=>({produtoId,quantidade:1})),{produtoId:'panqueca-palmito',quantidade:1}],ps);
+ assert.equal(x.subtotal,57.95);
+ assert.equal(x.savings,11.99);
+ assert.equal(x.lines.get('panqueca-palmito').unitPrice,11.99);
+ assert.equal(Math.round((x.subtotal+4+9.99)*100)/100,71.94);
+});
