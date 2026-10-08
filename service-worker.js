@@ -1,6 +1,6 @@
-const CACHE='caseirinho-loja-v9.10.9-desconto-sem-duplicacao';
+const CACHE='caseirinho-loja-v9.10.10-panqueca-palmito-promocional';
 const PROMOTIONJS='./ecommerce-promotions-v910.js';
-const PROMOTIONJS_TAG='<script src="./ecommerce-promotions-v910.js?v=91060" defer></'+'script>';
+const PROMOTIONJS_TAG='<script src="./ecommerce-promotions-v910.js?v=910100" defer></'+'script>';
 const HOTFIX931='./store-hotfix-v9-3-1.js';
 const HOTFIX932='./store-hotfix-v9-3-2.js';
 const HOTFIX933='./store-hotfix-v9-3-3.js';
@@ -59,7 +59,7 @@ function injectHead(html,needle,tag){if(html.includes(needle))return html;const 
 function injectBeforeApp(html,needle,tag){if(html.includes(needle))return html;const p=html.indexOf('<script src="./app.js');return p>=0?html.slice(0,p)+tag+html.slice(p):injectOne(html,needle,tag)}
 function stripOldCardScripts(html){return html.split(/<script[^>]*product-cards-mobile-v9-4-(?:8|9)\.js[^>]*><\/script>/gi).join('')}
 function stripOldDeliveryScripts(html){return html.split(/<script[^>]*delivery-moto-v9-5-3\.js[^>]*><\/script>/gi).join('')}
-function injectHotfix(response){if(!response)return response;const ct=response.headers.get('content-type')||'';if(!ct.includes('text/html'))return response;return response.text().then(html=>{html=stripOldCardScripts(html);html=stripOldDeliveryScripts(html);
+function injectHotfix(response){if(!response)return response;const ct=response.headers.get('content-type')||'';if(!ct.includes('text/html'))return response;return response.text().then(html=>{html=stripOldCardScripts(html);html=stripOldDeliveryScripts(html);html=html.replace(/(ecommerce-promotions-v910\.js\?v=)\d+/g,(_,prefix)=>prefix+'910100');
   // Atualiza versões nos HTMLs guardados pelo PWA sem inserir um segundo script.
   html=html.replace(/(app\.js\?v=)\d+/g,(_,prefix)=>prefix+'91090');
   html=html.replace(/(checkout-parmesao-v9-3-6\.js\?v=)\d+/g,(_,prefix)=>prefix+'91090');
