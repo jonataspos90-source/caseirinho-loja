@@ -39,7 +39,7 @@ test('checkout e comprovante usam o mesmo discriminador centralizado',()=>{
  const html=fs.readFileSync(__dirname+'/index.html','utf8');
  const receipt=fs.readFileSync(__dirname+'/order-receipt-pdf-v9-4-1.js','utf8');
  assert.match(html,/id="packDiscountLine"/);
- assert.match(app,/E\('packDiscountTotal'\)\.textContent/);
+ assert.match(app,/updateText\('packDiscountTotal'/);
  assert.match(receipt,/JohnOrderAmounts\.lines\(o\)/);
  assert.match(receipt,/PARABÉNS PELA ECONOMIA!/);
 });
