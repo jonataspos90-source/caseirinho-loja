@@ -92,6 +92,11 @@ function receiptLines(o){
   }
   sep();
   window.JohnOrderAmounts.lines(o).forEach(([label,value])=>add(label+': '+value,{size:label.startsWith('Total')?14:10,bold:true,gap:label.startsWith('Total')?22:14}));
+  const congrat=window.JohnOrderAmounts.celebration(o);
+  if(congrat){
+    add('PARABÉNS PELA ECONOMIA!',{size:12,bold:true,gap:21});
+    wrap(congrat.replace(/[^\u0020-\u00ff]/g,''),71).forEach(t=>add(t,{size:10,bold:true,gap:16}));
+  }
   sep();
   add('PIX OFICIAL DO CASEIRINHO',{size:12,bold:true,gap:18});
   add('Chave PIX (CNPJ): '+prettyPix(),{bold:true});
