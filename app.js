@@ -754,8 +754,14 @@ function renderCart(){
   E('cartItems').querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>{cart.splice(N(b.dataset.remove),1);renderCart()});
 
   const sub=promoTotals.subtotal;
+  const savings=roundMoney(promoTotals.savings||0);
+  const discountLine=E('packDiscountLine');
+  if(discountLine){
+    discountLine.hidden=savings<=0;
+    E('packDiscountTotal').textContent='− '+money(savings);
+  }
   const freight=freightInfo();
-  E('subtotal').textContent=money(sub);
+  E('subtotal').textContent=money(roundMoney(sub+savings));
   E('shipping').textContent=E('mode')?.value==='ENTREGA'?(freight.pending?'A cotar':money(freight.value)):money(0);
   E('grandTotal').textContent=freight.pending?money(sub)+' + frete':money(sub+freight.value);
   updateDateMin();
@@ -1210,9 +1216,12 @@ async function submitOrder(ev){
     );
 
     const appliedPromotions=promoApi()?.cartTotals(cart,catalog.produtos);
+    const promoSavings=roundMoney(appliedPromotions?.savings||0);
     const saved={
       ...body,
       ...result,
+      subtotalOriginal:result.subtotalOriginal??roundMoney(N(result.subtotal)+promoSavings),
+      descontoPromocional:result.descontoPromocional??promoSavings,
       publicToken:result.publicToken,
       savedAt:new Date().toISOString(),
       itens:cart.map(x=>{const row=appliedPromotions?.lines.get(S(x.produtoId));return{...x,precoUnitario:row?.unitPrice??N(x.precoUnitario),total:row?.total??N(x.quantidade)*N(x.precoUnitario),economia:row?.savings??0,promocaoAplicada:row?.promotionLabel||''}})
@@ -1243,6 +1252,7 @@ async function submitOrder(ev){
     E('checkoutResult').innerHTML=
       `<div class="result">
         <b>Pedido ${esc(result.codigo)} recebido! 🎉</b><br>
+        ${window.JohnOrderAmounts.celebration(saved)?`<strong style="color:#166534">${esc(window.JohnOrderAmounts.celebration(saved))}</strong><br>`:''}
         ${esc(freightText)}<br>
         ${window.JohnOrderAmounts.lines(saved).map(([label,value])=>esc(label)+': <b>'+esc(value)+'</b>').join('<br>')}<br>
         <button class="soft" type="button" id="openSavedOrders" style="margin-top:9px">Acompanhar pedido</button>
@@ -1331,6 +1341,7 @@ function ordersCardsHtml(orders){
 
     return `<div class="order-card"><div class="order-top"><div><b>${esc(o.codigo||o.id)}</b><br><small>${new Date(o.criadoEm||o.createdAt||o.savedAt||Date.now()).toLocaleString('pt-BR')}</small></div><span class="status-badge ${esc(st)}">${esc(customerStatusLabel(st))}</span></div>
       <div class="order-customer-grid">${window.JohnOrderAmounts.lines(o).map(([label,value])=>`<div><small>${esc(label)}</small><b>${esc(value)}</b></div>`).join('')}${delivery?`<div><small>Entrega</small><b>${esc(orderTimeText(o))}</b></div>`:''}</div>
+      ${window.JohnOrderAmounts.celebration(o)?`<div class="cx-note ok" style="color:#166534;font-weight:800">${esc(window.JohnOrderAmounts.celebration(o))}</div>`:''}
       ${o.freteStatus==='COTACAO_PENDENTE'?'<div class="cx-note">🛵 A loja calculará a entrega e enviará o valor aqui para sua aprovação.</div>':''}
       ${awaiting?`<div class="freight-decision"><b>🛵 Novo valor de entrega aguardando sua resposta</b><div>Frete: <strong>${money(o.valorFrete)}</strong> · Total atualizado: <strong>${money(o.total)}</strong></div><div class="order-actions"><button class="soft" data-shipping-no="${esc(o.id)}" type="button">Não, cancelar pedido</button><button class="primary" data-shipping-yes="${esc(o.id)}" type="button">Sim, aprovar frete</button></div></div>`:''}
       ${st==='AGUARDANDO_ACEITE_ERP'?'<div class="cx-note ok">✅ Você aceitou o novo frete. Agora o pedido aguarda o aceite final da loja.</div>':''}
