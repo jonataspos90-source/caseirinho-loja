@@ -71,7 +71,7 @@ function breakdown(input={}){
 function lines(o){
   const b=breakdown(o),out=[['Produtos',money(b.products)]];
   for(const p of b.promoLines)out.push(['Desconto - '+p.label,'- '+money(p.amount)]);
-  if(b.otherDiscounts>0)out.push(['Outros descontos / cashback','- '+money(b.otherDiscounts)]);
+  if(b.otherDiscounts>0)out.push([b.promoDiscount>0?'Outros descontos / cashback':'Descontos / cashback','- '+money(b.otherDiscounts)]);
   out.push(['Frete',b.pending?'A calcular':money(b.freight)+(b.pickup?' (retirada)':'')]);
   if(b.adjustment>0)out.push(['Ajustes do pedido',money(b.adjustment)]);
   out.push([b.pending?'Total atual (frete a calcular)':'Total do pedido',money(b.total)]);
