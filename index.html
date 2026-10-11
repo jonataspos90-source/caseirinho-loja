@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Caseirinho">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Loja Online · V9.10.15</title>
+  <title>Loja Online · V9.10.16</title>
   <link rel="manifest" href="./manifest.webmanifest?v=clean-20261004">
   <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png?v=clean-20261004">
   <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png?v=clean-20261004">
@@ -21,13 +21,15 @@
   <link rel="stylesheet" href="./desktop-ux-v9-5-6.css?v=9560">
   <link rel="stylesheet" href="./premium-checkout-v9-7-0.css?v=9700">
   <style>
-    .bottom-nav.instagram-enabled{grid-template-columns:repeat(6,minmax(0,1fr))}
+    .bottom-nav.instagram-enabled{grid-template-columns:repeat(7,minmax(0,1fr))}
     .totals #packDiscountLine[hidden],.totals #originalProductsLine[hidden]{display:none!important}
     .totals #packDiscountLine{color:#166534;background:#ecfdf5;padding:10px 12px;border-radius:10px;font-weight:800;margin:6px 0}
     .totals #packDiscountLine strong{font-weight:900;white-space:nowrap;margin-left:auto;color:#166534}
     .totals #packDiscountTotal::before{content:'−';margin-right:.35em}
     @media(max-width:430px){.totals #packDiscountLine{gap:8px;flex-wrap:wrap}.totals #packDiscountLabel{max-width:70%;line-height:1.3}}
-    .bottom-nav.instagram-enabled.cashback-wallet-enabled{grid-template-columns:repeat(7,minmax(0,1fr))}
+    .bottom-nav.instagram-enabled.cashback-wallet-enabled{grid-template-columns:repeat(8,minmax(0,1fr))}
+    #navReviews{color:#8a1a48}#navReviews:focus-visible{outline:3px solid #e5a52a;outline-offset:2px}#navReviews span{font-weight:900}
+    @media(max-width:420px){.bottom-nav.instagram-enabled.cashback-wallet-enabled button span{font-size:8px}.bottom-nav.instagram-enabled.cashback-wallet-enabled{gap:1px}}
     #navInstagram{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:54px;padding:6px 2px;border-radius:12px;text-decoration:none;color:#a42c6b}
     #navInstagram span{display:block;font-size:9px;font-weight:800;line-height:1.05}
     #navInstagram:focus-visible,.instagram-footer:focus-visible{outline:3px solid #a42c6b;outline-offset:3px}
@@ -111,21 +113,6 @@
           <div><h2>Cardápio</h2><p>Escolha uma categoria ou continue rolando.</p></div>
         </div>
 
-        <section class="reviews-showcase" id="avaliacoes" aria-labelledby="reviewsTitle">
-          <div class="reviews-heading">
-            <div><div class="reviews-eyebrow">💚 Clientes que recomendam</div><h3 id="reviewsTitle">⭐ O que dizem do Caseirinho?</h3></div>
-            <button type="button" class="review-refresh" id="experienceRefresh">Atualizar</button>
-          </div>
-          <p class="reviews-intro">Opiniões reais sobre comprar pelo aplicativo e sobre o sabor dos nossos produtos.</p>
-          <div class="reviews-metrics">
-            <div class="reviews-metric"><span>📱 APP E EXPERIÊNCIA</span><strong id="reviewsAppAvg">—</strong><div class="reviews-metric-stars">★★★★★</div><small id="reviewsAppCount">Carregando...</small></div>
-            <div class="reviews-metric"><span>😋 PRODUTOS E SABOR</span><strong id="reviewsProductAvg">—</strong><div class="reviews-metric-stars">★★★★★</div><small id="reviewsProductCount">Carregando...</small></div>
-          </div>
-          <div class="reviews-subheading"><b id="experienceSummary">Carregando avaliações...</b><small>Avaliações de clientes</small></div>
-          <div id="lista-avaliacoes" aria-live="polite"><p class="review-empty">Buscando experiências reais...</p></div>
-          <p class="reviews-privacy" id="reviewsFetchStatus">Avaliações verificadas. Os nomes são exibidos apenas pelas iniciais.</p>
-        </section>
-
         <div class="category-row" id="categories"></div>
         <div class="catalog-head">
           <div><b id="catalogTitle">Cardápio</b><small id="catalogCount"></small></div>
@@ -145,12 +132,32 @@
 
   <nav class="bottom-nav instagram-enabled" aria-label="Navegação">
     <button id="navMenu" type="button">📖<span>Cardápio</span></button>
+    <button id="navReviews" type="button" aria-label="Abrir avaliações do Caseirinho" aria-haspopup="dialog">⭐<span>Avaliações</span></button>
     <button id="navCart" type="button">🛒<span>Carrinho</span><b id="navCartCount">0</b></button>
     <button id="navOrders" type="button">🧾<span>Pedidos</span></button>
     <button id="navStore" type="button">🏪<span>Loja</span></button>
     <a id="navInstagram" href="https://www.instagram.com/caseirinho_massas_artesanais/" target="_blank" rel="noopener noreferrer" aria-label="Abrir Instagram do Caseirinho em nova aba"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><defs><linearGradient id="igNavGradient" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#feda75"/><stop offset=".25" stop-color="#fa7e1e"/><stop offset=".5" stop-color="#d62976"/><stop offset=".75" stop-color="#962fbf"/><stop offset="1" stop-color="#4f5bd5"/></linearGradient></defs><rect width="24" height="24" rx="6" fill="url(#igNavGradient)"/><g fill="none" stroke="#fff" stroke-width="1.7"><rect x="5" y="5" width="14" height="14" rx="4"/><circle cx="12" cy="12" r="3.3"/></g><circle cx="16.7" cy="7.3" r="1" fill="#fff"/></svg><span>Instagram</span></a>
     <button id="navWhats" type="button"><svg class="whatsapp-brand-icon" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:middle"><rect width="24" height="24" rx="6" fill="#25D366"/><path d="M6.1 18.3l.9-3.1a7 7 0 1 1 2.6 2.6z" fill="none" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/><path d="M9.2 7.9c-.2-.5-.4-.5-.7-.5h-.5c-.2 0-.5.1-.7.4-.3.3-.9.9-.9 2.1s.9 2.4 1 2.6c.1.2 1.8 2.8 4.4 3.8 2.2.9 2.6.6 3.1.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.1-1.2-.1-.1-.3-.2-.6-.3l-1.8-.9c-.2-.1-.4-.1-.6.2l-.8 1c-.1.2-.3.2-.6.1-.3-.1-1.2-.4-2.2-1.3-.8-.7-1.3-1.5-1.4-1.8-.2-.3 0-.4.1-.5l.4-.5.3-.5c.1-.2 0-.4 0-.5z" fill="#fff"/></svg><span>WhatsApp</span></button>
   </nav>
+
+
+  <template id="reviewsViewTemplate">
+    <section class="reviews-showcase" id="avaliacoes" aria-labelledby="reviewsTitle">
+      <div class="reviews-heading">
+        <div><div class="reviews-eyebrow">💚 Clientes que recomendam</div><h3 id="reviewsTitle">⭐ O que dizem do Caseirinho?</h3></div>
+        <button type="button" class="review-refresh" id="experienceRefresh">Atualizar</button>
+      </div>
+      <p class="reviews-intro">Opiniões reais sobre comprar pelo aplicativo e sobre o sabor dos nossos produtos.</p>
+      <div class="reviews-metrics">
+        <div class="reviews-metric"><span>📱 APP E EXPERIÊNCIA</span><strong id="reviewsAppAvg">—</strong><div class="reviews-metric-stars">★★★★★</div><small id="reviewsAppCount">Carregando...</small></div>
+        <div class="reviews-metric"><span>😋 PRODUTOS E SABOR</span><strong id="reviewsProductAvg">—</strong><div class="reviews-metric-stars">★★★★★</div><small id="reviewsProductCount">Carregando...</small></div>
+      </div>
+      <div class="reviews-subheading"><b id="experienceSummary">Carregando avaliações...</b><small>Avaliações de clientes</small></div>
+      <div id="lista-avaliacoes" aria-live="polite"><p class="review-empty">Buscando experiências reais...</p></div>
+      <p class="reviews-privacy" id="reviewsFetchStatus">Avaliações verificadas. Os nomes são exibidos apenas pelas iniciais.</p>
+    </section>
+
+  </template>
 
   <div class="overlay" id="productOverlay" aria-hidden="true">
     <div class="product-modal">
@@ -237,7 +244,7 @@
     window.CASEIRINHO_CONFIG={
       apiUrl:'https://john-cloud-api-production.up.railway.app',
       storeSlug:'caseirinho',
-      version:'9.10.15',
+      version:'9.10.16',
       promotionsVersion:'9.10.12',
       mobileUxVersion:'9.4.7',
       productCardVersion:'9.5.7',
@@ -275,7 +282,7 @@
   <script src="./delivery-moto-v9-5-4.js?v=91090" defer></script>
   <script src="./delivery-mode-v9-5-5.js?v=9550" defer></script>
   <script src="./commerce-engagement-v9-6-1.js?v=20261011" defer></script>
-  <script src="./customer-reviews-v1.js?v=20261011c" defer></script>
+  <script src="./customer-reviews-v1.js?v=20261011d" defer></script>
   <script src="./premium-checkout-v9-7-0.js?v=9700" defer></script>
 </body>
 </html>
