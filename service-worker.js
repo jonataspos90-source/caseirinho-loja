@@ -1,4 +1,4 @@
-const CACHE='caseirinho-loja-v9.10.12-promocoes-packs';
+const CACHE='caseirinho-loja-v9.10.13-avaliacoes-verificadas';
 const PROMOTIONJS='./ecommerce-promotions-v910.js';
 const PROMOTIONJS_TAG='<script src="./ecommerce-promotions-v910.js?v=910120" defer></'+'script>';
 const HOTFIX931='./store-hotfix-v9-3-1.js';
@@ -27,6 +27,8 @@ const COUPONJS958='./caseirinho-coupon-assistant-v9-5-8.js';
 const JOHNJS959='./caseirinho-john-coupon-v9-5-9.js';
 const CASHBACKJS960='./caseirinho-cashback-v9-6-0.js';
 const ENGAGEMENTJS961='./commerce-engagement-v9-6-1.js';
+const REVIEWSJS='./customer-reviews-v1.js';
+const REVIEWSCSS='./customer-reviews-v1.css';
 const HOTFIX931_TAG='<script src="./store-hotfix-v9-3-1.js?v=9490"></'+'script>';
 const HOTFIX932_TAG='<script src="./store-hotfix-v9-3-2.js?v=9490"></'+'script>';
 const HOTFIX933_TAG='<script src="./store-hotfix-v9-3-3.js?v=937"></'+'script>';
@@ -53,7 +55,7 @@ const COUPONJS958_TAG='<script src="./caseirinho-coupon-assistant-v9-5-8.js?v=99
 const JOHNJS959_TAG='<script src="./caseirinho-john-coupon-v9-5-9.js?v=9901" defer></'+'script>';
 const CASHBACKJS960_TAG='<script src="./caseirinho-cashback-v9-6-0.js?v=9600" defer></'+'script>';
 const ENGAGEMENTJS961_TAG='<script src="./commerce-engagement-v9-6-1.js?v=9610" defer></'+'script>';
-const SHELL=['./order-amounts.js','./','./index.html','./styles.css',MOBILECSS947,CARDSCSS948,VARIANTCSS957,DESKTOPCSS956,COUPONJS958,JOHNJS959,CASHBACKJS960,ENGAGEMENTJS961,PROMOTIONJS,'./app.js','./commerce-engine-v9-3-0.js',HOTFIX931,HOTFIX932,HOTFIX933,HOTFIX934,HOTFIX935,PARMESAO936,PIX937,REV938,PIX939,RECEIPT941,DEDUPE942,MOBILEJS947,CARDSJS950,GROUPJS951,SYNCJS952,VARIANTJS957,DELIVERYJS954,DELIVERYMODE955,'./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png','./icons/apple-touch-icon.png','./assets/salgados-sortidos-fritos-v984.webp'];
+const SHELL=['./order-amounts.js','./','./index.html','./styles.css',MOBILECSS947,CARDSCSS948,VARIANTCSS957,DESKTOPCSS956,COUPONJS958,JOHNJS959,CASHBACKJS960,ENGAGEMENTJS961,REVIEWSJS,REVIEWSCSS,PROMOTIONJS,'./app.js','./commerce-engine-v9-3-0.js',HOTFIX931,HOTFIX932,HOTFIX933,HOTFIX934,HOTFIX935,PARMESAO936,PIX937,REV938,PIX939,RECEIPT941,DEDUPE942,MOBILEJS947,CARDSJS950,GROUPJS951,SYNCJS952,VARIANTJS957,DELIVERYJS954,DELIVERYMODE955,'./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png','./icons/apple-touch-icon.png','./assets/salgados-sortidos-fritos-v984.webp'];
 function injectOne(html,needle,tag){if(html.includes(needle))return html;const low=html.toLowerCase(),p=low.lastIndexOf('</body>');return p>=0?html.slice(0,p)+tag+html.slice(p):html+tag}
 function injectHead(html,needle,tag){if(html.includes(needle))return html;const low=html.toLowerCase(),p=low.lastIndexOf('</head>');return p>=0?html.slice(0,p)+tag+html.slice(p):tag+html}
 function injectBeforeApp(html,needle,tag){if(html.includes(needle))return html;const p=html.indexOf('<script src="./app.js');return p>=0?html.slice(0,p)+tag+html.slice(p):injectOne(html,needle,tag)}
