@@ -83,9 +83,12 @@ async function loadReviews(){
     const data=await response.json();
     if(!response.ok)throw Error(data.error||'Servidor indisponível');
     enabled=data.enabled!==false;
-    if(summary)summary.textContent=data.count?
-      data.average.toLocaleString('pt-BR',{maximumFractionDigits:1})+' / 5 · '+data.count+' avaliação(ões)':
-      'Sua opinião é importante para nós';
+    const count=Math.max(0,Number(data.count)||0);
+    const avg=Math.max(0,Math.min(5,Number(data.average)||0));
+    if(summary)summary.textContent=count?
+      '★ Média geral '+avg.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+
+      '/5 · '+count.toLocaleString('pt-BR')+' '+(count===1?'avaliação recebida':'avaliações recebidas'):
+      '0 avaliações recebidas · Média ainda indisponível';
     paint(Array.isArray(data.reviews)?data.reviews:[]);
     E('experienceForm')?.toggleAttribute('hidden',!enabled);
     toggle();
