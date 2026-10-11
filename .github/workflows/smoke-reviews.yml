@@ -1,0 +1,42 @@
+name: Verificar Avaliações da Loja
+
+on:
+  push:
+    paths:
+      - .github/workflows/smoke-reviews.yml
+  workflow_dispatch:
+
+jobs:
+  review-api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Verificar media, total e comentarios da API publicada
+        run: |
+          node --input-type=module <<'JS'
+          const url='https://john-cloud-api-production.up.railway.app/api/v1/public/store/caseirinho/reviews';
+          let last;
+          for(let i=0;i<4;i++){
+            try{
+              const response=await fetch(url,{headers:{accept:'application/json'},signal:AbortSignal.timeout(15000)});
+              const data=await response.json();
+              if(!response.ok||data.ok!==true||!Number.isInteger(data.count)||
+                !Number.isFinite(Number(data.average))||!Array.isArray(data.reviews)) {
+                throw Error('Resposta da API invalida: HTTP '+response.status);
+              }
+              if(data.reviews.length>data.count)throw Error('Lista maior do que total');
+              if(data.reviews.some(x=>!/^([A-ZÀ-Ü]\.( [A-ZÀ-Ü]\.)?|Cliente Caseirinho)$/.test(x.name))) {
+                throw Error('Identificacao publica nao abreviada');
+              }
+              console.log('Avaliacoes na API: '+data.count);
+              console.log('Media publica: '+data.average+'/5');
+              console.log('Comentarios apresentados: '+data.reviews.filter(x=>x.comment).length);
+              process.exit(0);
+            }catch(e){last=e;await new Promise(r=>setTimeout(r,2500))}
+          }
+          console.error('Falha de integracao: '+last?.message);
+          process.exit(1);
+          JS
