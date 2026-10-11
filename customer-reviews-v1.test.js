@@ -23,7 +23,7 @@ test('comentários renderizados como texto, sem HTML arbitrário',()=>{
   assert.doesNotMatch(script,/insertAdjacentHTML|innerHTML/);
 });
 test('nota depende de token, pedido entregue e registro na API',()=>{
-  assert.match(script,/orders\/\+'\/experience/);
+  assert.match(script,/experience\\?token=/);
   assert.match(script,/statusDone\(d\.status\)/);
   assert.match(script,/publicToken/);
   assert.match(script,/method:'POST'/);
