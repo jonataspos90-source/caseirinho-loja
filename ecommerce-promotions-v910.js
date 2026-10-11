@@ -94,7 +94,7 @@
         const q=Math.floor(n(quantities.get(id))),product=map.get(id);
         for(let i=0;i<q;i++)units.push({id,price:base(product)});
       }
-      units.sort((a,b)=>a.price-b.price||a.id.localeCompare(b.id));
+      units.sort((a,b)=>b.price-a.price||a.id.localeCompare(b.id));
       const completeSets=Math.floor(units.length/rule.x);
       if(!completeSets){
         const eligible=units.length,remaining=rule.x-eligible;
@@ -104,8 +104,8 @@
         }
         continue;
       }
-      const freeCount=completeSets*(rule.x-rule.y);
-      const packTotal=round(units.slice(freeCount).reduce((sum,unit)=>sum+unit.price,0));
+      let packTotal=0;
+      units.forEach((unit,index)=>{const pos=index%rule.x;if(pos<rule.y)packTotal+=unit.price});
       const currentTotal=rule.ids.reduce((sum,id)=>sum+(lines.get(id)?.total||0),0);
       if(packTotal>=currentTotal-.001)continue;
       const totals=new Map(rule.ids.map(id=>[id,0]));
