@@ -14,7 +14,11 @@
     return [...new Set(ids)];
   };
   const productName=p=>String(p?.nomeComercial||p?.nome||p?.descricao||'produto');
-  const base=p=>Math.max(0,n(p?.precoEcommerce||p?.preco));
+  const base=p=>{
+    const ecommerce=n(p?.precoEcommerce),regular=n(p?.preco);
+    return Math.max(0,String(p?.precoModo||'').toUpperCase()==='REPLICAR'
+      ?(regular>0?regular:ecommerce):(ecommerce>0?ecommerce:regular));
+  };
   const packKey=(deal,ids,x,y)=>String(deal.packId||JSON.stringify([ids.slice().sort(),x,y]));
   function isPalmitoPanqueca(p){
     const grade=String(p?.gradeNome||p?.grade?.nome||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
