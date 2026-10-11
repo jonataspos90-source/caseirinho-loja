@@ -3,35 +3,38 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const script=fs.readFileSync('customer-reviews-v1.js','utf8');
 const html=fs.readFileSync('index.html','utf8');
+const app=fs.readFileSync('app.js','utf8');
 const sw=fs.readFileSync('service-worker.js','utf8');
 const engagement=fs.readFileSync('commerce-engagement-v9-6-1.js','utf8');
-
-test('loja oferece avaliações acessíveis com nota, pedido e comentário',()=>{
-  for(const id of ['avaliacoes','lista-avaliacoes','rating-stars','experienceOrder','input-comentario','experienceSubmit'])
+test('Cardápio exibe médias de app e produtos e não contém formulário de nota',()=>{
+  for(const id of ['avaliacoes','reviewsAppAvg','reviewsProductAvg','reviewsAppCount','reviewsProductCount','lista-avaliacoes'])
     assert.match(html,new RegExp('id="'+id+'"'));
-  assert.match(html,/customer-reviews-v1\.js/);
-  assert.match(html,/customer-reviews-v1\.css/);
+  assert.ok(html.indexOf('id="avaliacoes"')<html.indexOf('id="categories"'));
+  assert.doesNotMatch(html,/id="experienceForm"|id="experienceSubmit"|id="rating-stars"/);
 });
-test('lista pública consulta API real, sem avaliações fictícias',()=>{
+test('notas e comentários reais são consultados do ERP e mostrados sem HTML inseguro',()=>{
   assert.match(script,/url\+'\/reviews/);
-  assert.match(script,/loadReviews\(\)/);
-  assert.doesNotMatch(html,/Maria Silva|Carlos Eduardo|Marmita executiva/);
+  assert.match(script,/data\.app/);
+  assert.match(script,/data\.product/);
+  assert.match(script,/p\.textContent=S\(r\.comment\)/);
+  assert.doesNotMatch(html,/Maria Silva|Carlos Eduardo/);
 });
-test('comentários renderizados como texto, sem HTML arbitrário',()=>{
-  assert.match(script,/comment\.textContent=/);
-  assert.match(script,/review\.appendChild\(comment\)/);
-  assert.doesNotMatch(script,/insertAdjacentHTML|innerHTML/);
+test('avaliar produtos exige aceite confirmado no servidor e token de pedido',()=>{
+  assert.match(script,/\/reviews\/status\?token=/);
+  assert.match(script,/check\.allowedProduct/);
+  assert.match(script,/kind:'PRODUCT'/);
+  assert.match(script,/orderId:S\(order\.id\),token:S\(order\.publicToken\)/);
+  assert.match(script,/onOrdersViewed/);
+  assert.match(app,/data-review-order/);
+  assert.match(app,/CaseirinhoReviewsV2\?\.onOrdersViewed/);
 });
-test('nota depende de token, pedido entregue e registro na API',()=>{
-  assert.match(script,/experience\?token=/);
-  assert.match(script,/statusDone\(d\.status\)/);
-  assert.match(script,/publicToken/);
-  assert.match(script,/method:'POST'/);
-  assert.match(script,/orderId:order\.id,token:order\.token,rating:selected/);
-  assert.match(engagement,/Avaliações e Experiências após a entrega/);
+test('checkout mantém avaliação independente do APP após confirmar pedido',()=>{
+  assert.match(engagement,/Avalie sua experiência no App/);
+  assert.match(engagement,/kind:'APP'/);
+  assert.match(engagement,/showRatingModal\(o\)/);
   assert.doesNotMatch(engagement,/postEvent\('RATING'/);
 });
-test('PWA armazena as versões novas dos arquivos',()=>{
+test('PWA recebe cache atualizado',()=>{
   assert.match(sw,/REVIEWSJS,REVIEWSCSS/);
-  assert.match(sw,/caseirinho-loja-v9\.10\.14-avaliacoes-erp/);
+  assert.match(sw,/caseirinho-loja-v9\.10\.15-app-produtos/);
 });
