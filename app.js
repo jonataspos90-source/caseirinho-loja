@@ -1503,6 +1503,12 @@ async function showOrders(){
     wireOrdersView();
   }
 }
+function showReviews(){
+  const template=E('reviewsViewTemplate');
+  if(!template)return toast('Avaliações temporariamente indisponíveis.');
+  openSimple('⭐ Avaliações e Experiências',template.innerHTML);
+  window.CaseirinhoReviewsV2?.openShowcase?.();
+}
 function showStore(){
   const l=catalog.loja||{},addr=[l.logradouro||l.endereco,l.numero,l.complemento,l.bairro,l.cidade,l.uf].filter(Boolean).join(', ');
   openSimple('Sobre a loja',`<h3>${esc(l.nome||STORE||'Loja')}</h3><p>${esc(l.apresentacao||l.subtitulo||'Conheça nossos produtos e faça seu pedido online.')}</p>${addr?`<p><b>📍 Endereço</b><br>${esc(addr)}</p>`:''}${l.horarioFuncionamento?`<p><b>🕐 Funcionamento</b><br>${esc(l.horarioFuncionamento)}</p>`:''}${l.whatsapp?`<p><b>📱 WhatsApp</b><br>${esc(l.whatsapp)}</p>`:''}`);
@@ -1559,7 +1565,7 @@ function wire(){
   E('number').oninput=renderCart;
   E('date').onchange=()=>{if(!allowedDate(E('date').value,E('mode').value))toast('Escolha um dos dias disponíveis.')};
   E('checkout').onsubmit=submitOrder;
-  E('navOrders').onclick=showOrders;E('navStore').onclick=showStore;
+  E('navOrders').onclick=showOrders;E('navStore').onclick=showStore;E('navReviews').onclick=showReviews;
   E('navWhats').onclick=()=>whatsapp();
   E('whatsHero').onclick=promoWhatsapp;
   E('privacyBtn').onclick=showPrivacy;
