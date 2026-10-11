@@ -14,7 +14,12 @@
     return [...new Set(ids)];
   };
   const productName=p=>String(p?.nomeComercial||p?.nome||p?.descricao||'produto');
-  const base=p=>Math.max(0,n(p?.precoEcommerce||p?.preco));
+  const base=p=>{
+    const ecommerce=n(p?.precoEcommerce),regular=n(p?.preco);
+    // Mesma fonte de preço usada na API para impedir diferença entre vitrine e pagamento.
+    return Math.max(0,String(p?.precoModo||'').toUpperCase()==='REPLICAR'
+      ?(regular>0?regular:ecommerce):(ecommerce>0?ecommerce:regular));
+  };
   const packKey=(deal,ids,x,y)=>String(deal.packId||JSON.stringify([ids.slice().sort(),x,y]));
   function isPalmitoPanqueca(p){
     const grade=String(p?.gradeNome||p?.grade?.nome||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
@@ -25,6 +30,8 @@
   function fixedPromo(p){
     const v=n(promo(p).precoPromocional),b=base(p);
     if(promo(p).ativo===true&&v>0&&b>v)return v;
+    // Promoção desativada ou inválida no ERP não deve ser substituída pela regra legada.
+    if(Object.prototype.hasOwnProperty.call(promo(p),'ativo'))return null;
     return isPalmitoPanqueca(p)&&b>11.99?11.99:null;
   }
   function priceInfo(p,products=[]){
@@ -76,10 +83,12 @@
     const rules=new Map();
     for(const product of map.values()){
       const d=pack(product);if(d.ativo!==true||d.tipo!=='LEVE_X_PAGUE_Y')continue;
-      const ids=packProductIds(product,d).filter(id=>map.has(id));
+      const allIds=packProductIds(product,d);
+      const ids=allIds.filter(id=>map.has(id));
       const x=Math.floor(n(d.quantidadeLeve)),y=Math.floor(n(d.quantidadePague));
-      if(ids.length<2||x<2||y<1||y>=x)continue;
-      const key=packKey(d,ids,x,y);
+      // Contar também 5 unidades de um único sabor participante do Pack misto.
+      if(allIds.length<2||ids.length===0||x<2||y<1||y>=x)continue;
+      const key=packKey(d,allIds,x,y);
       if(!rules.has(key))rules.set(key,{ids,x,y,key});
     }
     for(const rule of rules.values()){
@@ -88,7 +97,9 @@
         const q=Math.floor(n(quantities.get(id))),product=map.get(id);
         for(let i=0;i<q;i++)units.push({id,price:base(product)});
       }
-      units.sort((a,b)=>b.price-a.price);
+      // Grupos completos de Pack usam os maiores preços primeiro; o item grátis
+      // é o menor de cada grupo e unidades extras não reduzem o benefício.
+      units.sort((a,b)=>b.price-a.price||a.id.localeCompare(b.id));
       const completeSets=Math.floor(units.length/rule.x);
       if(!completeSets){
         const eligible=units.length,remaining=rule.x-eligible;
@@ -99,7 +110,7 @@
         continue;
       }
       let packTotal=0;
-      units.forEach((unit,index)=>{const pos=index%rule.x;if(pos<rule.y)packTotal+=unit.price});
+      units.forEach((unit,index)=>{if(index%rule.x<rule.y)packTotal+=unit.price});
       const currentTotal=rule.ids.reduce((sum,id)=>sum+(lines.get(id)?.total||0),0);
       if(packTotal>=currentTotal-.001)continue;
       const totals=new Map(rule.ids.map(id=>[id,0]));
