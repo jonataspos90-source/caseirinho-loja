@@ -97,8 +97,9 @@
         const q=Math.floor(n(quantities.get(id))),product=map.get(id);
         for(let i=0;i<q;i++)units.push({id,price:base(product)});
       }
-      // As unidades gratuitas são sempre as de menor preço, inclusive em dois Packs.
-      units.sort((a,b)=>a.price-b.price||a.id.localeCompare(b.id));
+      // Grupos completos de Pack usam os maiores preços primeiro; o item grátis
+      // é o menor de cada grupo e unidades extras não reduzem o benefício.
+      units.sort((a,b)=>b.price-a.price||a.id.localeCompare(b.id));
       const completeSets=Math.floor(units.length/rule.x);
       if(!completeSets){
         const eligible=units.length,remaining=rule.x-eligible;
@@ -108,12 +109,12 @@
         }
         continue;
       }
-      const freeCount=completeSets*(rule.x-rule.y);
-      const packTotal=round(units.slice(freeCount).reduce((sum,unit)=>sum+unit.price,0));
+      let packTotal=0;
+      units.forEach((unit,index)=>{if(index%rule.x<rule.y)packTotal+=unit.price});
       const currentTotal=rule.ids.reduce((sum,id)=>sum+(lines.get(id)?.total||0),0);
       if(packTotal>=currentTotal-.001)continue;
       const totals=new Map(rule.ids.map(id=>[id,0]));
-      units.forEach((unit,index)=>{if(index<freeCount)return;totals.set(unit.id,(totals.get(unit.id)||0)+unit.price)});
+      units.forEach((unit,index)=>{if(index<completeSets*rule.x&&index%rule.x>=rule.y)return;totals.set(unit.id,(totals.get(unit.id)||0)+unit.price)});
       for(const id of rule.ids){
         const old=lines.get(id);if(!old)continue;
         const total=round(totals.get(id)||0),q=n(quantities.get(id)),regular=round(base(map.get(id))*q);
