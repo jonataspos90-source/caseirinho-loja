@@ -360,7 +360,7 @@ function renderCatalogEntries(entries){
   const packGroups=new Map(),entryPack=new Map();
   for(const [index,entry] of entries.entries()){
     for(const p of entry.variants){
-      const d=p?.packVirtual||p?.ecommerce?.packVirtual||{};
+      const d=promoApi()?.linkedPack?.(p,catalog.produtos)||p?.packVirtual||p?.ecommerce?.packVirtual||{};
       if(d.ativo!==true||d.tipo!=='LEVE_X_PAGUE_Y')continue;
       const raw=d.produtoIds||d.produtosIds||d.itensProdutoIds||d.produtos;
       const ids=Array.isArray(raw)?raw.map(x=>String(typeof x==='object'?(x.id??x.produtoId):x)).filter(Boolean):[];
