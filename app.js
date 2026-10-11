@@ -396,7 +396,7 @@ function promoPackHtml(entries,group){
     </article>`;
   }).join('');
   return `<section class="promo-pack-card">
-    <header class="promo-pack-heading"><span>OFERTA EM PACK</span><h3>${esc(title)}</h3><p>Misture os sabores abaixo e adicione os itens ao carrinho. O desconto é calculado ao completar o pack.</p></header>
+    <header class="promo-pack-heading"><span>OFERTA EM PACK</span><h3>${esc(title)}</h3><p>Escolha os sabores participantes, inclusive várias unidades do mesmo sabor. O desconto é calculado automaticamente ao completar o Pack.</p></header>
     <div class="promo-pack-grid">${items}</div>
   </section>`;
 }
