@@ -1,0 +1,31 @@
+/* Experiências dos clientes — Caseirinho */
+#avaliacoes{padding-top:8px;padding-bottom:28px}
+#avaliacoes .card-experiencia{background:#fff;border:1px solid #e9dcd9;border-radius:18px;padding:clamp(16px,3vw,26px);box-shadow:0 8px 30px rgba(45,22,25,.07);color:#30312f}
+#avaliacoes .reviews-heading{display:flex;align-items:center;gap:12px;justify-content:space-between;flex-wrap:wrap}
+#avaliacoes h2{font-size:clamp(21px,3vw,28px);margin:0;color:#52192d}
+#avaliacoes .reviews-intro{font-size:13px;margin:8px 0 14px;color:#6e6765}
+#avaliacoes .reviews-summary{font-weight:700;color:#6d2842;font-size:13px}
+#avaliacoes #lista-avaliacoes{display:flex;flex-direction:column;gap:10px;max-height:300px;overflow:auto;overscroll-behavior:contain;padding-right:4px;margin:12px 0 18px}
+#avaliacoes .review-item{background:#faf8f4;border:1px solid #eee6df;border-left:4px solid #7b1438;border-radius:10px;padding:12px 14px}
+#avaliacoes .review-meta{display:flex;justify-content:space-between;gap:8px;align-items:center;font-size:13px;color:#6e6863}
+#avaliacoes .review-meta strong{color:#44352e}
+#avaliacoes .review-stars{color:#e0a028;letter-spacing:2px;font-size:18px;line-height:1.5}
+#avaliacoes .review-item p{font-size:14px;line-height:1.55;color:#443c39;overflow-wrap:anywhere;margin:4px 0 0;white-space:pre-wrap}
+#avaliacoes .review-empty{background:#faf8f4;padding:15px;border-radius:10px;color:#695e57;font-size:13px}
+#avaliacoes .reviews-form{border-top:1px solid #eae1da;padding-top:18px}
+#avaliacoes .reviews-form h3{font-size:16px;color:#52192d;margin:0 0 6px}
+#avaliacoes .reviews-help{font-size:13px;color:#726961;margin:0 0 12px}
+#avaliacoes .reviews-form label{display:block;font-size:13px;font-weight:700;margin:12px 0 6px}
+#avaliacoes .reviews-form select,#avaliacoes .reviews-form textarea{font:inherit;font-size:14px;width:100%;max-width:100%;box-sizing:border-box;border:1px solid #cfc7c2;border-radius:10px;background:#fff;padding:11px 12px;color:#302c29}
+#avaliacoes .reviews-form textarea{resize:vertical;min-height:86px}
+#avaliacoes .reviews-form select:focus-visible,#avaliacoes .reviews-form textarea:focus-visible,#avaliacoes .review-star:focus-visible,#avaliacoes button:focus-visible{outline:3px solid #b07187;outline-offset:2px}
+#avaliacoes .reviews-stars{display:flex;gap:4px;align-items:center;margin-top:6px}
+#avaliacoes .review-star{background:transparent;border:0;padding:3px 4px;line-height:1;font-size:33px;cursor:pointer;color:#b3adaa;border-radius:6px}
+#avaliacoes .review-star.active{color:#e0a028}
+#avaliacoes .review-star:disabled{opacity:.45;cursor:not-allowed}
+#avaliacoes .reviews-form .review-send{margin-top:12px;border:0;background:#7b1438;color:white;border-radius:10px;padding:13px 18px;font-size:14px;font-weight:800;cursor:pointer;width:100%}
+#avaliacoes .review-send:disabled{opacity:.5;cursor:not-allowed}
+#avaliacoes .reviews-result{min-height:20px;font-size:13px;font-weight:600;margin:10px 0 0;color:#6a233d}
+#avaliacoes .reviews-result.error{color:#9e2331}
+#avaliacoes .review-refresh{background:transparent;border:1px solid #bba5aa;border-radius:8px;padding:7px 9px;color:#68334a;font-size:12px;cursor:pointer}
+@media(max-width:600px){#avaliacoes .card-experiencia{padding:16px;border-radius:14px}#avaliacoes .reviews-heading{align-items:flex-start}#avaliacoes .review-meta{font-size:12px}#avaliacoes .review-star{font-size:32px}}
