@@ -1455,7 +1455,7 @@ function ordersCardsHtml(orders){
       ${st==='ACEITO'?`<div class="result"><b>🎉 Seu pedido foi aceito!</b>${delivery?`<br>Horário de entrega: <b>${esc(orderTimeText(o))}</b>`:''}</div>${pixCard(o.pix)}`:''}
       ${st==='REJEITADO'?`<div class="result err">❌ <b>Pedido rejeitado</b><br>${esc(msg||'Seu pedido não pôde ser aceito. Entre em contato conosco se precisar de ajuda.')}</div>`:''}
       ${msg&&!['REJEITADO','CANCELADO','FRETE_RECUSADO_CLIENTE'].includes(st)?`<div class="cx-note">${esc(msg)}</div>`:''}
-      <div class="order-actions">${['CANCELADO','FRETE_RECUSADO_CLIENTE'].includes(st)?`<button class="primary" data-new-order="${esc(o.id)}" type="button">Fazer novo pedido</button>`:''}<button class="soft" data-refresh-orders type="button">Atualizar status</button></div></div>`;
+      <div class="order-actions">${['ACEITO','EM_PRODUCAO','PRONTO','SAIU_PARA_ENTREGA','EM_ENTREGA','ENTREGUE','RETIRADO','CONCLUIDO','FINALIZADO'].includes(st)&&!window.CaseirinhoReviewsV2?.productRated?.(o.id)?`<button class="primary" data-review-order="${esc(o.id)}" type="button">⭐ Avaliar experiência · Produtos</button>`:''}${['CANCELADO','FRETE_RECUSADO_CLIENTE'].includes(st)?`<button class="primary" data-new-order="${esc(o.id)}" type="button">Fazer novo pedido</button>`:''}<button class="soft" data-refresh-orders type="button">Atualizar status</button></div></div>`;
   }).join('');
 
   return `
@@ -1485,6 +1485,7 @@ async function showOrders(){
     <div id="ordersCardsArea">${cached.length?ordersCardsHtml(cached):'<div class="empty">Carregando seu histórico…</div>'}</div>
   `);
   if(cached.length)wireOrdersView();
+  // O convite só abre depois da confirmação atualizada do servidor.
 
   try{
     await ensureHistorySession();
@@ -1493,6 +1494,7 @@ async function showOrders(){
     if(area)area.innerHTML=ordersCardsHtml(orders);
     E('ordersSyncState')?.remove();
     wireOrdersView();
+    window.CaseirinhoReviewsV2?.onOrdersViewed?.(orders);
   }catch(_){
     const area=E('ordersCardsArea');
     if(area&&!cached.length)area.innerHTML=ordersCardsHtml([]);
