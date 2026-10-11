@@ -18,7 +18,8 @@ test('estrela apenas seleciona nota e envio ocorre em um único botão',()=>{
   assert.match(ux,/selectedRating=N\(b\.dataset\.ce962Star\)/);
   assert.match(ux,/Enviar avaliação/);
   assert.match(ux,/ce962Comment/);
-  assert.match(ux,/postEvent\('RATING'/);
+  assert.match(ux,/source:'CHECKOUT_MODAL'|\/reviews/);
+  assert.doesNotMatch(ux,/postEvent\('RATING'/);
 });
 
 test('observação da avaliação é opcional',()=>{
@@ -34,6 +35,6 @@ test('cashback não acumula com cupom e reserva é liberada',()=>{
 });
 
 test('index carrega a regra nova diretamente',()=>{
-  assert.match(html,/commerce-engagement-v9-6-1\.js\?v=9620/);
+  assert.match(html,/commerce-engagement-v9-6-1\.js\?v=20261011/);
   assert.match(html,/engagementVersion:'9\.6\.2'/);
 });
