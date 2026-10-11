@@ -29,3 +29,6 @@
 #avaliacoes .reviews-result.error{color:#9e2331}
 #avaliacoes .review-refresh{background:transparent;border:1px solid #bba5aa;border-radius:8px;padding:7px 9px;color:#68334a;font-size:12px;cursor:pointer}
 @media(max-width:600px){#avaliacoes .card-experiencia{padding:16px;border-radius:14px}#avaliacoes .reviews-heading{align-items:flex-start}#avaliacoes .review-meta{font-size:12px}#avaliacoes .review-star{font-size:32px}}
+
+#avaliacoes .reviews-summary{font-size:clamp(16px,2.2vw,21px);color:#681f3e;font-weight:850;line-height:1.4}
+#avaliacoes .reviews-privacy{font-size:12px;line-height:1.5;color:#74676e;margin:9px 0 0}
