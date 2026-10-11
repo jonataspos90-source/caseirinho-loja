@@ -96,7 +96,7 @@ function renderPopup(order){
       '</div><p id="productRatingHint" class="reviews-star-hint">Toque nas estrelas para dar sua nota ⭐</p>'+
       '<label class="reviews-field-label" for="productReviewComment">Comentário sobre os produtos <small>(opcional)</small></label>'+
       '<textarea id="productReviewComment" maxlength="500" placeholder="O nhoque estava delicioso? Gostou do sabor, da temperatura e da apresentação?"></textarea>'+
-      '<p class="reviews-privacy">🔒 Seu nome será exibido somente pelas iniciais; a nota e o comentário poderão aparecer na vitrine do Cardápio.</p>'+
+      '<p class="reviews-privacy">🔒 Seu nome será exibido somente pelas iniciais; a nota e o comentário poderão aparecer em Avaliações.</p>'+
       '<button type="button" id="productReviewSend" class="reviews-dialog-send" disabled>Enviar avaliação dos produtos</button>'+
       '<p id="productReviewStatus" class="reviews-modal-status" role="status"></p>'+
     '</div></section>';
@@ -167,8 +167,8 @@ async function onOrdersViewed(list){
   }finally{checking=false}
 }
 function init(){
-  if(!E('avaliacoes'))return;
-  E('experienceRefresh')?.addEventListener('click',loadReviews);
+  if(!E('reviewsViewTemplate')||!E('navReviews'))return;
+  document.addEventListener('click',e=>{if(e.target.closest?.('#experienceRefresh'))loadReviews()});
   document.addEventListener('click',e=>{
     const button=e.target.closest?.('[data-review-order]');
     if(!button)return;
@@ -176,9 +176,8 @@ function init(){
     openProductReview(button.dataset.reviewOrder);
   });
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&E('reviewProductPopup'))E('productReviewClose')?.click()});
-  window.addEventListener('focus',loadReviews);
-  loadReviews();
+  window.addEventListener('focus',()=>{if(E('avaliacoes'))loadReviews()});
 }
-window.CaseirinhoReviewsV2={loadReviews,onOrdersViewed,openProductReview,productRated};
+window.CaseirinhoReviewsV2={loadReviews,openShowcase:()=>{if(E('avaliacoes'))return loadReviews()},onOrdersViewed,openProductReview,productRated};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
