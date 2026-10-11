@@ -13,8 +13,22 @@
     if(!ids.includes(String(p?.id)))ids.push(String(p?.id));
     return [...new Set(ids)];
   };
+  // Uma regra de Pack cadastrada em um único produto deve alcançar todos os sabores selecionados.
+  const linkedPack=(p,products=[])=>{
+    const own=pack(p);
+    if(own.ativo===true)return own;
+    for(const owner of products){
+      const d=pack(owner);
+      if(d.ativo===true&&d.tipo==='LEVE_X_PAGUE_Y'&&packProductIds(owner,d).includes(String(p?.id)))return d;
+    }
+    return own;
+  };
   const productName=p=>String(p?.nomeComercial||p?.nome||p?.descricao||'produto');
-  const base=p=>Math.max(0,n(p?.precoEcommerce||p?.preco));
+  const base=p=>{
+    const ecommerce=n(p?.precoEcommerce),regular=n(p?.preco);
+    return Math.max(0,String(p?.precoModo||'').toUpperCase()==='REPLICAR'
+      ?(regular>0?regular:ecommerce):(ecommerce>0?ecommerce:regular));
+  };
   const packKey=(deal,ids,x,y)=>String(deal.packId||JSON.stringify([ids.slice().sort(),x,y]));
   function isPalmitoPanqueca(p){
     const grade=String(p?.gradeNome||p?.grade?.nome||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
@@ -25,20 +39,22 @@
   function fixedPromo(p){
     const v=n(promo(p).precoPromocional),b=base(p);
     if(promo(p).ativo===true&&v>0&&b>v)return v;
+    // Desativação explícita prevalece sobre a promoção histórica de Palmito.
+    if(Object.prototype.hasOwnProperty.call(promo(p),'ativo'))return null;
     return isPalmitoPanqueca(p)&&b>11.99?11.99:null;
   }
   function priceInfo(p,products=[]){
     const b=base(p),fixed=fixedPromo(p);if(fixed!==null)return{regular:b,current:fixed,conditional:false};
-    for(const trigger of products){const d=pack(trigger);if(d.ativo===true&&d.tipo==='COMPRA_X_LEVE_Y_POR_VALOR'&&String(d.produtoBeneficioId)===String(p?.id)){const v=n(d.precoBeneficio);if(v>0&&v<b)return{regular:b,current:v,conditional:true,triggerProduct:trigger,deal:d}}}
+    for(const trigger of products){const d=pack(trigger);if(d.ativo===true&&d.tipo==='COMPRA_X_LEVE_Y_POR_VALOR'&&String(d.produtoBeneficioId)===String(p?.id)){const v=n(d.precoBeneficio);if(v>0&&v<b)return{regular:b,current:b,benefitPrice:v,conditional:true,triggerProduct:trigger,deal:d}}}
     return{regular:b,current:b,conditional:false};
   }
   function isFeatured(p,products=[]){
     if(fixedPromo(p)!==null)return true;
-    if(pack(p).ativo===true&&packProductIds(p).includes(String(p?.id)))return true;
+    if(linkedPack(p,products).ativo===true)return true;
     return products.some(trigger=>{const d=pack(trigger);return d.ativo===true&&d.tipo==='COMPRA_X_LEVE_Y_POR_VALOR'&&String(d.produtoBeneficioId)===String(p?.id)});
   }
   function offerText(p,products=[]){
-    const d=pack(p);
+    const d=linkedPack(p,products);
     if(d.ativo===true&&d.tipo==='LEVE_X_PAGUE_Y'){
       const x=Math.floor(n(d.quantidadeLeve)),y=Math.floor(n(d.quantidadePague)),ids=packProductIds(p,d);
       if(ids.length>1){
@@ -49,7 +65,7 @@
     }
     if(d.ativo===true&&d.tipo==='COMPRA_X_LEVE_Y_POR_VALOR')return`Compre ${Math.floor(n(d.quantidadeGatilho))} ${p?.nome||'unidades'} e leve ${products.find(x=>String(x.id)===String(d.produtoBeneficioId))?.nome||'outro produto'} por R$ ${n(d.precoBeneficio).toFixed(2).replace('.',',')}`;
     const info=priceInfo(p,products);
-    if(info.conditional)return`Na compra de ${Math.floor(n(info.deal.quantidadeGatilho))} ${info.triggerProduct.nome||'unidades'}, este produto sai por R$ ${info.current.toFixed(2).replace('.',',')}`;
+    if(info.conditional)return`Na compra de ${Math.floor(n(info.deal.quantidadeGatilho))} ${info.triggerProduct.nome||'unidades'}, este produto sai por R$ ${info.benefitPrice.toFixed(2).replace('.',',')}`;
     return fixedPromo(p)!==null?'Preço especial por tempo de promoção':'';
   }
   function linePrice(productId,quantity,products=[],quantities=new Map()){
@@ -88,7 +104,7 @@
         const q=Math.floor(n(quantities.get(id))),product=map.get(id);
         for(let i=0;i<q;i++)units.push({id,price:base(product)});
       }
-      units.sort((a,b)=>b.price-a.price);
+      units.sort((a,b)=>b.price-a.price||a.id.localeCompare(b.id));
       const completeSets=Math.floor(units.length/rule.x);
       if(!completeSets){
         const eligible=units.length,remaining=rule.x-eligible;
@@ -112,5 +128,5 @@
     }
     return{lines,subtotal:round([...lines.values()].reduce((s,x)=>s+x.total,0)),savings:round([...lines.values()].reduce((s,x)=>s+x.savings,0))};
   }
-  return{base,fixedPromo,priceInfo,isFeatured,offerText,linePrice,cartTotals};
+  return{base,fixedPromo,priceInfo,isFeatured,offerText,linePrice,cartTotals,linkedPack};
 });
