@@ -33,5 +33,5 @@ test('nota depende de token, pedido entregue e registro na API',()=>{
 });
 test('PWA armazena as versões novas dos arquivos',()=>{
   assert.match(sw,/REVIEWSJS,REVIEWSCSS/);
-  assert.match(sw,/caseirinho-loja-v9\.10\.13-avaliacoes-verificadas/);
+  assert.match(sw,/caseirinho-loja-v9\.10\.14-avaliacoes-erp/);
 });
