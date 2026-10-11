@@ -9,11 +9,12 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Caseirinho">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Loja Online · V9.10.11</title>
+  <title>Loja Online · V9.10.13</title>
   <link rel="manifest" href="./manifest.webmanifest?v=clean-20261004">
   <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png?v=clean-20261004">
   <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png?v=clean-20261004">
   <link rel="stylesheet" href="./styles.css?v=910110">
+  <link rel="stylesheet" href="./customer-reviews-v1.css?v=20261011">
   <link rel="stylesheet" href="./mobile-ux-v9-4-7.css?v=9490">
   <link rel="stylesheet" href="./product-cards-mobile-v9-4-8.css?v=9510">
   <link rel="stylesheet" href="./mobile-variant-carousel-v9-5-7.css?v=9570">
@@ -114,6 +115,40 @@
           <div><b id="catalogTitle">Cardápio</b><small id="catalogCount"></small></div>
         </div>
         <div class="product-grid" id="products"></div>
+      </div>
+    </section>
+
+
+    <section class="section" id="avaliacoes" aria-labelledby="reviewsTitle">
+      <div class="wrap">
+        <div class="card-experiencia">
+          <div class="reviews-heading">
+            <h2 id="reviewsTitle">⭐ Avaliações e Experiências</h2>
+            <button type="button" id="experienceRefresh" class="review-refresh">Atualizar avaliações</button>
+          </div>
+          <p class="reviews-intro">Veja o que nossos clientes acharam das massas e dos pedidos do Caseirinho.</p>
+          <div class="reviews-summary" id="experienceSummary">Consultando avaliações...</div>
+          <div id="lista-avaliacoes" aria-live="polite"><p class="review-empty">Carregando avaliações reais...</p></div>
+          <div class="reviews-form" id="experienceForm">
+            <h3>O que achou do seu pedido?</h3>
+            <p class="reviews-help">Você pode avaliar após receber seu pedido ou retirá-lo na loja.</p>
+            <p class="reviews-help" id="experienceEligibility" aria-live="polite">Verificando seus pedidos...</p>
+            <label for="experienceOrder">Pedido que deseja avaliar</label>
+            <select id="experienceOrder" disabled><option value="">Carregando pedidos...</option></select>
+            <label id="reviewStarsLabel">Sua nota</label>
+            <div id="rating-stars" class="reviews-stars" role="group" aria-labelledby="reviewStarsLabel">
+              <button class="review-star" data-value="1" type="button" aria-label="1 estrela" aria-pressed="false">★</button>
+              <button class="review-star" data-value="2" type="button" aria-label="2 estrelas" aria-pressed="false">★</button>
+              <button class="review-star" data-value="3" type="button" aria-label="3 estrelas" aria-pressed="false">★</button>
+              <button class="review-star" data-value="4" type="button" aria-label="4 estrelas" aria-pressed="false">★</button>
+              <button class="review-star" data-value="5" type="button" aria-label="5 estrelas" aria-pressed="false">★</button>
+            </div>
+            <label for="input-comentario">Conte sua experiência (opcional)</label>
+            <textarea id="input-comentario" maxlength="500" placeholder="Sabor, atendimento, temperatura, embalagem, entrega..."></textarea>
+            <button class="review-send" type="button" id="experienceSubmit" disabled>Enviar Avaliação</button>
+            <p class="reviews-result" id="experienceResult" role="status" aria-live="polite"></p>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -256,7 +291,8 @@
   <script src="./mobile-variant-carousel-v9-5-7.js?v=9570" defer></script>
   <script src="./delivery-moto-v9-5-4.js?v=91090" defer></script>
   <script src="./delivery-mode-v9-5-5.js?v=9550" defer></script>
-  <script src="./commerce-engagement-v9-6-1.js?v=9620" defer></script>
+  <script src="./commerce-engagement-v9-6-1.js?v=20261011" defer></script>
+  <script src="./customer-reviews-v1.js?v=20261011" defer></script>
   <script src="./premium-checkout-v9-7-0.js?v=9700" defer></script>
 </body>
 </html>
