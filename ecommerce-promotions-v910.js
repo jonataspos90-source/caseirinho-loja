@@ -24,6 +24,7 @@
   }
   function fixedPromo(p){
     const v=n(promo(p).precoPromocional),b=base(p);
+    if(promo(p).ativo===false)return null;
     if(promo(p).ativo===true&&v>0&&b>v)return v;
     return isPalmitoPanqueca(p)&&b>11.99?11.99:null;
   }
@@ -76,10 +77,12 @@
     const rules=new Map();
     for(const product of map.values()){
       const d=pack(product);if(d.ativo!==true||d.tipo!=='LEVE_X_PAGUE_Y')continue;
-      const ids=packProductIds(product,d).filter(id=>map.has(id));
+      const allIds=packProductIds(product,d);
+      const ids=allIds.filter(id=>map.has(id));
       const x=Math.floor(n(d.quantidadeLeve)),y=Math.floor(n(d.quantidadePague));
-      if(ids.length<2||x<2||y<1||y>=x)continue;
-      const key=packKey(d,ids,x,y);
+      // Contar também 5 unidades de um único sabor participante do Pack misto.
+      if(allIds.length<2||ids.length===0||x<2||y<1||y>=x)continue;
+      const key=packKey(d,allIds,x,y);
       if(!rules.has(key))rules.set(key,{ids,x,y,key});
     }
     for(const rule of rules.values()){
