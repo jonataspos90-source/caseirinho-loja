@@ -24,7 +24,7 @@ test('estrela apenas seleciona nota e envio ocorre em um único botão',()=>{
 
 test('observação da avaliação é opcional',()=>{
   assert.match(ux,/observação\? <span[^>]*>\(opcional\)/i);
-  assert.match(ux,/const btn=E\('ce962Send'\),status=E\('ce962Status'\),who=identity\(\),comment=S\(E\('ce962Comment'\)\?\.value\)\.trim\(\)/);
+  assert.match(ux,/const btn=E\('ce962Send'\),status=E\('ce962Status'\),comment=S\(E\('ce962Comment'\)\?\.value\)\.trim\(\)/);
 });
 
 test('cashback não acumula com cupom e reserva é liberada',()=>{
