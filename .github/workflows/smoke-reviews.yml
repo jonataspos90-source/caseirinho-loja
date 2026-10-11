@@ -4,6 +4,8 @@ on:
   push:
     paths:
       - .github/workflows/smoke-reviews.yml
+      - index.html
+      - customer-reviews-v1.js
   workflow_dispatch:
 
 jobs:
@@ -24,14 +26,18 @@ jobs:
               const response=await fetch(url,{headers:{accept:'application/json'},signal:AbortSignal.timeout(15000)});
               const data=await response.json();
               if(!response.ok||data.ok!==true||!Number.isInteger(data.count)||
-                !Number.isFinite(Number(data.average))||!Array.isArray(data.reviews)) {
+                !Number.isFinite(Number(data.average))||!Array.isArray(data.reviews)||
+                !data.app||!data.product||!Number.isInteger(data.total)) {
                 throw Error('Resposta da API invalida: HTTP '+response.status);
               }
-              if(data.reviews.length>data.count)throw Error('Lista maior do que total');
+              if(data.reviews.length>data.total||data.total!==data.app.count+data.product.count)throw Error('Totais divergentes');
+              if(data.reviews.some(x=>!['APP','PRODUCT'].includes(x.kind)))throw Error('Tipo de avaliacao indefinido');
               if(data.reviews.some(x=>!/^([A-ZÀ-Ü]\.( [A-ZÀ-Ü]\.)?|Cliente Caseirinho)$/.test(x.name))) {
                 throw Error('Identificacao publica nao abreviada');
               }
-              console.log('Avaliacoes na API: '+data.count);
+              console.log('Avaliacoes publicas na API: '+data.total);
+              console.log('App: '+data.app.count+' notas, media '+data.app.average+'/5');
+              console.log('Produtos: '+data.product.count+' notas, media '+data.product.average+'/5');
               console.log('Media publica: '+data.average+'/5');
               console.log('Comentarios apresentados: '+data.reviews.filter(x=>x.comment).length);
               process.exit(0);
