@@ -13,6 +13,16 @@
     if(!ids.includes(String(p?.id)))ids.push(String(p?.id));
     return [...new Set(ids)];
   };
+  // Uma regra de Pack cadastrada em um único produto deve alcançar todos os sabores selecionados.
+  const linkedPack=(p,products=[])=>{
+    const own=pack(p);
+    if(own.ativo===true)return own;
+    for(const owner of products){
+      const d=pack(owner);
+      if(d.ativo===true&&d.tipo==='LEVE_X_PAGUE_Y'&&packProductIds(owner,d).includes(String(p?.id)))return d;
+    }
+    return own;
+  };
   const productName=p=>String(p?.nomeComercial||p?.nome||p?.descricao||'produto');
   const base=p=>{
     const ecommerce=n(p?.precoEcommerce),regular=n(p?.preco);
@@ -40,11 +50,11 @@
   }
   function isFeatured(p,products=[]){
     if(fixedPromo(p)!==null)return true;
-    if(pack(p).ativo===true&&packProductIds(p).includes(String(p?.id)))return true;
+    if(linkedPack(p,products).ativo===true)return true;
     return products.some(trigger=>{const d=pack(trigger);return d.ativo===true&&d.tipo==='COMPRA_X_LEVE_Y_POR_VALOR'&&String(d.produtoBeneficioId)===String(p?.id)});
   }
   function offerText(p,products=[]){
-    const d=pack(p);
+    const d=linkedPack(p,products);
     if(d.ativo===true&&d.tipo==='LEVE_X_PAGUE_Y'){
       const x=Math.floor(n(d.quantidadeLeve)),y=Math.floor(n(d.quantidadePague)),ids=packProductIds(p,d);
       if(ids.length>1){
@@ -118,5 +128,5 @@
     }
     return{lines,subtotal:round([...lines.values()].reduce((s,x)=>s+x.total,0)),savings:round([...lines.values()].reduce((s,x)=>s+x.savings,0))};
   }
-  return{base,fixedPromo,priceInfo,isFeatured,offerText,linePrice,cartTotals};
+  return{base,fixedPromo,priceInfo,isFeatured,offerText,linePrice,cartTotals,linkedPack};
 });
