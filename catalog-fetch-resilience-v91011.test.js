@@ -106,5 +106,5 @@ test('PWA usa versão atual da lógica de cardápio e mantém script único',()=
  assert.match(sw,/caseirinho-loja-v9\.10\.11-catalog-auto-retry/);
  assert.match(sw,/prefix\+'910110'/);
  assert.match(html,/id="retryCatalog"/);
- assert.match(html,/\.\/app\.js\?v=910110/);
+ assert.match(html,/\.\/app\.js\?v=910120/);
 });
