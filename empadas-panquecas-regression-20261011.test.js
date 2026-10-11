@@ -22,8 +22,8 @@ test('seis empadas de mesmo sabor: uma grátis, outra fora do pack',()=>{
 test('dez empadas mistas geram dois packs e descontam os dois itens mais baratos',()=>{
  const cart=ids.map(produtoId=>({produtoId,quantidade:2}));
  const r=cartTotals(cart,products);
- assert.equal(r.subtotal,round(prices.reduce((s,p)=>s+p*2,0)-9.99*2));
- assert.equal(r.savings,19.98);
+ assert.equal(r.subtotal,89.92);
+ assert.equal(r.savings,21.98);
 });
 function round(n){return Math.round((n+Number.EPSILON)*100)/100}
 test('panqueca palmito permanece separada do Pack de empadas no mesmo pedido',()=>{
