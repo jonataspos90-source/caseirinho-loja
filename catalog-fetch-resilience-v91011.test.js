@@ -103,8 +103,8 @@ test('sem cache, nunca finge que a loja está online e permite nova tentativa',a
 test('PWA usa versão atual da lógica de cardápio e mantém script único',()=>{
  const sw=fs.readFileSync(path.join(__dirname,'service-worker.js'),'utf8');
  const html=fs.readFileSync(path.join(__dirname,'index.html'),'utf8');
- assert.match(sw,/caseirinho-loja-v9\.10\.11-catalog-auto-retry/);
- assert.match(sw,/prefix\+'910110'/);
+ assert.match(sw,/caseirinho-loja-v9\.10\.12-promocoes-packs/);
+ assert.match(sw,/prefix\+'910120'/);
  assert.match(html,/id="retryCatalog"/);
  assert.match(html,/\.\/app\.js\?v=910120/);
 });
