@@ -73,7 +73,7 @@ function toast(message){E('ce962Toast')?.remove();const x=document.createElement
 function closeRating(){E('ce962Overlay')?.remove();selectedRating=0;ratingOrder=null}
 function paintStars(){document.querySelectorAll('#ce962Overlay [data-ce962-star]').forEach(b=>{const n=N(b.dataset.ce962Star);b.classList.toggle('on',n<=selectedRating);b.setAttribute('aria-pressed',n===selectedRating?'true':'false')})}
 function showRatingModal(order){
-  if(cfg?.ratings?.enabled===false||!order?.id||rated(order.id)||E('ce962Overlay'))return;
+  if(cfg?.ratings?.enabled===false||!order?.id||!['ENTREGUE','RETIRADO'].includes(S(order.status).toUpperCase())||rated(order.id)||E('ce962Overlay'))return;
   cleanupLegacyRatings();injectUx();ratingOrder=order;selectedRating=0;
   const code=esc(order.codigo||order.code||order.id);
   const overlay=document.createElement('div');overlay.id='ce962Overlay';overlay.innerHTML=`<section class="ce962-card" role="dialog" aria-modal="true" aria-labelledby="ce962Title"><header class="ce962-head"><div><h3 id="ce962Title">Avalie seu pedido</h3><small>${code?`Pedido ${code}`:'Sua opinião é importante para nós.'}</small></div><button type="button" class="ce962-close" aria-label="Fechar">×</button></header><div class="ce962-body"><div class="ce962-question">Como foi sua experiência?</div><div class="ce962-help">Primeiro escolha de 1 a 5 estrelas.</div><div class="ce962-stars" role="radiogroup" aria-label="Nota do pedido">${[1,2,3,4,5].map(n=>`<button type="button" class="ce962-star" data-ce962-star="${n}" aria-label="${n} estrela${n>1?'s':''}" aria-pressed="false">★</button>`).join('')}</div><div class="ce962-details" id="ce962Details" hidden><label for="ce962Comment">Quer deixar uma observação? <span style="font-weight:500;color:#6b7280">(opcional)</span></label><textarea id="ce962Comment" maxlength="500" placeholder="Conte como foi sua experiência, se quiser."></textarea><button type="button" class="ce962-send" id="ce962Send">Enviar avaliação</button><div class="ce962-status" id="ce962Status"></div></div></div></section>`;
@@ -87,16 +87,13 @@ async function submitRating(){
   const btn=E('ce962Send'),status=E('ce962Status'),who=identity(),comment=S(E('ce962Comment')?.value).trim();
   btn.disabled=true;btn.textContent='Enviando...';status.textContent='';
   try{
-    await postEvent('RATING',{orderId:S(ratingOrder.id),orderCode:S(ratingOrder.codigo||ratingOrder.code||''),rating:selectedRating,comment,name:who.name,customerName:who.name,phone:who.phone,email:who.email,cpf:who.cpf,source:'CHECKOUT_MODAL'});
+    const r=await fetch(`${API}/api/v1/public/store/${encodeURIComponent(STORE)}/reviews`,{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify({orderId:S(ratingOrder.id),token:S(ratingOrder.publicToken),rating:selectedRating,comment})});if(!r.ok)throw new Error('A avaliação requer pedido entregue ou retirado.');
     markRated(ratingOrder.id);closeRating();cleanupLegacyRatings();toast('Obrigado! Sua avaliação foi enviada.');
   }catch(_){btn.disabled=false;btn.textContent='Enviar avaliação';status.textContent='Não foi possível enviar agora. Tente novamente.'}
 }
 function renderCheckoutRating(){
+  // A nota é solicitada na seção Avaliações e Experiências após a entrega.
   cleanupLegacyRatings();
-  if(cfg?.ratings?.enabled===false)return;
-  const host=E('checkoutResult');if(!host||!/pedido\s+.+\s+recebido/i.test(S(host.textContent)))return;
-  const o=latestOrder();if(!o?.id||rated(o.id))return;
-  setTimeout(()=>showRatingModal(o),80);
 }
 function enhanceOrderCards(){cleanupLegacyRatings()}
 function watchCheckout(){const host=E('checkoutResult');if(!host)return;checkoutObserver?.disconnect();checkoutObserver=new MutationObserver(()=>setTimeout(renderCheckoutRating,30));checkoutObserver.observe(host,{childList:true,subtree:true,characterData:true});renderCheckoutRating()}
