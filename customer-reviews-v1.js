@@ -1,6 +1,7 @@
 (function(){'use strict';
-if(window.__caseirinhoReviewsV1)return;
-window.__caseirinhoReviewsV1=true;
+// V2: vitrine de avaliações junto ao Cardápio e modal dos produtos em Meus Pedidos.
+if(window.__caseirinhoReviewsV2)return;
+window.__caseirinhoReviewsV2=true;
 const CFG=window.CASEIRINHO_CONFIG||{};
 const API=String(CFG.apiUrl||'https://john-cloud-api-production.up.railway.app').replace(/\/+$/,'');
 const STORE=String(new URLSearchParams(location.search).get('empresa')||
@@ -9,169 +10,175 @@ const STORE=String(new URLSearchParams(location.search).get('empresa')||
   .replace(/[^a-z0-9-]/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'')||'caseirinho';
 const PREFIX='john_store_'+STORE+'_';
 const ORDERS_KEY=PREFIX+'orders_v1';
-const REVIEWED_PREFIX=PREFIX+'verified_review_v1_';
+const REVIEWED_PREFIX=PREFIX+'product_review_done_v2_';
+const SHOWN_PREFIX=PREFIX+'product_review_shown_v2_';
 const url=API+'/api/v1/public/store/'+encodeURIComponent(STORE);
 const E=id=>document.getElementById(id);
-const S=x=>String(x??'');
-const statusDone=x=>['ENTREGUE','RETIRADO'].includes(S(x).trim().toUpperCase());
-let eligible=[],selected=0,submitting=false,loading=false,lastLoad=0,enabled=true;
-function readOrders(){
-  try{
-    const list=JSON.parse(localStorage.getItem(ORDERS_KEY)||'[]');
-    return Array.isArray(list)?list:[];
-  }catch(_){return []}
-}
-function wasReviewed(id){
-  try{return localStorage.getItem(REVIEWED_PREFIX+id)==='1'}catch(_){return false}
-}
-function markReviewed(id){
-  try{localStorage.setItem(REVIEWED_PREFIX+id,'1')}catch(_){}
-}
-function message(text,error=false){
-  const el=E('experienceResult');if(!el)return;
-  el.textContent=text;el.classList.toggle('error',error);
-}
-function stars(){
-  document.querySelectorAll('#rating-stars .review-star').forEach(btn=>{
-    const active=Number(btn.dataset.value)<=selected;
-    btn.classList.toggle('active',active);
-    btn.setAttribute('aria-pressed',String(Number(btn.dataset.value)===selected));
-  });
-  toggle();
-}
-function toggle(){
-  const order=E('experienceOrder'),submit=E('experienceSubmit');
-  const available=enabled&&eligible.length>0&&!submitting;
-  if(order)order.disabled=!available;
-  if(submit)submit.disabled=!available||!selected;
-  document.querySelectorAll('#rating-stars .review-star').forEach(b=>b.disabled=!available);
-}
-function paint(list){
-  const host=E('lista-avaliacoes');
-  if(!host)return;
-  host.replaceChildren();
-  if(!list.length){
-    const empty=document.createElement('p');empty.className='review-empty';
-    empty.textContent='Ainda não há avaliações publicadas. Seja o primeiro a avaliar após receber seu pedido!';
-    host.appendChild(empty);return;
-  }
-  for(const item of list){
-    const review=document.createElement('article');review.className='review-item';
+const S=v=>String(v??'');
+const n=v=>Math.max(0,Number(v)||0);
+const fmt=v=>n(v).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1});
+let enabled=true,opened=false,checking=false,latestRequest=0;
+function orders(){try{const r=JSON.parse(localStorage.getItem(ORDERS_KEY)||'[]');return Array.isArray(r)?r:[]}catch(_){return []}}
+function productRated(id){try{return localStorage.getItem(REVIEWED_PREFIX+id)==='1'}catch(_){return false}}
+function markProductRated(id){try{localStorage.setItem(REVIEWED_PREFIX+id,'1')}catch(_){}}
+function wasShown(id){try{return sessionStorage.getItem(SHOWN_PREFIX+id)==='1'}catch(_){return false}}
+function markShown(id){try{sessionStorage.setItem(SHOWN_PREFIX+id,'1')}catch(_){}}
+function date(v){const d=new Date(v);return Number.isFinite(d.getTime())?d.toLocaleDateString('pt-BR'):''}
+function setMessage(text){const el=E('reviewsFetchStatus');if(el)el.textContent=text}
+function paint(reviews){
+  const target=E('lista-avaliacoes');if(!target)return;
+  target.replaceChildren();
+  const list=Array.isArray(reviews)?reviews.slice(0,10):[];
+  if(!list.length){const p=document.createElement('p');p.className='review-empty';p.textContent='Ainda não há avaliações públicas disponíveis.';target.appendChild(p);return}
+  for(const r of list){
+    const item=document.createElement('article');item.className='review-item';
     const meta=document.createElement('div');meta.className='review-meta';
-    const name=document.createElement('strong');name.textContent=S(item.name||'Cliente Caseirinho');
-    const date=document.createElement('time');
-    const d=new Date(item.date);
-    date.textContent=Number.isFinite(d.getTime())?d.toLocaleDateString('pt-BR'):'';
-    meta.append(name,date);
-    const rating=document.createElement('div');rating.className='review-stars';
-    rating.setAttribute('aria-label',S(item.rating)+' de 5 estrelas');
-    const n=Math.min(5,Math.max(1,Number(item.rating)||1));
-    rating.textContent='★'.repeat(n)+'☆'.repeat(5-n);
-    review.append(meta,rating);
-    if(item.comment){
-      const comment=document.createElement('p');
-      comment.textContent=S(item.comment).slice(0,500);
-      review.appendChild(comment);
-    }
-    host.appendChild(review);
+    const name=document.createElement('strong');name.textContent=S(r.name||'Cliente Caseirinho');
+    const when=document.createElement('time');when.textContent=date(r.date);
+    meta.append(name,when);
+    const tag=document.createElement('div');tag.className='review-topic';
+    tag.textContent=r.kind==='PRODUCT'?'😋 Produtos e sabor':'📱 App e experiência';
+    const stars=document.createElement('div');stars.className='review-stars';
+    const rating=Math.max(1,Math.min(5,Number(r.rating)||1));
+    stars.textContent='★'.repeat(rating)+'☆'.repeat(5-rating);
+    stars.setAttribute('aria-label',rating+' de 5 estrelas');
+    item.append(meta,tag,stars);
+    if(r.comment){const p=document.createElement('p');p.textContent=S(r.comment);item.appendChild(p)}
+    target.appendChild(item);
   }
 }
 async function loadReviews(){
-  const summary=E('experienceSummary'),list=E('lista-avaliacoes');
   try{
     const response=await fetch(url+'/reviews?_t='+Date.now(),{cache:'no-store'});
     const data=await response.json();
-    if(!response.ok)throw Error(data.error||'Servidor indisponível');
+    if(!response.ok||data.ok!==true)throw Error('Não foi possível carregar as avaliações.');
     enabled=data.enabled!==false;
-    const count=Math.max(0,Number(data.count)||0);
-    const avg=Math.max(0,Math.min(5,Number(data.average)||0));
-    if(summary)summary.textContent=count?
-      '★ Média geral '+avg.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+
-      '/5 · '+count.toLocaleString('pt-BR')+' '+(count===1?'avaliação recebida':'avaliações recebidas'):
-      '0 avaliações recebidas · Média ainda indisponível';
-    paint(Array.isArray(data.reviews)?data.reviews:[]);
-    E('experienceForm')?.toggleAttribute('hidden',!enabled);
-    toggle();
-  }catch(_){
-    if(summary)summary.textContent='Avaliações temporariamente indisponíveis';
-    if(list)list.textContent='Não foi possível consultar as avaliações agora. Tente novamente.';
-  }
+    const app=data.app||{},product=data.product||{};
+    const ids=[['reviewsAppAvg',app.count?fmt(app.average)+'/5':'—'],['reviewsAppCount',n(app.count)+' avaliação(ões)'],
+      ['reviewsProductAvg',product.count?fmt(product.average)+'/5':'—'],['reviewsProductCount',n(product.count)+' avaliação(ões)'],
+      ['experienceSummary',n(data.total)+' avaliações registradas']];
+    for(const [id,value] of ids){const e=E(id);if(e)e.textContent=value}
+    paint(data.reviews);
+    setMessage(enabled?'Notas e comentários reais de clientes · nomes abreviados.':'Avaliações temporariamente desativadas.');
+  }catch(e){setMessage('Não foi possível atualizar as avaliações. Tente novamente.');}
 }
-async function verifyOrder(order){
-  if(!order?.id||!order?.publicToken||wasReviewed(order.id))return null;
+function getOrder(id,provided){
+  const a=Array.isArray(provided)?provided:orders();
+  return a.find(o=>S(o?.id)===S(id)&&S(o?.publicToken).length>=20)||null;
+}
+async function status(order){
+  if(!order?.id||!order?.publicToken)return null;
   try{
-    const r=await fetch(url+'/orders/'+encodeURIComponent(order.id)+'/experience?token='+encodeURIComponent(order.publicToken),{cache:'no-store'});
+    const r=await fetch(url+'/orders/'+encodeURIComponent(order.id)+'/reviews/status?token='+encodeURIComponent(order.publicToken),{cache:'no-store'});
     if(!r.ok)return null;
-    const d=await r.json();
-    return statusDone(d.status)?{id:S(order.id),token:S(order.publicToken),code:S(d.codigo||order.codigo||order.code||order.id)}:null;
+    return await r.json();
   }catch(_){return null}
 }
-async function loadEligible(){
-  if(loading)return;
-  loading=true;lastLoad=Date.now();
-  const select=E('experienceOrder'),hint=E('experienceEligibility');
-  if(hint)hint.textContent='Conferindo seus pedidos entregues...';
+function popupToast(msg){
+  let el=E('reviewsToast');
+  if(!el){el=document.createElement('div');el.id='reviewsToast';el.className='reviews-toast';document.body.appendChild(el)}
+  el.textContent=msg;
+  window.setTimeout(()=>{if(el.textContent===msg)el.remove()},4500);
+}
+function renderPopup(order){
+  const overlay=document.createElement('div');overlay.id='reviewProductPopup';overlay.className='reviews-overlay';
+  overlay.innerHTML=
+    '<section class="reviews-dialog" role="dialog" aria-modal="true" aria-labelledby="productReviewTitle">'+
+    '<header class="reviews-dialog-head"><span>🌟 Sua experiência importa</span><button type="button" id="productReviewClose" aria-label="Fechar avaliação">×</button></header>'+
+    '<div class="reviews-dialog-body">'+
+      '<span class="reviews-chip">Pedido '+S(order.codigo||order.code||order.id).replace(/[&<>"']/g,'')+'</span>'+
+      '<h2 id="productReviewTitle">😋 Como estavam os produtos?</h2>'+
+      '<p>Conte sobre o <b>sabor, qualidade, temperatura e apresentação</b> dos produtos do Caseirinho.</p>'+
+      '<div class="reviews-aspect-info">📱 <b>Avaliação do App</b>: facilidade para comprar e atendimento são avaliados separadamente após confirmar o pedido.</div>'+
+      '<label class="reviews-field-label" id="productRatingLabel">Sua nota para os produtos</label>'+
+      '<div class="reviews-modal-stars" role="group" aria-labelledby="productRatingLabel">'+
+        [1,2,3,4,5].map(x=>'<button type="button" data-product-star="'+x+'" aria-label="'+x+' estrelas" aria-pressed="false">★</button>').join('')+
+      '</div><p id="productRatingHint" class="reviews-star-hint">Toque nas estrelas para dar sua nota ⭐</p>'+
+      '<label class="reviews-field-label" for="productReviewComment">Comentário sobre os produtos <small>(opcional)</small></label>'+
+      '<textarea id="productReviewComment" maxlength="500" placeholder="O nhoque estava delicioso? Gostou do sabor, da temperatura e da apresentação?"></textarea>'+
+      '<p class="reviews-privacy">🔒 Seu nome será exibido somente pelas iniciais; a nota e o comentário poderão aparecer na vitrine do Cardápio.</p>'+
+      '<button type="button" id="productReviewSend" class="reviews-dialog-send" disabled>Enviar avaliação dos produtos</button>'+
+      '<p id="productReviewStatus" class="reviews-modal-status" role="status"></p>'+
+    '</div></section>';
+  document.body.appendChild(overlay);
+  let rating=0,submitting=false;
+  const close=()=>{overlay.remove();opened=false;};
+  E('productReviewClose').onclick=close;
+  overlay.addEventListener('click',ev=>{if(ev.target===overlay)close()});
+  const stars=[...overlay.querySelectorAll('[data-product-star]')];
+  stars.forEach(button=>button.addEventListener('click',()=>{
+    rating=Number(button.dataset.productStar);
+    stars.forEach(b=>{const active=Number(b.dataset.productStar)<=rating;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active))});
+    E('productRatingHint').textContent=['','😕 Vamos melhorar','🙂 Obrigado por contar','😊 Que bom!','😍 Que delícia!','🤩 Que alegria!'][rating];
+    E('productReviewSend').disabled=false;
+  }));
+  E('productReviewSend').onclick=async()=>{
+    if(submitting||!rating)return;
+    const button=E('productReviewSend'),msg=E('productReviewStatus');
+    submitting=true;button.disabled=true;button.textContent='Enviando avaliação...';msg.textContent='';
+    try{
+      const response=await fetch(url+'/reviews',{
+        method:'POST',cache:'no-store',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({orderId:S(order.id),token:S(order.publicToken),
+          kind:'PRODUCT',rating,comment:S(E('productReviewComment').value).trim().slice(0,500)})
+      });
+      const result=await response.json();
+      if(!response.ok)throw Error(result.error||'Falha ao salvar. Tente novamente.');
+      markProductRated(order.id);
+      document.querySelectorAll('[data-review-order]').forEach(b=>{if(b.dataset.reviewOrder===S(order.id))b.remove()});
+      await loadReviews();
+      overlay.querySelector('.reviews-dialog-body').innerHTML=
+        '<div class="reviews-thanks"><div>🎉 😋 ⭐</div><h2>Obrigado pelo carinho!</h2>'+
+        '<p>Sua avaliação dos produtos foi registrada e vai ajudar outros clientes.</p>'+
+        '<button class="reviews-dialog-send" id="productReviewDone" type="button">Concluir</button></div>';
+      E('productReviewDone').onclick=close;
+    }catch(err){msg.textContent=S(err.message);button.textContent='Tentar novamente';button.disabled=false;submitting=false}
+  };
+  return overlay;
+}
+async function openProductReview(id,provided,automatic=false){
+  if(opened||!enabled)return;
+  const order=getOrder(id,provided);
+  if(!order){if(!automatic)popupToast('Recupere seu pedido em Meus Pedidos para avaliar.');return}
+  const check=await status(order);
+  if(!check?.ok){if(!automatic)popupToast('Não conseguimos conferir o pedido. Atualize e tente novamente.');return}
+  if(!check.allowedProduct){
+    if(check.reviewed?.PRODUCT)markProductRated(order.id);
+    if(!automatic)popupToast(check.reviewed?.PRODUCT?'Os produtos deste pedido já foram avaliados.':'A avaliação dos produtos fica disponível após o aceite do pedido.');
+    return;
+  }
+  if(opened)return;
+  opened=true;markShown(order.id);
+  renderPopup(order);
+}
+async function onOrdersViewed(list){
+  if(checking||opened||!enabled)return;
+  const nonce=++latestRequest;checking=true;
   try{
-    const unique=new Map();
-    readOrders().slice(-30).reverse().forEach(o=>{
-      if(o&&o.id&&o.publicToken&&!unique.has(S(o.id)))unique.set(S(o.id),o);
-    });
-    const verified=await Promise.all([...unique.values()].slice(0,12).map(verifyOrder));
-    eligible=verified.filter(Boolean);
-    if(!select)return;
-    const previous=select.value;
-    select.replaceChildren();
-    if(!eligible.length){
-      const placeholder=new Option('Nenhum pedido entregue disponível','');
-      select.add(placeholder);
-      if(hint)hint.textContent='Para avaliar, aguarde a entrega ou retirada. Se comprou em outro dispositivo, recupere seu pedido na aba Pedidos.';
-    }else{
-      eligible.forEach(o=>select.add(new Option('Pedido '+o.code,o.id)));
-      if(eligible.some(o=>o.id===previous))select.value=previous;
-      if(hint)hint.textContent='Selecione o pedido entregue ou retirado que deseja avaliar.';
+    const recent=(Array.isArray(list)?list:orders()).slice().reverse()
+      .filter(o=>o&&o.id&&o.publicToken&&!productRated(o.id)&&!wasShown(o.id)).slice(0,8);
+    for(const order of recent){
+      if(nonce!==latestRequest||opened)break;
+      const check=await status(order);
+      if(!check?.ok)continue;
+      if(check.reviewed?.PRODUCT){markProductRated(order.id);continue}
+      if(check.allowedProduct){await openProductReview(order.id,list,true);break}
     }
-    toggle();
-  }finally{loading=false}
+  }finally{checking=false}
 }
-async function submit(){
-  const select=E('experienceOrder'),comment=E('input-comentario'),btn=E('experienceSubmit');
-  const order=eligible.find(o=>o.id===select?.value);
-  if(!order){message('Escolha um pedido já entregue para avaliar.',true);return}
-  if(!selected){message('Por favor, escolha de 1 a 5 estrelas.',true);return}
-  if(submitting)return;
-  submitting=true;toggle();message('Enviando sua avaliação...');
-  try{
-    const response=await fetch(url+'/reviews',{
-      method:'POST',cache:'no-store',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({orderId:order.id,token:order.token,rating:selected,comment:S(comment?.value).trim().slice(0,500)})
-    });
-    const result=await response.json();
-    if(!response.ok)throw Error(result.error||'Não foi possível registrar sua avaliação.');
-    markReviewed(order.id);
-    if(comment)comment.value='';
-    selected=0;stars();
-    message('Obrigado! Sua avaliação foi registrada e já pode ser vista na loja.');
-    await Promise.all([loadReviews(),loadEligible()]);
-  }catch(err){message(S(err.message||'Falha de conexão. Tente novamente.'),true)}
-  finally{submitting=false;toggle()}
-}
-function start(){
+function init(){
   if(!E('avaliacoes'))return;
-  document.querySelectorAll('#rating-stars .review-star').forEach(b=>{
-    b.addEventListener('click',()=>{selected=Number(b.dataset.value);stars();message('')});
+  E('experienceRefresh')?.addEventListener('click',loadReviews);
+  document.addEventListener('click',e=>{
+    const button=e.target.closest?.('[data-review-order]');
+    if(!button)return;
+    e.preventDefault();
+    openProductReview(button.dataset.reviewOrder);
   });
-  E('experienceSubmit')?.addEventListener('click',submit);
-  E('experienceRefresh')?.addEventListener('click',()=>{loadReviews();loadEligible()});
-  E('experienceOrder')?.addEventListener('change',()=>message(''));
-  window.addEventListener('storage',e=>{if(e.key===ORDERS_KEY)loadEligible()});
-  window.addEventListener('focus',()=>{
-    if(Date.now()-lastLoad>25000){loadEligible();loadReviews()}
-  });
-  document.addEventListener('visibilitychange',()=>{
-    if(!document.hidden&&Date.now()-lastLoad>25000){loadEligible();loadReviews()}
-  });
-  stars();loadReviews();loadEligible();
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&E('reviewProductPopup'))E('productReviewClose')?.click()});
+  window.addEventListener('focus',loadReviews);
+  loadReviews();
 }
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+window.CaseirinhoReviewsV2={loadReviews,onOrdersViewed,openProductReview,productRated};
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
