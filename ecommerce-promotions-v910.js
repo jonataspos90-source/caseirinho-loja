@@ -119,7 +119,7 @@
       const currentTotal=rule.ids.reduce((sum,id)=>sum+(lines.get(id)?.total||0),0);
       if(packTotal>=currentTotal-.001)continue;
       const totals=new Map(rule.ids.map(id=>[id,0]));
-      units.forEach((unit,index)=>{if(index<freeCount)return;totals.set(unit.id,(totals.get(unit.id)||0)+unit.price)});
+      units.forEach((unit,index)=>{if(index<completeSets*rule.x&&index%rule.x>=rule.y)return;totals.set(unit.id,(totals.get(unit.id)||0)+unit.price)});
       for(const id of rule.ids){
         const old=lines.get(id);if(!old)continue;
         const total=round(totals.get(id)||0),q=n(quantities.get(id)),regular=round(base(map.get(id))*q);
