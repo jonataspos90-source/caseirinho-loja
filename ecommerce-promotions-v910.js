@@ -14,7 +14,12 @@
     return [...new Set(ids)];
   };
   const productName=p=>String(p?.nomeComercial||p?.nome||p?.descricao||'produto');
-  const base=p=>Math.max(0,n(p?.precoEcommerce||p?.preco));
+  const base=p=>{
+    const ecommerce=n(p?.precoEcommerce),regular=n(p?.preco);
+    // Mesma fonte de preço usada na API para impedir diferença entre vitrine e pagamento.
+    return Math.max(0,String(p?.precoModo||'').toUpperCase()==='REPLICAR'
+      ?(regular>0?regular:ecommerce):(ecommerce>0?ecommerce:regular));
+  };
   const packKey=(deal,ids,x,y)=>String(deal.packId||JSON.stringify([ids.slice().sort(),x,y]));
   function isPalmitoPanqueca(p){
     const grade=String(p?.gradeNome||p?.grade?.nome||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
@@ -24,8 +29,9 @@
   }
   function fixedPromo(p){
     const v=n(promo(p).precoPromocional),b=base(p);
-    if(promo(p).ativo===false)return null;
     if(promo(p).ativo===true&&v>0&&b>v)return v;
+    // Promoção desativada ou inválida no ERP não deve ser substituída pela regra legada.
+    if(Object.prototype.hasOwnProperty.call(promo(p),'ativo'))return null;
     return isPalmitoPanqueca(p)&&b>11.99?11.99:null;
   }
   function priceInfo(p,products=[]){
