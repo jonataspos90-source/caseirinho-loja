@@ -239,38 +239,15 @@ function watchPhone(){const p=document.getElementById('cPhone');if(!p)return;p.a
 function watchTotals(){const sub=document.getElementById('subtotal'),ship=document.getElementById('shipping');if(!sub||!ship)return;const observer=new MutationObserver(scheduleTotals);observer.observe(sub,{childList:true,characterData:true,subtree:true});observer.observe(ship,{childList:true,characterData:true,subtree:true});scheduleTotals()}
 
 window.fetch=async function(input,opt={}){
-  // Identifica antes da criação que o cliente concluiu o checkout com cupom.
-  // O servidor espera a aplicação definitiva antes do resumo no WhatsApp.
+  // O servidor deve notificar só depois que o cupom for registrado.
   let requestOptions=opt;
   try{
     const method=S(opt?.method||(input instanceof Request?input.method:'GET')).toUpperCase();
     const rawUrl=typeof input==='string'?input:input?.url;
     const url=new URL(rawUrl,location.href);
-    const orderPath=new RegExp('/api/v1/public/store/'+STORE.replace(/[.*+?^\u0024{}()|[\\]\\\\]/g,'\\\\window.fetch=async function(input,opt={}){
-  const response=await rawFetch(input,opt);
-  try{')+'/orders/?
-    const method=S(opt?.method||(input instanceof Request?input.method:'GET')).toUpperCase();const rawUrl=typeof input==='string'?input:input?.url;const url=new URL(rawUrl,location.href);
-    if(method==='POST'&&/\/commercial-apply$/i.test(url.pathname)&&response.ok){let sent={};try{sent=JSON.parse(S(opt.body)||'{}')}catch(_){}const st=readState();if(sent.couponCode&&st?.status==='GENERIC_OK'&&normalizeCode(sent.couponCode)===st.code)clearState('',false);return response}
-    const orderPath=new RegExp('/api/v1/public/store/'+STORE.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'/orders/?$','i');
-    if(method!=='POST'||!orderPath.test(url.pathname)||!response.ok)return response;
-    const st=readState();if(!st||st.code!==FIRST_CODE||!stateValidForCheckout())return response;
-    let sent={};try{sent=JSON.parse(S(opt.body)||'{}')}catch(_){return response}const sentPhone=sanitizePhone(sent?.cliente?.telefone);if(sentPhone!==st.phone)return response;
-    const created=await response.clone().json();if(!created?.id||!created?.publicToken)return response;
-    const apply=await rawFetch(API+'/api/v1/public/store/'+encodeURIComponent(STORE)+'/orders/'+encodeURIComponent(created.id)+'/coupon-caseirinho10?_t='+Date.now(),{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json','Cache-Control':'no-cache'},body:JSON.stringify({token:created.publicToken,whatsapp:sentPhone,couponCode:FIRST_CODE})});
-    let adjusted={};try{adjusted=await apply.json()}catch(_){}
-    if(!apply.ok||adjusted.status!=='PRIMEIRA_COMPRA_OK'){clearState('O CASEIRINHO10 não pôde ser aplicado ao pedido. O total permanece sem o desconto.',true);return response}
-    clearState('',false);const body={...created,subtotalOriginal:adjusted.subtotalOriginal,descontoCupom:adjusted.discount,subtotal:adjusted.subtotal,total:adjusted.total,cupom:{codigo:FIRST_CODE,percentual:10,desconto:adjusted.discount,primeiraCompra:true}};const headers=new Headers(response.headers);headers.set('Content-Type','application/json');headers.delete('content-length');return new Response(JSON.stringify(body),{status:response.status,statusText:response.statusText,headers});
-  }catch(e){console.warn('[CUPONS] aplicação segura não concluída:',e);return response}
-};
-
-function init(){injectStyle();mountCouponBox();mountAssistant();watchPhone();watchTotals();loadCommerceConfig();setTimeout(()=>{const st=readState();if(st?.status==='GENERIC_OK')syncNativeGeneric(st.code).catch(()=>{})},700)}
-window.CaseirinhoCoupon958={sanitizePhone,validPhone,validateCoupon:validateFirstPurchase,validateFirstPurchase,applyGenericCoupon,readState,clearState,loadCommerceConfig};
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-})();
-
-,'i');
+    const orderPath='/api/v1/public/store/'+encodeURIComponent(STORE)+'/orders';
     const st=readState();
-    if(method==='POST'&&orderPath.test(url.pathname)&&st?.code===FIRST_CODE&&stateValidForCheckout()){
+    if(method==='POST'&&(url.pathname===orderPath||url.pathname===orderPath+'/')&&st?.code===FIRST_CODE&&stateValidForCheckout()){
       const sent=JSON.parse(S(opt.body)||'{}');
       if(sanitizePhone(sent?.cliente?.telefone)===st.phone){
         requestOptions={...opt,body:JSON.stringify({...sent,couponIntent:FIRST_CODE})};
