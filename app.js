@@ -908,6 +908,40 @@ function updateDateMin(){
   const labels=['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
   E('deliveryDays').innerHTML=`<b>Dias disponíveis para ${mode==='ENTREGA'?'entrega':'retirada'}:</b> ${serviceDays(mode).map(x=>labels[x]).join(', ')}.`;
 }
+
+// Política informativa de pedidos após o expediente (fuso da loja: São Paulo).
+function storeHoursStatus(){
+  const raw=S(catalog.loja?.horarioFuncionamento||'');
+  const hours=[...raw.matchAll(/([01]?\d|2[0-3]):([0-5]\d)/g)].map(m=>Number(m[1])*60+Number(m[2]));
+  if(hours.length<2||hours[0]>=hours[1])return null;
+  const normalized=raw.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+  let days=[1,2,3,4,5,6];
+  if(/seg\s*(?:a|ate|-)\s*sex/.test(normalized))days=[1,2,3,4,5];
+  else if(/(?:todos os dias|diariamente|seg\s*(?:a|ate|-)\s*dom)/.test(normalized))days=[0,1,2,3,4,5,6];
+  else if(!/seg\s*(?:a|ate|-)\s*sab/.test(normalized))return null;
+  const format=new Intl.DateTimeFormat('en-US',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',weekday:'short',hour12:false});
+  const parts=Object.fromEntries(format.formatToParts(new Date()).map(p=>[p.type,p.value]));
+  const dayNo={Sun:0,Mon:1,Tue:2,Wed:3,Thu:4,Fri:5,Sat:6}[parts.weekday];
+  if(dayNo===undefined)return null;
+  const minute=Number(parts.hour)%24*60+Number(parts.minute);
+  if(days.includes(dayNo)&&minute>=hours[0]&&minute<hours[1])return{closed:false};
+  const today=Date.UTC(Number(parts.year),Number(parts.month)-1,Number(parts.day));
+  for(let offset=0;offset<8;offset++){
+    const candidate=new Date(today+offset*86400000);
+    if(!days.includes(candidate.getUTCDay())||(offset===0&&minute>=hours[0]))continue;
+    const dayText=new Intl.DateTimeFormat('pt-BR',{timeZone:'UTC',weekday:'long',day:'2-digit',month:'2-digit'}).format(candidate);
+    const hh=String(Math.floor(hours[0]/60)).padStart(2,'0'),mm=String(hours[0]%60).padStart(2,'0');
+    return{closed:true,nextOpening:dayText+' às '+hh+':'+mm,operatingHours:raw};
+  }
+  return null;
+}
+function updateHoursNotice(){
+  const target=E('checkoutHoursNotice');if(!target)return;
+  const current=storeHoursStatus();
+  target.hidden=!current?.closed;
+  if(current?.closed)target.textContent='🕘 Loja fechada no momento. Seu pedido pode ser feito normalmente! Atendimento a partir de '+current.nextOpening+'. A entrega ou retirada será confirmada pela equipe no primeiro horário disponível.';
+}
+
 function renderCheckoutConfig(){
   const currentMode=E('mode')?.value||'';
   const currentPayment=E('payment')?.value||'';
@@ -922,6 +956,7 @@ function renderCheckoutConfig(){
   E('payment').innerHTML=paymentOptions.map(x=>`<option>${esc(x)}</option>`).join('');
   if(currentPayment&&paymentOptions.includes(currentPayment))E('payment').value=currentPayment;
   modeChanged();
+  updateHoursNotice();
 }
 function modeChanged(){
   const delivery=E('mode').value==='ENTREGA';
@@ -939,7 +974,7 @@ function modeChanged(){
       if(E('time').value==='A combinar')E('time').value='';
     }
   }
-  updateDateMin();renderCart();
+  updateDateMin();renderCart();updateHoursNotice();
 }
 function address(){
   return {
@@ -1284,6 +1319,15 @@ async function submitOrder(ev){
     if(!confirmed)return;
   }
 
+  const afterHours=storeHoursStatus();
+  if(afterHours?.closed){
+    const proceed=await customerDialog({
+      title:'Loja fechada no momento',icon:'🕘',locked:true,
+      html:'<div class="cx-highlight warn"><b>Seu pedido será recebido agora, mas a loja está fechada.</b></div><p>Próximo início do atendimento: <b>'+esc(afterHours.nextOpening)+'</b>.</p><p>A equipe organizará o pedido no primeiro horário de funcionamento e confirmará o horário disponível para '+(mode==='ENTREGA'?'entrega':'retirada')+'.</p>',
+      actions:[{label:'Voltar',value:false},{label:'Fazer pedido mesmo assim',value:true,primary:true}]
+    });
+    if(!proceed)return;
+  }
   const now=new Date().toISOString();
   const body={
     cliente:{
@@ -1298,7 +1342,7 @@ async function submitOrder(ev){
     formaPagamento:E('payment').value,
     entrega:mode==='ENTREGA'?address():{},
     itens:cart.map(x=>({produtoId:S(x.produtoId),quantidade:N(x.quantidade)})),
-    observacao:S(E('obs').value).trim(),
+    observacao:[afterHours?.closed?'[PEDIDO FORA DO HORÁRIO · Primeiro atendimento previsto: '+afterHours.nextOpening+' · Horário da entrega/retirada sujeito à confirmação.]':'',S(E('obs').value).trim()].filter(Boolean).join('\n'),
     lgpd:{
       consent:true,
       consentAt:now,
@@ -1359,6 +1403,7 @@ async function submitOrder(ev){
       `<div class="result">
         <b>Pedido ${esc(result.codigo)} recebido! 🎉</b><br>
         ${window.JohnOrderAmounts.celebration(saved)?`<strong style="color:#166534">${esc(window.JohnOrderAmounts.celebration(saved))}</strong><br>`:''}
+        ${afterHours?.closed?'<div class="cx-note">🕘 Pedido feito fora do expediente. Atendimento a partir de <b>'+esc(afterHours.nextOpening)+'</b>. Entrega/retirada sujeita à confirmação da loja.</div>':''}
         ${esc(freightText)}<br>
         ${window.JohnOrderAmounts.lines(saved).map(([label,value])=>esc(label)+': <b>'+esc(value)+'</b>').join('<br>')}<br>
         <button class="soft" type="button" id="openSavedOrders" style="margin-top:9px">Acompanhar pedido</button>
