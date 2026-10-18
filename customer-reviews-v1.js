@@ -18,6 +18,7 @@ const S=v=>String(v??'');
 const n=v=>Math.max(0,Number(v)||0);
 const fmt=v=>n(v).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1});
 let enabled=true,opened=false,checking=false,latestRequest=0;
+let activeReviewKind='ALL',lastReviews=[],reviewCounts={APP:0,PRODUCT:0};
 function orders(){try{const r=JSON.parse(localStorage.getItem(ORDERS_KEY)||'[]');return Array.isArray(r)?r:[]}catch(_){return []}}
 function productRated(id){try{return localStorage.getItem(REVIEWED_PREFIX+id)==='1'}catch(_){return false}}
 function markProductRated(id){try{localStorage.setItem(REVIEWED_PREFIX+id,'1')}catch(_){}}
@@ -28,8 +29,8 @@ function setMessage(text){const el=E('reviewsFetchStatus');if(el)el.textContent=
 function paint(reviews){
   const target=E('lista-avaliacoes');if(!target)return;
   target.replaceChildren();
-  const list=Array.isArray(reviews)?reviews.slice(0,10):[];
-  if(!list.length){const p=document.createElement('p');p.className='review-empty';p.textContent='Ainda não há avaliações públicas disponíveis.';target.appendChild(p);return}
+  const list=(Array.isArray(reviews)?reviews:[]).filter(r=>activeReviewKind==='ALL'||r.kind===activeReviewKind).slice(0,100);
+  if(!list.length){const p=document.createElement('p');p.className='review-empty';p.textContent=activeReviewKind==='ALL'?'Ainda não há avaliações públicas disponíveis.':'Ainda não há comentários disponíveis nesta categoria.';target.appendChild(p);return}
   for(const r of list){
     const item=document.createElement('article');item.className='review-item';
     const meta=document.createElement('div');meta.className='review-meta';
@@ -47,9 +48,22 @@ function paint(reviews){
     target.appendChild(item);
   }
 }
+function updateReviewsFilter(){
+  const root=E('avaliacoes');if(!root)return;
+  for(const [kind,selector] of [['APP','[data-review-filter="APP"]'],['PRODUCT','[data-review-filter="PRODUCT"]']]){
+    const el=root.querySelector(selector);if(el){el.classList.toggle('reviews-metric-active',activeReviewKind===kind);el.setAttribute('aria-pressed',String(activeReviewKind===kind));}
+  }
+  const reset=E('reviewsShowAll');if(reset)reset.hidden=activeReviewKind==='ALL';
+  const total=activeReviewKind==='ALL'?reviewCounts.APP+reviewCounts.PRODUCT:reviewCounts[activeReviewKind];
+  const count=E('experienceSummary');if(count)count.textContent=total+' '+(total===1?'avaliação registrada':'avaliações registradas')+(activeReviewKind==='ALL'?'':activeReviewKind==='APP'?' · App e experiência':' · Produtos e sabor');
+  paint(lastReviews);
+}
+function filterReviews(kind){activeReviewKind=['APP','PRODUCT'].includes(kind)?kind:'ALL';updateReviewsFilter();loadReviews();}
 async function loadReviews(){
   try{
-    const response=await fetch(url+'/reviews?_t='+Date.now(),{cache:'no-store'});
+    const params=new URLSearchParams({_t:String(Date.now()),limit:'200'});
+    if(activeReviewKind!=='ALL')params.set('kind',activeReviewKind);
+    const response=await fetch(url+'/reviews?'+params.toString(),{cache:'no-store'});
     const data=await response.json();
     if(!response.ok||data.ok!==true)throw Error('Não foi possível carregar as avaliações.');
     enabled=data.enabled!==false;
@@ -58,7 +72,9 @@ async function loadReviews(){
       ['reviewsProductAvg',product.count?fmt(product.average)+'/5':'—'],['reviewsProductCount',n(product.count)+' avaliação(ões)'],
       ['experienceSummary',n(data.total)+' avaliações registradas']];
     for(const [id,value] of ids){const e=E(id);if(e)e.textContent=value}
-    paint(data.reviews);
+    reviewCounts={APP:n(app.count),PRODUCT:n(product.count)};
+    lastReviews=Array.isArray(data.reviews)?data.reviews:[];
+    updateReviewsFilter();
     setMessage(enabled?'Notas e comentários reais de clientes · nomes abreviados.':'Avaliações temporariamente desativadas.');
   }catch(e){setMessage('Não foi possível atualizar as avaliações. Tente novamente.');}
 }
@@ -169,6 +185,8 @@ async function onOrdersViewed(list){
 function init(){
   if(!E('reviewsViewTemplate')||!E('navReviews'))return;
   document.addEventListener('click',e=>{if(e.target.closest?.('#experienceRefresh'))loadReviews()});
+  document.addEventListener('click',e=>{const control=e.target.closest?.('[data-review-filter]');if(control&&E('avaliacoes'))filterReviews(control.dataset.reviewFilter)});
+  document.addEventListener('keydown',e=>{const control=e.target.closest?.('[data-review-filter]');if(control&&(e.key==='Enter'||e.key===' ')){e.preventDefault();filterReviews(control.dataset.reviewFilter)}});
   document.addEventListener('click',e=>{
     const button=e.target.closest?.('[data-review-order]');
     if(!button)return;
@@ -178,6 +196,6 @@ function init(){
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&E('reviewProductPopup'))E('productReviewClose')?.click()});
   window.addEventListener('focus',()=>{if(E('avaliacoes'))loadReviews()});
 }
-window.CaseirinhoReviewsV2={loadReviews,openShowcase:()=>{if(E('avaliacoes'))return loadReviews()},onOrdersViewed,openProductReview,productRated};
+window.CaseirinhoReviewsV2={loadReviews,openShowcase:()=>{activeReviewKind='ALL';if(E('avaliacoes'))return loadReviews()},onOrdersViewed,openProductReview,productRated};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
