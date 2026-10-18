@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Caseirinho">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Loja Online · V9.10.16</title>
+  <title>Loja Online · V9.10.17</title>
   <link rel="manifest" href="./manifest.webmanifest?v=clean-20261004">
   <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png?v=clean-20261004">
   <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png?v=clean-20261004">
@@ -198,6 +198,7 @@
 
       <form id="checkout" class="checkout">
         <h3>Dados para o pedido</h3>
+    <div id="checkoutHoursNotice" class="cx-note" role="status" style="background:#fff6e7;border:1px solid #f0cd83;color:#805016;margin-bottom:12px;font-weight:700" hidden></div>
         <div class="form-grid">
           <label class="full">Nome *<input id="cName" required autocomplete="name"></label>
           <label>WhatsApp *<input id="cPhone" required inputmode="tel" autocomplete="tel"></label>
@@ -244,7 +245,7 @@
     window.CASEIRINHO_CONFIG={
       apiUrl:'https://john-cloud-api-production.up.railway.app',
       storeSlug:'caseirinho',
-      version:'9.10.16',
+      version:'9.10.17',
       promotionsVersion:'9.10.12',
       mobileUxVersion:'9.4.7',
       productCardVersion:'9.5.7',
@@ -267,7 +268,7 @@
   <script src="./customer-cashback-wallet-v9-6-3.js?v=9630" defer></script>
   <script src="./cashback-auto-refresh-v9-6-7.js?v=9670" defer></script>
   <script src="./ecommerce-promotions-v910.js?v=910120" defer></script>
-  <script src="./app.js?v=910120" defer></script>
+  <script src="./app.js?v=910170" defer></script>
   <script src="./pwa-install-v9-6-6.js?v=9660" defer></script>
   <script src="./cashback-order-yield-v9-6-4.js?v=9650" defer></script>
   <script src="./commerce-engine-v9-3-0.js?v=9600" defer></script>
