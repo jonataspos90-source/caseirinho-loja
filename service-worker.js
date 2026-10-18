@@ -1,4 +1,4 @@
-const CACHE='caseirinho-loja-v9.10.16-avaliacoes-janela';
+const CACHE='caseirinho-loja-v9.10.17-avaliacoes-expediente';
 const PROMOTIONJS='./ecommerce-promotions-v910.js';
 const PROMOTIONJS_TAG='<script src="./ecommerce-promotions-v910.js?v=910120" defer></'+'script>';
 const HOTFIX931='./store-hotfix-v9-3-1.js';
