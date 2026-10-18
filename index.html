@@ -14,7 +14,7 @@
   <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png?v=clean-20261004">
   <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png?v=clean-20261004">
   <link rel="stylesheet" href="./styles.css?v=910110">
-  <link rel="stylesheet" href="./customer-reviews-v1.css?v=20261011c">
+  <link rel="stylesheet" href="./customer-reviews-v1.css?v=20261018a">
   <link rel="stylesheet" href="./mobile-ux-v9-4-7.css?v=9490">
   <link rel="stylesheet" href="./product-cards-mobile-v9-4-8.css?v=9510">
   <link rel="stylesheet" href="./mobile-variant-carousel-v9-5-7.css?v=9570">
@@ -149,10 +149,10 @@
       </div>
       <p class="reviews-intro">Opiniões reais sobre comprar pelo aplicativo e sobre o sabor dos nossos produtos.</p>
       <div class="reviews-metrics">
-        <div class="reviews-metric"><span>📱 APP E EXPERIÊNCIA</span><strong id="reviewsAppAvg">—</strong><div class="reviews-metric-stars">★★★★★</div><small id="reviewsAppCount">Carregando...</small></div>
-        <div class="reviews-metric"><span>😋 PRODUTOS E SABOR</span><strong id="reviewsProductAvg">—</strong><div class="reviews-metric-stars">★★★★★</div><small id="reviewsProductCount">Carregando...</small></div>
+        <div class="reviews-metric" data-review-filter="APP" role="button" tabindex="0" aria-pressed="false" aria-label="Filtrar avaliações do aplicativo e experiência"><span>📱 APP E EXPERIÊNCIA</span><strong id="reviewsAppAvg">—</strong><div class="reviews-metric-stars">★★★★★</div><small id="reviewsAppCount">Carregando...</small></div>
+        <div class="reviews-metric" data-review-filter="PRODUCT" role="button" tabindex="0" aria-pressed="false" aria-label="Filtrar avaliações dos produtos e sabor"><span>😋 PRODUTOS E SABOR</span><strong id="reviewsProductAvg">—</strong><div class="reviews-metric-stars">★★★★★</div><small id="reviewsProductCount">Carregando...</small></div>
       </div>
-      <div class="reviews-subheading"><b id="experienceSummary">Carregando avaliações...</b><small>Avaliações de clientes</small></div>
+      <div class="reviews-subheading"><b id="experienceSummary">Carregando avaliações...</b><button type="button" data-review-filter="ALL" id="reviewsShowAll" hidden>Ver todas</button></div>
       <div id="lista-avaliacoes" aria-live="polite"><p class="review-empty">Buscando experiências reais...</p></div>
       <p class="reviews-privacy" id="reviewsFetchStatus">Avaliações verificadas. Os nomes são exibidos apenas pelas iniciais.</p>
     </section>
@@ -282,7 +282,7 @@
   <script src="./delivery-moto-v9-5-4.js?v=91090" defer></script>
   <script src="./delivery-mode-v9-5-5.js?v=9550" defer></script>
   <script src="./commerce-engagement-v9-6-1.js?v=20261011" defer></script>
-  <script src="./customer-reviews-v1.js?v=20261011d" defer></script>
+  <script src="./customer-reviews-v1.js?v=20261018a" defer></script>
   <script src="./premium-checkout-v9-7-0.js?v=9700" defer></script>
 </body>
 </html>
