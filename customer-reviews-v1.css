@@ -80,3 +80,11 @@
 .reviews-thanks>div{font-size:48px}
 .reviews-toast{position:fixed;z-index:2147483550;bottom:110px;left:50%;transform:translateX(-50%);border-radius:14px;background:#482038;color:white;font-size:13px;padding:13px 18px;min-width:200px;max-width:90%;box-shadow:0 6px 32px #0004}
 @media(max-width:500px){#avaliacoes.reviews-showcase{padding:13px;margin:4px 0 12px}#avaliacoes .reviews-metric{padding:12px 6px}#avaliacoes .reviews-metric>span{font-size:9px}.reviews-dialog-body{padding:15px}.reviews-overlay{padding:9px}}
+
+/* Filtros acessíveis de avaliações */
+#avaliacoes [data-review-filter]{cursor:pointer;transition:border-color .2s,box-shadow .2s,transform .2s}
+#avaliacoes .reviews-metric[data-review-filter]:hover{border-color:#b96c87}
+#avaliacoes .reviews-metric[data-review-filter]:focus-visible,#avaliacoes #reviewsShowAll:focus-visible{outline:3px solid #d4a527;outline-offset:3px}
+#avaliacoes .reviews-metric.reviews-metric-active{border:2px solid #83183e;box-shadow:0 0 0 3px #83183e17;transform:translateY(-1px)}
+#avaliacoes #reviewsShowAll{font:inherit;border:1px solid #a6677f;border-radius:10px;color:#74203e;background:#fff7fa;padding:6px 10px;font-weight:800}
+#avaliacoes #reviewsShowAll[hidden]{display:none!important}
