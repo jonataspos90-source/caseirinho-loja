@@ -771,7 +771,7 @@ async function quickAdd(id,qty){
   const min=minQty(p),step=stepQty(p),wanted=Math.max(min,N(qty)||min),limit=N(p.limitePedido);
   const existing=cart.find(x=>S(x.produtoId)===S(id));
   const requested=existing?N(existing.quantidade)+(N(qty)>0?wanted:step):wanted;
-  if(isOrderItem(p,requested)&&!isOrderItem(p,N(existing?.quantidade))){
+  if(isOrderItem(p,requested)&&(!existing||!isOrderItem(p,N(existing.quantidade)))){
     const answer=await customerDialog({
       title:'Produto sob encomenda',icon:'🕘',locked:true,
       html:orderNoticeHtml([{product:p,item:{nome:p.nome}}]),
