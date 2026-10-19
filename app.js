@@ -1250,6 +1250,16 @@ async function notifyOrderChange(before,after){
     }
     return;
   }
+  const confirmationAt=S(after.encomendaConfirmacao?.atualizadoEm||'');
+  const oldConfirmationAt=S(before?.encomendaConfirmacao?.atualizadoEm||'');
+  const decisionKey=after.id+':encomenda:'+confirmationAt;
+  if(confirmationAt&&confirmationAt!==oldConfirmationAt&&
+     after.encomendaConfirmacao?.status!=='PENDENTE'&&!seen[decisionKey]){
+    markNotice(decisionKey);
+    await customerDialog({title:'Atualização da sua encomenda',icon:'📦',
+      html:'<div class="cx-note">'+esc(after.mensagemCliente||'A loja confirmou a disponibilidade da sua encomenda. Confira os detalhes do pedido.')+'</div>'});
+    return;
+  }
   const acceptKey=`${after.id}:accepted:${after.aceitoEm||after.updatedAt}`;
   if(st==='ACEITO'&&old!=='ACEITO'&&!seen[acceptKey]){
     markNotice(acceptKey);
@@ -1536,6 +1546,9 @@ function ordersCardsHtml(orders){
       ${st==='FRETE_RECUSADO_CLIENTE'||st==='CANCELADO'?`<div class="result err">🛑 <b>Pedido cancelado</b><br>${esc(msg||'Você não aceitou o valor da entrega. Caso queira prosseguir, faça um novo pedido.')}</div>`:''}
       ${st==='ACEITO'?`<div class="result"><b>🎉 Seu pedido foi aceito!</b>${delivery?`<br>Horário de entrega: <b>${esc(orderTimeText(o))}</b>`:''}</div>${pixCard(o.pix)}`:''}
       ${st==='REJEITADO'?`<div class="result err">❌ <b>Pedido rejeitado</b><br>${esc(msg||'Seu pedido não pôde ser aceito. Entre em contato conosco se precisar de ajuda.')}</div>`:''}
+      ${o.encomendaConfirmacao?.status==='PENDENTE'?'<div class="cx-note">🕘 Produto sob encomenda: aguardando confirmação de disponibilidade e prazo da loja.</div>':''}
+      ${o.encomendaConfirmacao?.status==='CONFIRMADO'?'<div class="cx-note ok">✅ Disponibilidade analisada pelo Caseirinho. Confira a atualização abaixo.</div>':''}
+      ${o.encomendaConfirmacao?.status==='AGUARDANDO_CONTATO'?'<div class="cx-note">⚠️ Item indisponível: a loja entrará em contato para combinar uma alternativa.</div>':''}
       ${msg&&!['REJEITADO','CANCELADO','FRETE_RECUSADO_CLIENTE'].includes(st)?`<div class="cx-note">${esc(msg)}</div>`:''}
       <div class="order-actions">${['ACEITO','EM_PRODUCAO','PRONTO','SAIU_PARA_ENTREGA','EM_ENTREGA','ENTREGUE','RETIRADO','CONCLUIDO','FINALIZADO'].includes(st)&&!window.CaseirinhoReviewsV2?.productRated?.(o.id)?`<button class="primary" data-review-order="${esc(o.id)}" type="button">⭐ Avaliar experiência · Produtos</button>`:''}${['CANCELADO','FRETE_RECUSADO_CLIENTE'].includes(st)?`<button class="primary" data-new-order="${esc(o.id)}" type="button">Fazer novo pedido</button>`:''}<button class="soft" data-refresh-orders type="button">Atualizar status</button></div></div>`;
   }).join('');
