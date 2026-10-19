@@ -241,6 +241,23 @@ function availabilityText(p){
   const suffix=days>0?' · '+days+' dia(s) de antecedência':'';
   return (p?.encomendaAutomatica?'◷ Produção sob encomenda':'◷ Sob encomenda')+suffix;
 }
+function isOrderItem(p,quantity=1){
+  if(!p)return false;
+  const original=norm(p?.disponibilidade||'AMBOS');
+  const effective=canonicalAvailability(p);
+  const stock=Math.max(0,N(p?.saldoDisponivel));
+  return effective==='SOB_ENCOMENDA'||(original==='AMBOS'&&N(quantity)>stock)||(original==='SOB_ENCOMENDA');
+}
+function pendingOrderItems(){
+  return cart.map(i=>({item:i,product:A(catalog.produtos).find(p=>S(p.id)===S(i.produtoId))}))
+    .filter(x=>isOrderItem(x.product,x.item.quantidade));
+}
+function orderNoticeHtml(items){
+  const names=items.map(x=>esc(x.product?.nomeComercial||x.product?.nome||x.item.nome));
+  return '<div class="cx-highlight warn"><b>Produto(s) sob encomenda: '+names.join(', ')+'</b></div>'+
+    '<p>Você pode fazer o pedido normalmente. A equipe do Caseirinho confirmará se existe pronta entrega ou se será necessária a produção.</p>'+
+    '<p><b>A data e o horário de entrega ou retirada dependem de confirmação da loja pelo WhatsApp.</b></p>';
+}
 function images(p){
   const arr=A(p?.imagens).filter(Boolean);
   return arr.length?arr:(p?.imagem?[p.imagem]:[]);
@@ -388,15 +405,15 @@ function renderCatalogEntries(entries){
 function promoPackHtml(entries,group){
   const title=group.label||`Leve ${group.x}, pague ${group.y}`;
   const items=entries.map(entry=>{
-    const p=entry.rep,price=productPriceInfo(p).current,im=images(p)[0],available=entry.variants.some(canBuy);
+    const p=entry.rep,price=productPriceInfo(p).regular,im=images(p)[0],available=entry.variants.some(canBuy);
     return `<article class="promo-pack-item">
       <button class="promo-pack-image" data-view="${esc(p.id)}" type="button" aria-label="Ver ${esc(p.nome)}">${im?`<img src="${esc(im)}" alt="">`:'🍽️'}</button>
-      <div class="promo-pack-copy"><b>${esc(p.nomeComercial||p.nome)}</b><strong>${money(price)} <small>cada</small></strong>
+      <div class="promo-pack-copy"><b>${esc(p.nomeComercial||p.nome)}</b><strong>${money(price)} <small>cada</small></strong>${isOrderItem(p,1)?'<small style="display:block;color:#84530c;margin-top:5px">🕘 Sob encomenda · sujeita à confirmação</small>':''}
       <div class="promo-pack-actions"><button class="soft" data-view="${esc(p.id)}" type="button">Ver</button><button class="primary" data-add="${esc(p.id)}" type="button" ${available&&catalog.loja?.ativo!==false?'':'disabled'}>Adicionar</button></div></div>
     </article>`;
   }).join('');
   return `<section class="promo-pack-card">
-    <header class="promo-pack-heading"><span>OFERTA EM PACK</span><h3>${esc(title)}</h3><p>Misture os sabores abaixo e adicione os itens ao carrinho. O desconto é calculado ao completar o pack.</p></header>
+    <header class="promo-pack-heading"><span>OFERTA EM PACK</span><h3>${esc(title)}</h3><p>Misture os sabores abaixo e adicione os itens ao carrinho. Os valores mostrados são os preços normais; a promoção individual e o desconto do pack são calculados separadamente no carrinho, prevalecendo o melhor preço.</p></header>
     <div class="promo-pack-grid">${items}</div>
   </section>`;
 }
@@ -748,10 +765,20 @@ function renderGallery(imgs,index){
   E('thumbs').innerHTML=imgs.length>1?imgs.map((x,i)=>`<button class="thumb ${i===index?'active':''}" data-thumb="${i}" type="button"><img src="${esc(x)}" alt=""></button>`).join(''):'';
   E('thumbs').querySelectorAll('[data-thumb]').forEach(b=>b.onclick=()=>renderGallery(imgs,N(b.dataset.thumb)));
 }
-function quickAdd(id,qty){
+async function quickAdd(id,qty){
   const p=A(catalog.produtos).find(x=>S(x.id)===S(id));if(!p)return;
   if(!canBuy(p))return toast('Este produto está indisponível no momento.');
   const min=minQty(p),step=stepQty(p),wanted=Math.max(min,N(qty)||min),limit=N(p.limitePedido);
+  const existing=cart.find(x=>S(x.produtoId)===S(id));
+  const requested=existing?N(existing.quantidade)+(N(qty)>0?wanted:step):wanted;
+  if(isOrderItem(p,requested)&&(!existing||!isOrderItem(p,N(existing.quantidade)))){
+    const answer=await customerDialog({
+      title:'Produto sob encomenda',icon:'🕘',locked:true,
+      html:orderNoticeHtml([{product:p,item:{nome:p.nome}}]),
+      actions:[{label:'Voltar',value:false},{label:'Adicionar ao carrinho',value:true,primary:true}]
+    });
+    if(!answer)return;
+  }
   const row=cart.find(x=>S(x.produtoId)===S(id));
   const add=row?(N(qty)>0?wanted:step):wanted;
   if(limit&&N(row?.quantidade)+add>limit+1e-9)return toast('Limite por pedido: '+limit);
@@ -785,9 +812,9 @@ function renderCart(){
     if(!groups.has(key))groups.set(key,{key,promoted:!!entry.pricing.promotionGroupId,label:entry.pricing.promotionGroupLabel||'',hint:entry.pricing.promotionGroupHint||'',progress:entry.pricing.promotionGroupProgress||null,entries:[]});
     groups.get(key).entries.push(entry);
   });
-  const renderItem=({x,i,min,step,pricing})=>`<div class="cart-item">
+  const renderItem=({x,i,p,min,step,pricing})=>`<div class="cart-item">
       ${x.imagem?`<img src="${esc(x.imagem)}" alt="">`:'<div class="no-image" style="font-size:25px">🍽️</div>'}
-      <div><h4>${esc(x.nome)}</h4><small>${pricing.unitPrice===0&&pricing.promotionGroupId?'<b style="color:#15803d">Unidade incluída na oferta</b>':`${money(pricing.unitPrice)} cada`}${pricing.promotionLabel&&!pricing.promotionLabel.startsWith('Leve ')?` · <b style="color:#15803d">${esc(pricing.promotionLabel)}</b>`:''}</small>
+      <div><h4>${esc(x.nome)}</h4>${isOrderItem(p,N(x.quantidade))?'<small style="display:block;color:#84530c">🕘 Sob encomenda · aguardará confirmação da loja</small>':''}<small>${pricing.unitPrice===0&&pricing.promotionGroupId?'<b style="color:#15803d">Unidade incluída na oferta</b>':`${money(pricing.unitPrice)} cada`}${pricing.promotionLabel&&!pricing.promotionLabel.startsWith('Leve ')?` · <b style="color:#15803d">${esc(pricing.promotionLabel)}</b>`:''}</small>
         <div class="qty"><button data-minus="${i}" type="button">−</button><b>${x.quantidade}</b><button data-plus="${i}" type="button">+</button></div>
       </div>
       <div class="cart-item-price" style="text-align:right"><b>${money(pricing.total)}</b><br><button class="remove" data-remove="${i}" type="button">Remover</button></div>
@@ -1223,6 +1250,16 @@ async function notifyOrderChange(before,after){
     }
     return;
   }
+  const confirmationAt=S(after.encomendaConfirmacao?.atualizadoEm||'');
+  const oldConfirmationAt=S(before?.encomendaConfirmacao?.atualizadoEm||'');
+  const decisionKey=after.id+':encomenda:'+confirmationAt;
+  if(confirmationAt&&confirmationAt!==oldConfirmationAt&&
+     after.encomendaConfirmacao?.status!=='PENDENTE'&&!seen[decisionKey]){
+    markNotice(decisionKey);
+    await customerDialog({title:'Atualização da sua encomenda',icon:'📦',
+      html:'<div class="cx-note">'+esc(after.mensagemCliente||'A loja confirmou a disponibilidade da sua encomenda. Confira os detalhes do pedido.')+'</div>'});
+    return;
+  }
   const acceptKey=`${after.id}:accepted:${after.aceitoEm||after.updatedAt}`;
   if(st==='ACEITO'&&old!=='ACEITO'&&!seen[acceptKey]){
     markNotice(acceptKey);
@@ -1319,6 +1356,15 @@ async function submitOrder(ev){
     if(!confirmed)return;
   }
 
+  const pendingEncomendas=pendingOrderItems();
+  if(pendingEncomendas.length){
+    const proceed=await customerDialog({
+      title:'Confirmação de itens sob encomenda',icon:'🕘',locked:true,
+      html:orderNoticeHtml(pendingEncomendas),
+      actions:[{label:'Revisar carrinho',value:false},{label:'Continuar pedido',value:true,primary:true}]
+    });
+    if(!proceed)return;
+  }
   const afterHours=storeHoursStatus();
   if(afterHours?.closed){
     const proceed=await customerDialog({
@@ -1342,7 +1388,7 @@ async function submitOrder(ev){
     formaPagamento:E('payment').value,
     entrega:mode==='ENTREGA'?address():{},
     itens:cart.map(x=>({produtoId:S(x.produtoId),quantidade:N(x.quantidade)})),
-    observacao:[afterHours?.closed?'[PEDIDO FORA DO HORÁRIO · Primeiro atendimento previsto: '+afterHours.nextOpening+' · Horário da entrega/retirada sujeito à confirmação.]':'',S(E('obs').value).trim()].filter(Boolean).join('\n'),
+    observacao:[pendingEncomendas.length?'[ITENS SOB ENCOMENDA — disponibilidade, prazo e entrega dependem de confirmação da loja: '+pendingEncomendas.map(x=>x.product?.nome||x.item.nome).join(', ').slice(0,400)+']':'',afterHours?.closed?'[PEDIDO FORA DO HORÁRIO · Primeiro atendimento previsto: '+afterHours.nextOpening+' · Horário da entrega/retirada sujeito à confirmação.]':'',S(E('obs').value).trim()].filter(Boolean).join('\n').slice(0,1000),
     lgpd:{
       consent:true,
       consentAt:now,
@@ -1404,6 +1450,7 @@ async function submitOrder(ev){
         <b>Pedido ${esc(result.codigo)} recebido! 🎉</b><br>
         ${window.JohnOrderAmounts.celebration(saved)?`<strong style="color:#166534">${esc(window.JohnOrderAmounts.celebration(saved))}</strong><br>`:''}
         ${afterHours?.closed?'<div class="cx-note">🕘 Pedido feito fora do expediente. Atendimento a partir de <b>'+esc(afterHours.nextOpening)+'</b>. Entrega/retirada sujeita à confirmação da loja.</div>':''}
+        ${pendingEncomendas.length?'<div class="cx-note">🕘 Este pedido contém produtos sob encomenda. O Caseirinho confirmará a disponibilidade e o prazo pelo WhatsApp antes da preparação.</div>':''}
         ${esc(freightText)}<br>
         ${window.JohnOrderAmounts.lines(saved).map(([label,value])=>esc(label)+': <b>'+esc(value)+'</b>').join('<br>')}<br>
         <button class="soft" type="button" id="openSavedOrders" style="margin-top:9px">Acompanhar pedido</button>
@@ -1499,6 +1546,9 @@ function ordersCardsHtml(orders){
       ${st==='FRETE_RECUSADO_CLIENTE'||st==='CANCELADO'?`<div class="result err">🛑 <b>Pedido cancelado</b><br>${esc(msg||'Você não aceitou o valor da entrega. Caso queira prosseguir, faça um novo pedido.')}</div>`:''}
       ${st==='ACEITO'?`<div class="result"><b>🎉 Seu pedido foi aceito!</b>${delivery?`<br>Horário de entrega: <b>${esc(orderTimeText(o))}</b>`:''}</div>${pixCard(o.pix)}`:''}
       ${st==='REJEITADO'?`<div class="result err">❌ <b>Pedido rejeitado</b><br>${esc(msg||'Seu pedido não pôde ser aceito. Entre em contato conosco se precisar de ajuda.')}</div>`:''}
+      ${o.encomendaConfirmacao?.status==='PENDENTE'?'<div class="cx-note">🕘 Produto sob encomenda: aguardando confirmação de disponibilidade e prazo da loja.</div>':''}
+      ${o.encomendaConfirmacao?.status==='CONFIRMADO'?'<div class="cx-note ok">✅ Disponibilidade analisada pelo Caseirinho. Confira a atualização abaixo.</div>':''}
+      ${o.encomendaConfirmacao?.status==='AGUARDANDO_CONTATO'?'<div class="cx-note">⚠️ Item indisponível: a loja entrará em contato para combinar uma alternativa.</div>':''}
       ${msg&&!['REJEITADO','CANCELADO','FRETE_RECUSADO_CLIENTE'].includes(st)?`<div class="cx-note">${esc(msg)}</div>`:''}
       <div class="order-actions">${['ACEITO','EM_PRODUCAO','PRONTO','SAIU_PARA_ENTREGA','EM_ENTREGA','ENTREGUE','RETIRADO','CONCLUIDO','FINALIZADO'].includes(st)&&!window.CaseirinhoReviewsV2?.productRated?.(o.id)?`<button class="primary" data-review-order="${esc(o.id)}" type="button">⭐ Avaliar experiência · Produtos</button>`:''}${['CANCELADO','FRETE_RECUSADO_CLIENTE'].includes(st)?`<button class="primary" data-new-order="${esc(o.id)}" type="button">Fazer novo pedido</button>`:''}<button class="soft" data-refresh-orders type="button">Atualizar status</button></div></div>`;
   }).join('');
