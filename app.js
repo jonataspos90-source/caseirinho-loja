@@ -241,6 +241,23 @@ function availabilityText(p){
   const suffix=days>0?' · '+days+' dia(s) de antecedência':'';
   return (p?.encomendaAutomatica?'◷ Produção sob encomenda':'◷ Sob encomenda')+suffix;
 }
+function isOrderItem(p,quantity=1){
+  if(!p)return false;
+  const original=norm(p?.disponibilidade||'AMBOS');
+  const effective=canonicalAvailability(p);
+  const stock=Math.max(0,N(p?.saldoDisponivel));
+  return effective==='SOB_ENCOMENDA'||(original==='AMBOS'&&N(quantity)>stock)||(original==='SOB_ENCOMENDA');
+}
+function pendingOrderItems(){
+  return cart.map(i=>({item:i,product:A(catalog.produtos).find(p=>S(p.id)===S(i.produtoId))}))
+    .filter(x=>isOrderItem(x.product,x.item.quantidade));
+}
+function orderNoticeHtml(items){
+  const names=items.map(x=>esc(x.product?.nomeComercial||x.product?.nome||x.item.nome));
+  return '<div class="cx-highlight warn"><b>Produto(s) sob encomenda: '+names.join(', ')+'</b></div>'+
+    '<p>Você pode fazer o pedido normalmente. A equipe do Caseirinho confirmará se existe pronta entrega ou se será necessária a produção.</p>'+
+    '<p><b>A data e o horário de entrega ou retirada dependem de confirmação da loja pelo WhatsApp.</b></p>';
+}
 function images(p){
   const arr=A(p?.imagens).filter(Boolean);
   return arr.length?arr:(p?.imagem?[p.imagem]:[]);
@@ -748,10 +765,20 @@ function renderGallery(imgs,index){
   E('thumbs').innerHTML=imgs.length>1?imgs.map((x,i)=>`<button class="thumb ${i===index?'active':''}" data-thumb="${i}" type="button"><img src="${esc(x)}" alt=""></button>`).join(''):'';
   E('thumbs').querySelectorAll('[data-thumb]').forEach(b=>b.onclick=()=>renderGallery(imgs,N(b.dataset.thumb)));
 }
-function quickAdd(id,qty){
+async function quickAdd(id,qty){
   const p=A(catalog.produtos).find(x=>S(x.id)===S(id));if(!p)return;
   if(!canBuy(p))return toast('Este produto está indisponível no momento.');
   const min=minQty(p),step=stepQty(p),wanted=Math.max(min,N(qty)||min),limit=N(p.limitePedido);
+  const existing=cart.find(x=>S(x.produtoId)===S(id));
+  const requested=existing?N(existing.quantidade)+(N(qty)>0?wanted:step):wanted;
+  if(isOrderItem(p,requested)&&!isOrderItem(p,N(existing?.quantidade))){
+    const answer=await customerDialog({
+      title:'Produto sob encomenda',icon:'🕘',locked:true,
+      html:orderNoticeHtml([{product:p,item:{nome:p.nome}}]),
+      actions:[{label:'Voltar',value:false},{label:'Adicionar ao carrinho',value:true,primary:true}]
+    });
+    if(!answer)return;
+  }
   const row=cart.find(x=>S(x.produtoId)===S(id));
   const add=row?(N(qty)>0?wanted:step):wanted;
   if(limit&&N(row?.quantidade)+add>limit+1e-9)return toast('Limite por pedido: '+limit);
@@ -1319,6 +1346,15 @@ async function submitOrder(ev){
     if(!confirmed)return;
   }
 
+  const pendingEncomendas=pendingOrderItems();
+  if(pendingEncomendas.length){
+    const proceed=await customerDialog({
+      title:'Confirmação de itens sob encomenda',icon:'🕘',locked:true,
+      html:orderNoticeHtml(pendingEncomendas),
+      actions:[{label:'Revisar carrinho',value:false},{label:'Continuar pedido',value:true,primary:true}]
+    });
+    if(!proceed)return;
+  }
   const afterHours=storeHoursStatus();
   if(afterHours?.closed){
     const proceed=await customerDialog({
@@ -1342,7 +1378,7 @@ async function submitOrder(ev){
     formaPagamento:E('payment').value,
     entrega:mode==='ENTREGA'?address():{},
     itens:cart.map(x=>({produtoId:S(x.produtoId),quantidade:N(x.quantidade)})),
-    observacao:[afterHours?.closed?'[PEDIDO FORA DO HORÁRIO · Primeiro atendimento previsto: '+afterHours.nextOpening+' · Horário da entrega/retirada sujeito à confirmação.]':'',S(E('obs').value).trim()].filter(Boolean).join('\n'),
+    observacao:[pendingEncomendas.length?'[ITENS SOB ENCOMENDA — disponibilidade, prazo e entrega dependem de confirmação da loja: '+pendingEncomendas.map(x=>x.product?.nome||x.item.nome).join(', ').slice(0,400)+']':'',afterHours?.closed?'[PEDIDO FORA DO HORÁRIO · Primeiro atendimento previsto: '+afterHours.nextOpening+' · Horário da entrega/retirada sujeito à confirmação.]':'',S(E('obs').value).trim()].filter(Boolean).join('\n').slice(0,1000),
     lgpd:{
       consent:true,
       consentAt:now,
@@ -1404,6 +1440,7 @@ async function submitOrder(ev){
         <b>Pedido ${esc(result.codigo)} recebido! 🎉</b><br>
         ${window.JohnOrderAmounts.celebration(saved)?`<strong style="color:#166534">${esc(window.JohnOrderAmounts.celebration(saved))}</strong><br>`:''}
         ${afterHours?.closed?'<div class="cx-note">🕘 Pedido feito fora do expediente. Atendimento a partir de <b>'+esc(afterHours.nextOpening)+'</b>. Entrega/retirada sujeita à confirmação da loja.</div>':''}
+        ${pendingEncomendas.length?'<div class="cx-note">🕘 Este pedido contém produtos sob encomenda. O Caseirinho confirmará a disponibilidade e o prazo pelo WhatsApp antes da preparação.</div>':''}
         ${esc(freightText)}<br>
         ${window.JohnOrderAmounts.lines(saved).map(([label,value])=>esc(label)+': <b>'+esc(value)+'</b>').join('<br>')}<br>
         <button class="soft" type="button" id="openSavedOrders" style="margin-top:9px">Acompanhar pedido</button>
