@@ -388,7 +388,7 @@ function renderCatalogEntries(entries){
 function promoPackHtml(entries,group){
   const title=group.label||`Leve ${group.x}, pague ${group.y}`;
   const items=entries.map(entry=>{
-    const p=entry.rep,price=productPriceInfo(p).current,im=images(p)[0],available=entry.variants.some(canBuy);
+    const p=entry.rep,price=productPriceInfo(p).regular,im=images(p)[0],available=entry.variants.some(canBuy);
     return `<article class="promo-pack-item">
       <button class="promo-pack-image" data-view="${esc(p.id)}" type="button" aria-label="Ver ${esc(p.nome)}">${im?`<img src="${esc(im)}" alt="">`:'🍽️'}</button>
       <div class="promo-pack-copy"><b>${esc(p.nomeComercial||p.nome)}</b><strong>${money(price)} <small>cada</small></strong>
@@ -396,7 +396,7 @@ function promoPackHtml(entries,group){
     </article>`;
   }).join('');
   return `<section class="promo-pack-card">
-    <header class="promo-pack-heading"><span>OFERTA EM PACK</span><h3>${esc(title)}</h3><p>Misture os sabores abaixo e adicione os itens ao carrinho. O desconto é calculado ao completar o pack.</p></header>
+    <header class="promo-pack-heading"><span>OFERTA EM PACK</span><h3>${esc(title)}</h3><p>Misture os sabores abaixo e adicione os itens ao carrinho. Os valores mostrados são os preços normais; a promoção individual e o desconto do pack são calculados separadamente no carrinho, prevalecendo o melhor preço.</p></header>
     <div class="promo-pack-grid">${items}</div>
   </section>`;
 }
