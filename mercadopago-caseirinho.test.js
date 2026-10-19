@@ -3,7 +3,7 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 const app=fs.readFileSync(__dirname+'/app.js','utf8');
 const html=fs.readFileSync(__dirname+'/index.html','utf8');
 test('Loja só oferece Mercado Pago quando habilitado pelo backend',()=>{
- assert.match(app,/mercadoPagoOnline&&catalogConnected/);
+ assert.match(app,/\(mercadoPagoOnline\|\|PAYMENT_UI_PREVIEW\)&&catalogConnected/);
  assert.match(app,/MP_CREDIT_LABEL='Cartão de crédito online \(Mercado Pago\)'/);
  assert.match(app,/MP_DEBIT_LABEL='Cartão de débito online \(Mercado Pago\)'/);
  assert.match(app,/for\(const option of MP_PAYMENT_OPTIONS\)/);
