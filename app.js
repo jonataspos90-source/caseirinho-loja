@@ -48,6 +48,8 @@ let mercadoPagoOnline=false;
 const MP_CREDIT_LABEL='Cartão de crédito online (Mercado Pago)';
  const MP_DEBIT_LABEL='Cartão de débito online (Mercado Pago)';
  const MP_PAYMENT_OPTIONS=[MP_CREDIT_LABEL,MP_DEBIT_LABEL];
+ // Visualização somente da interface: nunca cria pedidos ou cobranças.
+ const PAYMENT_UI_PREVIEW=new URLSearchParams(location.search).get('preview_cartoes')==='1';
 const mpSelected=x=>norm(x).includes('MERCADO_PAGO');
 
 function readJson(k,fallback){try{const x=JSON.parse(localStorage.getItem(k)||'null');return x??fallback}catch(_){return fallback}}
@@ -1034,9 +1036,10 @@ function renderCheckoutConfig(){
   const paymentOptions=(payments.length?[...payments]:['A definir']).filter(x=>!mpSelected(x));
   // O tipo selecionado expressa a preferência; o Mercado Pago determina e
   // processa os meios efetivamente disponíveis em seu Checkout Pro seguro.
-  if(mercadoPagoOnline&&catalogConnected){
+  if((mercadoPagoOnline||PAYMENT_UI_PREVIEW)&&catalogConnected){
     for(const option of MP_PAYMENT_OPTIONS)if(!paymentOptions.includes(option))paymentOptions.push(option);
   }
+  if(E('paymentPreviewNotice'))E('paymentPreviewNotice').hidden=!PAYMENT_UI_PREVIEW;
   E('payment').innerHTML=paymentOptions.map(x=>`<option>${esc(x)}</option>`).join('');
   if(currentPayment&&paymentOptions.includes(currentPayment))E('payment').value=currentPayment;
   modeChanged();
@@ -1391,6 +1394,9 @@ async function submitOrder(ev){
     return toast('Aguarde a conexão com a loja para confirmar preços e disponibilidade.');
   }
   if(!cart.length)return toast('Seu carrinho está vazio.');
+  // Visualização não gera pedido de teste no banco de produção.
+  if(PAYMENT_UI_PREVIEW&&mpSelected(E('payment')?.value))
+    return toast('Demonstração de interface: o pagamento com cartão não pode ser enviado por esta loja.');
   if(mpSelected(E('payment')?.value)&&!mercadoPagoOnline)return toast('O pagamento online ainda não está ativado nesta loja.');
   if(!validPhone(E('cPhone').value)){
     E('cPhone').focus();
