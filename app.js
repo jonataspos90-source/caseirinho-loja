@@ -44,10 +44,59 @@ let profileHydrated=false;
 let pollBusy=false;
 let historySyncBusy=null;
 let activeQuoteNotice='';
+let mercadoPagoOnline=false;
+const MP_LABEL='Cartão online (Mercado Pago)';
+const mpSelected=x=>norm(x).includes('MERCADO_PAGO');
 
 function readJson(k,fallback){try{const x=JSON.parse(localStorage.getItem(k)||'null');return x??fallback}catch(_){return fallback}}
 function writeJson(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(_){}}
 function removeLocal(k){try{localStorage.removeItem(k)}catch(_){}}
+
+async function loadMercadoPagoConfig(){
+  if(!API||STORE!=='caseirinho'){mercadoPagoOnline=false;return;}
+  try{
+    const response=await api('/api/v1/public/store/'+encodeURIComponent(STORE)+'/mercadopago/config');
+    const enabled=response?.available===true;
+    if(mercadoPagoOnline!==enabled){mercadoPagoOnline=enabled;if(E('payment'))renderCheckoutConfig()}
+  }catch(_){mercadoPagoOnline=false}
+}
+function mpPayable(o){
+  const st=norm(o?.status);
+  const freight=norm(o?.freteStatus),confirm=norm(o?.encomendaConfirmacao?.status);
+  if(!mercadoPagoOnline||!mpSelected(o?.formaPagamento))return false;
+  if(['REJEITADO','CANCELADO','ENTREGUE','RETIRADO','CONCLUIDO','FINALIZADO'].includes(st))return false;
+  if(o?.encomendaConfirmacao&&confirm!=='CONFIRMADO')return false;
+  if(['COTACAO_PENDENTE','COTADO'].includes(freight)&&norm(o?.freteDecisaoCliente)!=='ACEITO')return false;
+  return norm(o?.pagamentoOnline?.status)!=='APROVADO';
+}
+function mpStatusHtml(o){
+  if(!mpSelected(o?.formaPagamento)||!mercadoPagoOnline)return'';
+  const status=norm(o?.pagamentoOnline?.status);
+  if(status==='APROVADO')return'<div class="cx-note ok">✅ Pagamento Mercado Pago confirmado pelo servidor.</div>';
+  if(status==='ESTORNADO')return'<div class="cx-note">⚠️ Pagamento estornado. Aguarde orientações da loja.</div>';
+  if(status==='RECUSADO')return'<div class="cx-note">❌ Pagamento recusado. Consulte a loja antes de tentar novamente.</div>';
+  if(!mpPayable(o))return'<div class="cx-note">🕘 Link de pagamento será liberado após a confirmação da encomenda e do frete.</div>';
+  return'<div class="cx-note">💳 Pagamento Mercado Pago pendente. A loja só considerará pago após confirmação do servidor.</div>'+
+    '<button class="primary" data-mp-pay="'+esc(o.id)+'" type="button">Pagar online com Mercado Pago</button>';
+}
+async function startMercadoPagoPayment(order,button){
+  if(!order?.id||!order?.publicToken)return toast('Recupere seu pedido antes de pagar.');
+  if(!mercadoPagoOnline)return toast('Pagamento online indisponível no momento.');
+  if(button){button.disabled=true;button.textContent='Gerando pagamento seguro...'}
+  try{
+    const out=await api('/api/v1/public/store/'+encodeURIComponent(STORE)+'/orders/'+
+      encodeURIComponent(order.id)+'/mercadopago/checkout',{
+      method:'POST',body:JSON.stringify({publicToken:order.publicToken})
+    });
+    const url=new URL(S(out.url));
+    if(url.protocol!=='https:'||!/(^|\.)mercadopago\.com(\.br)?$/.test(url.hostname))
+      throw Error('Link de pagamento inválido. Não prossiga.');
+    window.location.assign(url.href);
+  }catch(error){toast(S(error?.message||'Falha ao gerar pagamento.'));
+    if(button){button.disabled=false;button.textContent='Pagar online com Mercado Pago'}
+  }
+}
+
 function migrateLegacyCaseirinhoStorage(){
   if(STORE!=='caseirinho')return;
   const map={
@@ -711,6 +760,7 @@ async function loadCatalog(silent=false){
     catalogRecoveryCount=0;
     setCatalogConnectionStatus(true,`Loja conectada · ${A(catalog.produtos).length} produto(s) · atualizado ${catalog.publicadoEm?new Date(catalog.publicadoEm).toLocaleString('pt-BR'):'agora'}`);
     mount();
+    loadMercadoPagoConfig().catch(console.warn);
   }catch(err){
     const cached=A(catalog.produtos).length?catalog:await catalogBackup();
     if(cached&&A(cached.produtos).length){
@@ -979,7 +1029,8 @@ function renderCheckoutConfig(){
   if(currentMode&&modes.some(([v])=>v===currentMode))E('mode').value=currentMode;
 
   const payments=A(catalog.loja?.formasPagamento);
-  const paymentOptions=payments.length?payments:['A definir'];
+  const paymentOptions=payments.length?[...payments]:['A definir'];
+  if(mercadoPagoOnline&&catalogConnected&&!paymentOptions.includes(MP_LABEL))paymentOptions.push(MP_LABEL);
   E('payment').innerHTML=paymentOptions.map(x=>`<option>${esc(x)}</option>`).join('');
   if(currentPayment&&paymentOptions.includes(currentPayment))E('payment').value=currentPayment;
   modeChanged();
@@ -1334,6 +1385,7 @@ async function submitOrder(ev){
     return toast('Aguarde a conexão com a loja para confirmar preços e disponibilidade.');
   }
   if(!cart.length)return toast('Seu carrinho está vazio.');
+  if(mpSelected(E('payment')?.value)&&!mercadoPagoOnline)return toast('O pagamento online ainda não está ativado nesta loja.');
   if(!validPhone(E('cPhone').value)){
     E('cPhone').focus();
     return toast('Informe um WhatsApp válido com DDD.');
@@ -1451,12 +1503,17 @@ async function submitOrder(ev){
         ${window.JohnOrderAmounts.celebration(saved)?`<strong style="color:#166534">${esc(window.JohnOrderAmounts.celebration(saved))}</strong><br>`:''}
         ${afterHours?.closed?'<div class="cx-note">🕘 Pedido feito fora do expediente. Atendimento a partir de <b>'+esc(afterHours.nextOpening)+'</b>. Entrega/retirada sujeita à confirmação da loja.</div>':''}
         ${pendingEncomendas.length?'<div class="cx-note">🕘 Este pedido contém produtos sob encomenda. O Caseirinho confirmará a disponibilidade e o prazo pelo WhatsApp antes da preparação.</div>':''}
+        ${mpSelected(saved.formaPagamento)?(pendingEncomendas.length||result.freteStatus==='COTACAO_PENDENTE'?'<div class="cx-note">🕘 Seu link de cartão será liberado quando o Caseirinho confirmar disponibilidade e frete. Acompanhe em Meus pedidos.</div>':'<div class="cx-note">💳 Pagamento online pendente de confirmação.</div><button class="primary" type="button" id="mpPayNow">Pagar agora pelo Mercado Pago</button>'):''}
         ${esc(freightText)}<br>
         ${window.JohnOrderAmounts.lines(saved).map(([label,value])=>esc(label)+': <b>'+esc(value)+'</b>').join('<br>')}<br>
         <button class="soft" type="button" id="openSavedOrders" style="margin-top:9px">Acompanhar pedido</button>
       </div>`;
 
     E('openSavedOrders').onclick=showOrders;
+    if(mpSelected(saved.formaPagamento)){
+      const mpButton=E('mpPayNow');
+      if(mpButton)mpButton.onclick=()=>startMercadoPagoPayment(saved,mpButton);
+    }
     cart=[];
     renderCart();
   }catch(err){
@@ -1550,6 +1607,7 @@ function ordersCardsHtml(orders){
       ${o.encomendaConfirmacao?.status==='CONFIRMADO'?'<div class="cx-note ok">✅ Disponibilidade analisada pelo Caseirinho. Confira a atualização abaixo.</div>':''}
       ${o.encomendaConfirmacao?.status==='AGUARDANDO_CONTATO'?'<div class="cx-note">⚠️ Item indisponível: a loja entrará em contato para combinar uma alternativa.</div>':''}
       ${msg&&!['REJEITADO','CANCELADO','FRETE_RECUSADO_CLIENTE'].includes(st)?`<div class="cx-note">${esc(msg)}</div>`:''}
+      ${mpStatusHtml(o)}
       <div class="order-actions">${['ACEITO','EM_PRODUCAO','PRONTO','SAIU_PARA_ENTREGA','EM_ENTREGA','ENTREGUE','RETIRADO','CONCLUIDO','FINALIZADO'].includes(st)&&!window.CaseirinhoReviewsV2?.productRated?.(o.id)?`<button class="primary" data-review-order="${esc(o.id)}" type="button">⭐ Avaliar experiência · Produtos</button>`:''}${['CANCELADO','FRETE_RECUSADO_CLIENTE'].includes(st)?`<button class="primary" data-new-order="${esc(o.id)}" type="button">Fazer novo pedido</button>`:''}<button class="soft" data-refresh-orders type="button">Atualizar status</button></div></div>`;
   }).join('');
 
@@ -1569,6 +1627,10 @@ function wireOrdersView(){
   root.querySelectorAll('[data-new-order]').forEach(b=>b.onclick=()=>{
     closeOverlay(E('simpleOverlay'));
     E('catalogSection')?.scrollIntoView({behavior:'smooth'});
+  });
+  root.querySelectorAll('[data-mp-pay]').forEach(b=>b.onclick=()=>{
+    const order=readJson(ORDERS_KEY,[]).find(o=>S(o.id)===S(b.dataset.mpPay));
+    if(order)startMercadoPagoPayment(order,b);
   });
   bindCustomerExperienceActions(root);
 }
