@@ -45,7 +45,9 @@ let pollBusy=false;
 let historySyncBusy=null;
 let activeQuoteNotice='';
 let mercadoPagoOnline=false;
-const MP_LABEL='Cartão online (Mercado Pago)';
+const MP_CREDIT_LABEL='Cartão de crédito online (Mercado Pago)';
+ const MP_DEBIT_LABEL='Cartão de débito online (Mercado Pago)';
+ const MP_PAYMENT_OPTIONS=[MP_CREDIT_LABEL,MP_DEBIT_LABEL];
 const mpSelected=x=>norm(x).includes('MERCADO_PAGO');
 
 function readJson(k,fallback){try{const x=JSON.parse(localStorage.getItem(k)||'null');return x??fallback}catch(_){return fallback}}
@@ -1028,8 +1030,13 @@ function renderCheckoutConfig(){
   if(currentMode&&modes.some(([v])=>v===currentMode))E('mode').value=currentMode;
 
   const payments=A(catalog.loja?.formasPagamento);
-  const paymentOptions=payments.length?[...payments]:['A definir'];
-  if(mercadoPagoOnline&&catalogConnected&&!paymentOptions.includes(MP_LABEL))paymentOptions.push(MP_LABEL);
+  // Evita oferecer um cartão configurado no catálogo se a API ainda não o liberou.
+  const paymentOptions=(payments.length?[...payments]:['A definir']).filter(x=>!mpSelected(x));
+  // O tipo selecionado expressa a preferência; o Mercado Pago determina e
+  // processa os meios efetivamente disponíveis em seu Checkout Pro seguro.
+  if(mercadoPagoOnline&&catalogConnected){
+    for(const option of MP_PAYMENT_OPTIONS)if(!paymentOptions.includes(option))paymentOptions.push(option);
+  }
   E('payment').innerHTML=paymentOptions.map(x=>`<option>${esc(x)}</option>`).join('');
   if(currentPayment&&paymentOptions.includes(currentPayment))E('payment').value=currentPayment;
   modeChanged();
