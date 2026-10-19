@@ -42,6 +42,7 @@ ul{padding-left:20px;line-height:1.7;color:#4b3d45}.hint{font-size:12px;padding:
 <label for="method">Forma de pagamento para conferir</label>
 <select id="method"><option value="CREDITO">Cartão de crédito</option><option value="DEBITO">Cartão de débito</option></select>
 <p class="muted">A opção é uma preferência exibida aqui. Os meios efetivamente disponíveis na página de pagamento são definidos pelo Mercado Pago.</p>
+<button id="checkSeller" class="secondary" type="button">Validar credenciais de vendedor de teste</button>
 <button id="createOrder" class="primary" type="button">Criar pedido fictício de R$ 5,00</button>
 <div id="orderArea" hidden>
 <div class="order"><div class="step">Etapa 2 de 3 · Pedido de homologação</div>
@@ -96,6 +97,16 @@ async function environment(){
  }catch(e){available=false;badge('apiBadge','API indisponível','warn');msg('Não foi possível conectar à API do staging: '+e.message,'err')}
  show();
 }
+async function verifySeller(){
+ const code=$('accessCode').value.trim();
+ if(code.length<24){msg('Informe seu código de homologação para verificar a conta de testes.','err');return;}
+ $('checkSeller').disabled=true;
+ try{
+  const x=await request(PREFIX+'/mercadopago/sandbox/check-credentials',{method:'POST',body:{accessCode:code}});
+  msg(x.testSeller?'Credencial validada: vendedor fictício brasileiro reconhecido. '+(x.checkoutEnabled?'Checkout de testes habilitado.':'Checkout ainda desativado no Railway.'):'Vendedor não validado.',x.testSeller?'ok':'err');
+ }catch(e){msg('Não foi possível validar o vendedor de teste: '+e.message,'err')}
+ finally{$('checkSeller').disabled=false;await environment()}
+}
 async function create(){
  if(busy)return;
  if($('accessCode').value.trim().length<24){msg('Insira o código de acesso à homologação para criar o pedido fictício.','err');return}
@@ -128,7 +139,7 @@ async function status(){
  msg(st==='APROVADO'?'Pagamento fictício APROVADO e registrado na API de homologação.':'Consulta concluída. Estado do pagamento: '+st,st==='APROVADO'?'ok':'');
  }catch(e){msg('Erro na consulta do pedido: '+e.message,'err')}
 }
-$('createOrder').addEventListener('click',create);$('pay').addEventListener('click',checkout);$('refresh').addEventListener('click',status);
+$('checkSeller').addEventListener('click',verifySeller);$('createOrder').addEventListener('click',create);$('pay').addEventListener('click',checkout);$('refresh').addEventListener('click',status);
 $('reset').addEventListener('click',()=>{order=null;sessionStorage.removeItem(KEY);$('resultArea').hidden=true;badge('paymentBadge','Não iniciado');show();msg('Novo teste iniciado. Crie outro pedido fictício.');});
 try{const saved=JSON.parse(sessionStorage.getItem(KEY)||'null');if(saved&&saved.id&&saved.publicToken)order=saved;}catch(_){}
 environment().then(()=>{if(order&&new URLSearchParams(location.search).get('mp')==='retorno')status()});
