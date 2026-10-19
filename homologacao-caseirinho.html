@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="referrer" content="no-referrer">
+<title>Caseirinho — Laboratório de pagamentos</title>
+<link rel="icon" type="image/png" href="./icons/icon-192.png">
+<style>
+:root{color-scheme:light;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#281c24;background:#f8f2ec}*{box-sizing:border-box}
+body{margin:0}header{background:#751c3f;color:#fff;padding:19px 18px}
+.head{max-width:960px;margin:auto;display:flex;align-items:center;gap:14px}.head img{width:51px;height:51px;object-fit:contain;background:#fff;border-radius:14px}.head b{display:block;font-size:20px}.head small{font-size:12px;opacity:.9}
+main{max-width:960px;margin:24px auto;padding:0 16px 70px}.banner{background:#ffedb8;border:1px solid #e5b03c;border-radius:15px;padding:15px 19px;color:#654314;font-weight:700;line-height:1.5}
+h1{font-size:clamp(23px,4vw,34px);margin:28px 0 8px;line-height:1.2}p{line-height:1.55;color:#615660}.muted{color:#665c62;font-size:13px}
+.grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(260px,.8fr);gap:20px;margin-top:21px}.card{background:#fff;border:1px solid #e8dbe0;border-radius:20px;padding:23px;box-shadow:0 8px 24px #2d142007}.card h2{font-size:19px;margin:2px 0 15px}.card h3{font-size:16px}.step{color:#8d3356;font-size:11px;letter-spacing:.1em;font-weight:900;text-transform:uppercase}
+label{display:block;font-weight:700;font-size:14px;margin:15px 0 6px}
+input,select{font:inherit;border:1px solid #bcb0b6;padding:13px;border-radius:11px;background:#fff;width:100%;color:#29151e}input:focus,select:focus{outline:3px solid #f0d0d9;border-color:#913958}
+button{font:inherit;cursor:pointer;border:0;border-radius:12px;padding:14px 16px;font-weight:800}button:focus-visible{outline:3px solid #e4a12e;outline-offset:3px}button:disabled{cursor:not-allowed;opacity:.5}
+.primary{color:#fff;background:#842648;width:100%;margin-top:17px}.secondary{color:#842648;background:#fbe8ee;border:1px solid #e9cada;width:100%;margin-top:8px}
+.order{margin:11px 0 5px;padding:13px;border:1px dashed #d7a3b5;background:#fff8fa;border-radius:12px}.row{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.tag{border-radius:16px;font-size:12px;font-weight:800;padding:5px 10px;background:#f0eeee;color:#5b5360}.tag.ok{background:#d7f4de;color:#166432}.tag.warn{background:#fff0c8;color:#79520d}
+#message{padding:12px 14px;background:#eee9ef;border-radius:12px;margin-top:12px;font-size:14px;line-height:1.45;white-space:pre-wrap}
+#message.err{background:#ffe5e5;color:#8b1723}#message.ok{background:#e1f7e6;color:#165e2c}
+ul{padding-left:20px;line-height:1.7;color:#4b3d45}.hint{font-size:12px;padding:12px 14px;background:#f8f4f7;border-radius:12px;line-height:1.55}.price{font-size:34px;font-weight:900;color:#792246;letter-spacing:-.04em}
+#orderArea[hidden],#resultArea[hidden]{display:none!important}.footnote{margin-top:23px;font-size:12px;color:#665f68}
+@media(max-width:720px){.grid{grid-template-columns:1fr}.card{padding:18px}h1{margin-top:22px}}
+</style>
+</head>
+<body>
+<header><div class="head"><img src="./icons/icon-192.png" alt="Caseirinho"><div><b>Caseirinho Massas Artesanais</b><small>Laboratório de pagamentos • ambiente de homologação</small></div></div></header>
+<main>
+<div class="banner">🧪 <strong>AMBIENTE EXCLUSIVO DE TESTES.</strong> Nenhum pedido desta página é enviado à loja ou ao ERP de produção. Use somente contas e cartões fictícios do Mercado Pago. NÃO utilize cartões reais.</div>
+<h1>Teste de cartão: crédito e débito</h1>
+<p>Crie um pedido fictício no banco isolado do Railway, abra o Checkout Pro de testes quando disponível e verifique o resultado recebido pelo Webhook.</p>
+<div class="grid">
+<section class="card">
+<div class="step">Etapa 1 de 3 · Preparar o teste</div><h2>Criar pedido fictício</h2>
+<div class="row"><div><div style="font-size:13px;color:#66545f">Produto simbólico de homologação</div><b>Pedido de teste Caseirinho</b></div><div class="price">R$ 5,00</div></div>
+<label for="accessCode">Código de acesso à homologação</label>
+<input id="accessCode" type="password" autocomplete="off" spellcheck="false" placeholder="Código fornecido para testes">
+<label for="method">Forma de pagamento para conferir</label>
+<select id="method"><option value="CREDITO">Cartão de crédito</option><option value="DEBITO">Cartão de débito</option></select>
+<p class="muted">A opção é uma preferência exibida aqui. Os meios efetivamente disponíveis na página de pagamento são definidos pelo Mercado Pago.</p>
+<button id="createOrder" class="primary" type="button">Criar pedido fictício de R$ 5,00</button>
+<div id="orderArea" hidden>
+<div class="order"><div class="step">Etapa 2 de 3 · Pedido de homologação</div>
+<p><b id="orderCode">—</b></p><div class="row"><span>Valor</span><strong>R$ 5,00</strong></div>
+<p class="muted">Gravado apenas no PostgreSQL de staging; não há preparo nem entrega.</p></div>
+<button id="pay" class="primary" type="button" disabled>Abrir Checkout Pro de teste</button>
+<p class="muted" id="payHint">Aguardando liberação segura do ambiente de homologação.</p>
+<button id="reset" class="secondary" type="button">Iniciar outro teste</button>
+</div>
+<div id="message" role="status" aria-live="polite">Consultando disponibilidade do ambiente de testes…</div>
+</section>
+<aside class="card"><div class="step">Etapa 3 de 3 · Conferência</div><h2>Resultado do pagamento</h2>
+<div class="row"><span>Status da API</span><span id="apiBadge" class="tag warn">Verificando</span></div>
+<div class="row" style="margin-top:14px"><span>Pagamento</span><span id="paymentBadge" class="tag">Não iniciado</span></div>
+<button id="refresh" class="secondary" type="button" disabled>Consultar status do pedido</button>
+<div id="resultArea" hidden><p class="muted" id="paymentDetails"></p></div>
+<hr style="border:0;border-top:1px solid #f0e6e9;margin:22px 0">
+<h3>Como realizar o teste</h3>
+<ul><li>Insira seu código de homologação.</li><li>Escolha crédito ou débito.</li><li>Crie o pedido de teste no staging.</li><li>Use somente Buyer Test User e cartões de teste do Mercado Pago.</li><li>Volte e consulte o status registrado pela API.</li></ul>
+<p class="hint">A confirmação vem da consulta segura ao servidor e ao Webhook, não do simples retorno do navegador. Mesmo um HTTP 200 no Webhook não prova que um pagamento foi aprovado.</p></aside>
+</div>
+<div class="footnote">API: staging-caseirinho • Base de dados separada • Sem integração com pedidos reais • Não compartilhe seu código de acesso.</div>
+</main>
+<script>
+'use strict';
+(()=>{
+const API='https://ravishing-truth-staging-caseirinho.up.railway.app';
+const PREFIX='/api/v1/public/store/caseirinho';
+const $=id=>document.getElementById(id);
+const KEY='caseirinho_homologacao_pedido_somente_staging_v1';
+let order=null,available=false,busy=false;
+function msg(message,type=''){ $('message').textContent=message;$('message').className=type; }
+function badge(id,text,kind=''){ $(id).textContent=text;$(id).className='tag '+kind; }
+async function request(path,opts={}){
+ const r=await fetch(API+path,{method:opts.method||'GET',headers:{'Content-Type':'application/json'},cache:'no-store',...(opts.body?{body:JSON.stringify(opts.body)}:{})});
+ const data=await r.json().catch(()=>({}));
+ if(!r.ok)throw Error(data.error||'Erro HTTP '+r.status);
+ return data;
+}
+function show(){
+ $('orderArea').hidden=!order;
+ $('refresh').disabled=!order;
+ if(order){$('orderCode').textContent=order.codigo; $('pay').disabled=!available||busy;}
+ $('payHint').textContent=available?'Ambiente de pagamento de teste disponível. Utilize APENAS cartões fictícios.':'Checkout bloqueado até validação das credenciais de vendedor de teste.';
+}
+async function environment(){
+ try{
+   const x=await request(PREFIX+'/mercadopago/sandbox/status');
+   available=x.sandbox===true&&x.checkoutAvailable===true;
+   badge('apiBadge',available?'Checkout de teste disponível':'Checkout desativado',available?'ok':'warn');
+   if(!order)msg(available?'Ambiente isolado pronto. Crie seu pedido fictício.':'Página conectada ao staging. O pedido fictício pode ser criado, mas o pagamento permanece desativado até terminar a homologação.');
+ }catch(e){available=false;badge('apiBadge','API indisponível','warn');msg('Não foi possível conectar à API do staging: '+e.message,'err')}
+ show();
+}
+async function create(){
+ if(busy)return;
+ if($('accessCode').value.trim().length<24){msg('Insira o código de acesso à homologação para criar o pedido fictício.','err');return}
+ busy=true;$('createOrder').disabled=true;
+ try{
+  const result=await request(PREFIX+'/mercadopago/sandbox/demo-order',{method:'POST',body:{accessCode:$('accessCode').value.trim(),method:$('method').value}});
+  if(!result.sandbox||!result.id||!result.publicToken)throw Error('Resposta inesperada.');
+  order={id:result.id,codigo:result.codigo,publicToken:result.publicToken};
+  sessionStorage.setItem(KEY,JSON.stringify(order));$('accessCode').value='';
+  badge('paymentBadge','Não iniciado');msg('Pedido fictício '+order.codigo+' criado com sucesso no banco de homologação.','ok');show();
+ }catch(e){msg('Pedido não criado: '+e.message,'err')}
+ finally{busy=false;$('createOrder').disabled=false;show()}
+}
+async function checkout(){
+ if(!order||!available||busy)return;
+ busy=true;$('pay').disabled=true;
+ try{
+   const r=await request(PREFIX+'/orders/'+encodeURIComponent(order.id)+'/mercadopago/checkout',{method:'POST',body:{publicToken:order.publicToken}});
+   const u=new URL(String(r.url||''));if(u.protocol!=='https:'||!/(^|\.)mercadopago\.com(\.br)?$/.test(u.hostname))throw Error('URL de pagamento não verificada.');
+   window.location.assign(u.href);
+ }catch(e){msg('Checkout de testes não liberado: '+e.message,'err');busy=false;show()}
+}
+async function status(){
+ if(!order)return;
+ try{
+ const r=await request(PREFIX+'/orders/'+encodeURIComponent(order.id)+'/mercadopago/status',{method:'POST',body:{publicToken:order.publicToken}});
+ const x=r.payment||{},st=String(x.status||'NAO_GERADO');
+ badge('paymentBadge',st,st==='APROVADO'?'ok':st==='RECUSADO'?'warn':'');
+ $('resultArea').hidden=false;$('paymentDetails').textContent='Status registrado no servidor: '+st+(x.atualizadoEm?' • '+new Date(x.atualizadoEm).toLocaleString('pt-BR'):'');
+ msg(st==='APROVADO'?'Pagamento fictício APROVADO e registrado na API de homologação.':'Consulta concluída. Estado do pagamento: '+st,st==='APROVADO'?'ok':'');
+ }catch(e){msg('Erro na consulta do pedido: '+e.message,'err')}
+}
+$('createOrder').addEventListener('click',create);$('pay').addEventListener('click',checkout);$('refresh').addEventListener('click',status);
+$('reset').addEventListener('click',()=>{order=null;sessionStorage.removeItem(KEY);$('resultArea').hidden=true;badge('paymentBadge','Não iniciado');show();msg('Novo teste iniciado. Crie outro pedido fictício.');});
+try{const saved=JSON.parse(sessionStorage.getItem(KEY)||'null');if(saved&&saved.id&&saved.publicToken)order=saved;}catch(_){}
+environment().then(()=>{if(order&&new URLSearchParams(location.search).get('mp')==='retorno')status()});
+})();
+</script>
+</body>
+</html>
