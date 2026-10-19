@@ -9,7 +9,7 @@ test('Loja só oferece Mercado Pago quando habilitado pelo backend',()=>{
  assert.match(app,/for\(const option of MP_PAYMENT_OPTIONS\)/);
  assert.match(app,/\.filter\(x=>!mpSelected\(x\)\)/);
  assert.match(app,/mercadoPagoOnline\|\|PAYMENT_UI_PREVIEW/);
- assert.match(app,/PAYMENT_UI_PREVIEW&&mpSelected/);
+ assert.match(app,/if\(PAYMENT_UI_PREVIEW\)/);
  assert.match(html,/id="paymentPreviewNotice"/);
  assert.match(app,/loadMercadoPagoConfig/);
  assert.match(app,/\/mercadopago\/config/);
