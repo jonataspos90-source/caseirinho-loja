@@ -1767,6 +1767,9 @@ function start(){
   setInterval(()=>{if(!document.hidden)checkCatalogVersion()},30000);
   setInterval(()=>{if(!document.hidden)pollCustomerOrders()},4000);
   setTimeout(()=>pollCustomerOrders(),1200);
+  if(new URLSearchParams(location.search).get('mp')==='retorno'){
+    setTimeout(()=>showOrders().catch(console.warn),1800);
+  }
   window.addEventListener('focus',()=>{if(!catalogConnected)loadCatalog(true);checkCatalogVersion();pollCustomerOrders()});
   window.addEventListener('online',()=>{if(!catalogConnected)loadCatalog(true);checkCatalogVersion();pollCustomerOrders()});
   document.addEventListener('visibilitychange',()=>{if(!document.hidden){if(!catalogConnected)loadCatalog(true);checkCatalogVersion();pollCustomerOrders()}});
