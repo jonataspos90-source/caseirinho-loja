@@ -1394,9 +1394,9 @@ async function submitOrder(ev){
     return toast('Aguarde a conexão com a loja para confirmar preços e disponibilidade.');
   }
   if(!cart.length)return toast('Seu carrinho está vazio.');
-  // Visualização não gera pedido de teste no banco de produção.
-  if(PAYMENT_UI_PREVIEW&&mpSelected(E('payment')?.value))
-    return toast('Demonstração de interface: o pagamento com cartão não pode ser enviado por esta loja.');
+  // Visualização de checkout: jamais cria pedidos no banco real, independentemente da forma escolhida.
+  if(PAYMENT_UI_PREVIEW)
+    return toast('Prévia de interface: nenhum pedido ou pagamento é enviado neste modo.');
   if(mpSelected(E('payment')?.value)&&!mercadoPagoOnline)return toast('O pagamento online ainda não está ativado nesta loja.');
   if(!validPhone(E('cPhone').value)){
     E('cPhone').focus();
