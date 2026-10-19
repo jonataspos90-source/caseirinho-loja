@@ -408,7 +408,7 @@ function promoPackHtml(entries,group){
     const p=entry.rep,price=productPriceInfo(p).regular,im=images(p)[0],available=entry.variants.some(canBuy);
     return `<article class="promo-pack-item">
       <button class="promo-pack-image" data-view="${esc(p.id)}" type="button" aria-label="Ver ${esc(p.nome)}">${im?`<img src="${esc(im)}" alt="">`:'🍽️'}</button>
-      <div class="promo-pack-copy"><b>${esc(p.nomeComercial||p.nome)}</b><strong>${money(price)} <small>cada</small></strong>
+      <div class="promo-pack-copy"><b>${esc(p.nomeComercial||p.nome)}</b><strong>${money(price)} <small>cada</small></strong>${isOrderItem(p,1)?'<small style="display:block;color:#84530c;margin-top:5px">🕘 Sob encomenda · sujeita à confirmação</small>':''}
       <div class="promo-pack-actions"><button class="soft" data-view="${esc(p.id)}" type="button">Ver</button><button class="primary" data-add="${esc(p.id)}" type="button" ${available&&catalog.loja?.ativo!==false?'':'disabled'}>Adicionar</button></div></div>
     </article>`;
   }).join('');
@@ -812,9 +812,9 @@ function renderCart(){
     if(!groups.has(key))groups.set(key,{key,promoted:!!entry.pricing.promotionGroupId,label:entry.pricing.promotionGroupLabel||'',hint:entry.pricing.promotionGroupHint||'',progress:entry.pricing.promotionGroupProgress||null,entries:[]});
     groups.get(key).entries.push(entry);
   });
-  const renderItem=({x,i,min,step,pricing})=>`<div class="cart-item">
+  const renderItem=({x,i,p,min,step,pricing})=>`<div class="cart-item">
       ${x.imagem?`<img src="${esc(x.imagem)}" alt="">`:'<div class="no-image" style="font-size:25px">🍽️</div>'}
-      <div><h4>${esc(x.nome)}</h4><small>${pricing.unitPrice===0&&pricing.promotionGroupId?'<b style="color:#15803d">Unidade incluída na oferta</b>':`${money(pricing.unitPrice)} cada`}${pricing.promotionLabel&&!pricing.promotionLabel.startsWith('Leve ')?` · <b style="color:#15803d">${esc(pricing.promotionLabel)}</b>`:''}</small>
+      <div><h4>${esc(x.nome)}</h4>${isOrderItem(p,N(x.quantidade))?'<small style="display:block;color:#84530c">🕘 Sob encomenda · aguardará confirmação da loja</small>':''}<small>${pricing.unitPrice===0&&pricing.promotionGroupId?'<b style="color:#15803d">Unidade incluída na oferta</b>':`${money(pricing.unitPrice)} cada`}${pricing.promotionLabel&&!pricing.promotionLabel.startsWith('Leve ')?` · <b style="color:#15803d">${esc(pricing.promotionLabel)}</b>`:''}</small>
         <div class="qty"><button data-minus="${i}" type="button">−</button><b>${x.quantidade}</b><button data-plus="${i}" type="button">+</button></div>
       </div>
       <div class="cart-item-price" style="text-align:right"><b>${money(pricing.total)}</b><br><button class="remove" data-remove="${i}" type="button">Remover</button></div>
