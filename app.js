@@ -760,7 +760,6 @@ async function loadCatalog(silent=false){
     catalogRecoveryCount=0;
     setCatalogConnectionStatus(true,`Loja conectada · ${A(catalog.produtos).length} produto(s) · atualizado ${catalog.publicadoEm?new Date(catalog.publicadoEm).toLocaleString('pt-BR'):'agora'}`);
     mount();
-    loadMercadoPagoConfig().catch(console.warn);
   }catch(err){
     const cached=A(catalog.produtos).length?catalog:await catalogBackup();
     if(cached&&A(cached.produtos).length){
@@ -1760,6 +1759,7 @@ function start(){
   loadCatalog().then(()=>{
     lastCatalogMarker=S(catalog?.publicadoEm||'');
     checkCatalogVersion();
+    loadMercadoPagoConfig().catch(console.warn);
   });
   installPwa();
 
