@@ -84,6 +84,7 @@ const MP_CREDIT_LABEL='Cartão de crédito online (Mercado Pago)';
    }
    const pix=paymentGroup(E('payment')?.value)==='PIX';
    row.hidden=!pix;
+   row.style.display=pix?'':'none';
    E('bankPix').required=pix;
    if(!pix)E('bankPix').value='';
  }
@@ -1703,7 +1704,7 @@ async function editOrderPayment(id){
       <div id="paymentChangeResult" role="status"></div>
     </form>`);
   const choice=E('paymentChangeChoice'),bankRow=E('paymentChangeBankRow'),bank=E('paymentChangeBank');
-  const sync=()=>{bankRow.hidden=paymentGroup(choice.value)!=='PIX';bank.required=!bankRow.hidden};
+  const sync=()=>{bankRow.hidden=paymentGroup(choice.value)!=='PIX';bankRow.style.display=bankRow.hidden?'none':'';bank.required=!bankRow.hidden};
   choice.addEventListener('change',sync);sync();
   E('cancelPaymentChange').onclick=showOrders;
   E('paymentChangeForm').onsubmit=async ev=>{
@@ -1751,6 +1752,7 @@ function ordersCardsHtml(orders){
       ${o.encomendaConfirmacao?.status==='CONFIRMADO'?'<div class="cx-note ok">✅ Disponibilidade analisada pelo Caseirinho. Confira a atualização abaixo.</div>':''}
       ${o.encomendaConfirmacao?.status==='AGUARDANDO_CONTATO'?'<div class="cx-note">⚠️ Item indisponível: a loja entrará em contato para combinar uma alternativa.</div>':''}
       ${msg&&!['REJEITADO','CANCELADO','FRETE_RECUSADO_CLIENTE'].includes(st)?`<div class="cx-note">${esc(msg)}</div>`:''}
+      <div class="cx-note" style="font-size:12px"><b>Forma de pagamento:</b> ${esc(paymentPublicLabel(o.formaPagamento||'A definir'))}${o.pixBank?' · Banco Pix escolhido: '+esc(o.pixBank):''}</div>
       ${mpStatusHtml(o)}
       <div class="order-actions">${canChangeOrderPayment(o)?`<button class="soft" type="button" data-edit-payment="${esc(o.id)}">✏️ Alterar pagamento</button>`:''}${['ENTREGUE','RETIRADO','CONCLUIDO','FINALIZADO'].includes(st)&&!window.CaseirinhoReviewsV2?.productRated?.(o.id)?`<button class="primary" data-review-order="${esc(o.id)}" type="button">⭐ Avaliar este pedido</button>`:''}${['CANCELADO','FRETE_RECUSADO_CLIENTE'].includes(st)?`<button class="primary" data-new-order="${esc(o.id)}" type="button">Fazer novo pedido</button>`:''}<button class="soft" data-refresh-orders type="button">Atualizar status</button></div></div>`;
   }).join('');
