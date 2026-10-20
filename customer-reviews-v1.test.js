@@ -46,11 +46,13 @@ test('avaliar produtos exige aceite confirmado no servidor e token de pedido',()
   assert.match(app,/data-review-order/);
   assert.match(app,/CaseirinhoReviewsV2\?\.onOrdersViewed/);
 });
-test('checkout mantém avaliação independente do APP após confirmar pedido',()=>{
-  assert.match(engagement,/Avalie sua experiência no App/);
-  assert.match(engagement,/kind:'APP'/);
-  assert.match(engagement,/showRatingModal\(o\)/);
-  assert.doesNotMatch(engagement,/postEvent\('RATING'/);
+test('checkout não interrompe o pagamento; pedido tem uma avaliação pós-entrega para APP e produtos',()=>{
+  assert.match(script,/data-app-star/);
+  assert.match(script,/kind:'APP'/);
+  assert.match(script,/kind:'PRODUCT'/);
+  assert.match(script,/localStorage\.setItem\(SHOWN_PREFIX\+id,'1'\)/);
+  assert.match(script,/\['ENTREGUE','RETIRADO','CONCLUIDO','FINALIZADO'\]/);
+  assert.doesNotMatch(engagement,/setTimeout\(\(\)=>showRatingModal\(o\),100\)/);
 });
 test('PWA recebe cache atualizado',()=>{
   assert.match(sw,/REVIEWSJS,REVIEWSCSS/);
