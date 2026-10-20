@@ -80,14 +80,14 @@ function mpPayable(o){
 function mpStatusHtml(o){
   if(!mpSelected(o?.formaPagamento))return'';
   const status=norm(o?.pagamentoOnline?.status);
-  if(status==='APROVADO')return'<div class="cx-note ok">✅ Pagamento confirmado com segurança.</div>';
+  if(status==='APROVADO')return'<div class="cx-note ok">✅ Pagamento confirmado. Acompanhe o andamento do pedido.</div>';
   if(status==='ESTORNADO')return'<div class="cx-note">⚠️ Pagamento estornado. Aguarde orientações da loja.</div>';
   if(status==='RECUSADO')return'<div class="cx-note">❌ Pagamento recusado. Consulte a loja antes de tentar novamente.</div>';
   if(status==='CANCELADO')return'<div class="cx-note">⚠️ Cobrança cancelada. Solicite análise da loja antes de tentar novamente.</div>';
-  if(!mercadoPagoOnline)return'<div class="cx-note">🕘 Acompanhamento de pagamento online temporariamente indisponível. A confirmação permanece registrada no pedido.</div>';
+  if(!mercadoPagoOnline)return'<div class="cx-note">🕘 Não conseguimos consultar os meios de pagamento agora. Atualize o pedido para tentar novamente; nenhuma cobrança foi confirmada.</div>';
   if(!mpPayable(o))return'<div class="cx-note">🕘 Link de pagamento será liberado após a confirmação da encomenda e do frete.</div>';
-  return'<div class="cx-note">💳 Pagamento online pendente. A loja só considerará pago após confirmação do servidor.</div>'+
-    '<button class="primary" data-mp-pay="'+esc(o.id)+'" type="button">Pagar online com segurança</button>';
+  return'<div class="cx-note">🔐 Próxima etapa: escolha Pix ou cartão para pagar. O pedido só será considerado pago após a confirmação bancária.</div>'+
+    '<button class="primary" data-mp-pay="'+esc(o.id)+'" type="button">Escolher Pix ou cartão</button>';
 }
 async function startMercadoPagoPayment(order,button){
   if(!order?.id||!order?.publicToken)return toast('Recupere seu pedido antes de pagar.');
@@ -103,7 +103,7 @@ async function startMercadoPagoPayment(order,button){
       throw Error('Link de pagamento inválido. Não prossiga.');
     window.location.assign(url.href);
   }catch(error){toast(S(error?.message||'Falha ao gerar pagamento.'));
-    if(button){button.disabled=false;button.textContent='Pagar online com segurança'}
+    if(button){button.disabled=false;button.textContent='Escolher Pix ou cartão'}
   }
 }
 
@@ -1649,7 +1649,7 @@ function ordersCardsHtml(orders){
       ${o.encomendaConfirmacao?.status==='AGUARDANDO_CONTATO'?'<div class="cx-note">⚠️ Item indisponível: a loja entrará em contato para combinar uma alternativa.</div>':''}
       ${msg&&!['REJEITADO','CANCELADO','FRETE_RECUSADO_CLIENTE'].includes(st)?`<div class="cx-note">${esc(msg)}</div>`:''}
       ${mpStatusHtml(o)}
-      <div class="order-actions">${['ACEITO','EM_PRODUCAO','PRONTO','SAIU_PARA_ENTREGA','EM_ENTREGA','ENTREGUE','RETIRADO','CONCLUIDO','FINALIZADO'].includes(st)&&!window.CaseirinhoReviewsV2?.productRated?.(o.id)?`<button class="primary" data-review-order="${esc(o.id)}" type="button">⭐ Avaliar experiência · Produtos</button>`:''}${['CANCELADO','FRETE_RECUSADO_CLIENTE'].includes(st)?`<button class="primary" data-new-order="${esc(o.id)}" type="button">Fazer novo pedido</button>`:''}<button class="soft" data-refresh-orders type="button">Atualizar status</button></div></div>`;
+      <div class="order-actions">${['ENTREGUE','RETIRADO','CONCLUIDO','FINALIZADO'].includes(st)&&!window.CaseirinhoReviewsV2?.productRated?.(o.id)?`<button class="primary" data-review-order="${esc(o.id)}" type="button">⭐ Avaliar este pedido</button>`:''}${['CANCELADO','FRETE_RECUSADO_CLIENTE'].includes(st)?`<button class="primary" data-new-order="${esc(o.id)}" type="button">Fazer novo pedido</button>`:''}<button class="soft" data-refresh-orders type="button">Atualizar status</button></div></div>`;
   }).join('');
 
   return `
@@ -1677,6 +1677,7 @@ function wireOrdersView(){
 }
 
 async function showOrders(){
+  loadMercadoPagoConfig().catch(()=>{});
   const cached=readJson(ORDERS_KEY,[]);
   openSimple('Meus pedidos',`
     <div class="cx-note" id="ordersSyncState">🔄 Atualizando pedidos…</div>
