@@ -38,7 +38,7 @@ function toast(msg){
 }
 function acceptedPix(o){
   const st=norm(o?.status||o?.payload?.status||'');
-  return st==='ACEITO'&&/PIX/i.test(S(o?.formaPagamento||o?.payload?.formaPagamento));
+  return st==='ACEITO'&&/PIX/i.test(S(o?.formaPagamento||o?.payload?.formaPagamento))&&!/MERCADO[ _-]?PAGO/i.test(S(o?.formaPagamento||o?.payload?.formaPagamento));
 }
 function codeOf(o){return S(o?.codigo||o?.code||o?.id)}
 function findOrderFromCard(card){
@@ -109,7 +109,7 @@ function patchCheckout(){
     note=document.createElement('div');note.id='pixCheckoutNote937';note.className='pix-checkout-note';note.style.display='none';
     payment.closest('label')?.insertAdjacentElement('afterend',note);
   }
-  const show=/PIX/i.test(S(payment.value));
+  const show=/PIX/i.test(S(payment.value))&&!/MERCADO[ _-]?PAGO/i.test(S(payment.value));
   const nextDisplay=show?'block':'none';
   if(note.style.display!==nextDisplay)note.style.display=nextDisplay;
   if(show&&note.dataset.pixContent!=='1'){
