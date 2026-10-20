@@ -325,8 +325,14 @@ function canBuy(p){
   const d=canonicalAvailability(p);
   return d==='SOB_ENCOMENDA'||d==='AMBOS'||N(p?.saldoDisponivel)>0;
 }
+function readyNeedsConfirmation(p){
+  // Regras de estoque podem adiar a venda imediata, mas não devem apagar
+  // a opção PRONTA_ENTREGA escolhida no cadastro do ERP.
+  return norm(p?.disponibilidadeOriginal)==='PRONTA_ENTREGA'&&p?.encomendaAutomatica===true;
+}
 function availabilityText(p){
   const d=canonicalAvailability(p),stock=N(p?.saldoDisponivel),days=Math.max(0,N(p?.antecedenciaDias));
+  if(readyNeedsConfirmation(p))return '✓ Pronta entrega cadastrada · quantidade a confirmar';
   if(!canBuy(p))return 'Indisponível no momento';
   if(d==='PRONTA_ENTREGA'&&stock>0)return '✓ Pronta entrega disponível';
   if(d==='AMBOS'&&stock>0)return '✓ Pronta entrega · também aceitamos encomenda';
@@ -346,6 +352,11 @@ function pendingOrderItems(){
 }
 function orderNoticeHtml(items){
   const names=items.map(x=>esc(x.product?.nomeComercial||x.product?.nome||x.item.nome));
+  if(items.some(x=>readyNeedsConfirmation(x.product))){
+    return '<div class="cx-highlight warn"><b>Confirmar disponibilidade: '+names.join(', ')+'</b></div>'+
+      '<p>O produto está cadastrado como <b>pronta entrega</b>, mas ainda não há saldo de estoque disponível registrado para venda imediata.</p>'+
+      '<p>A equipe confirmará a quantidade disponível antes de preparar ou cobrar o pedido.</p>';
+  }
   return '<div class="cx-highlight warn"><b>Produto(s) sob encomenda: '+names.join(', ')+'</b></div>'+
     '<p>Você pode fazer o pedido normalmente. A equipe do Caseirinho confirmará se existe pronta entrega ou se será necessária a produção.</p>'+
     '<p><b>A data e o horário de entrega ou retirada dependem de confirmação da loja pelo WhatsApp.</b></p>';
@@ -500,7 +511,7 @@ function promoPackHtml(entries,group){
     const p=entry.rep,price=productPriceInfo(p).regular,im=images(p)[0],available=entry.variants.some(canBuy);
     return `<article class="promo-pack-item">
       <button class="promo-pack-image" data-view="${esc(p.id)}" type="button" aria-label="Ver ${esc(p.nome)}">${im?`<img src="${esc(im)}" alt="">`:'🍽️'}</button>
-      <div class="promo-pack-copy"><b>${esc(p.nomeComercial||p.nome)}</b><strong>${money(price)} <small>cada</small></strong>${isOrderItem(p,1)?'<small style="display:block;color:#84530c;margin-top:5px">🕘 Sob encomenda · sujeita à confirmação</small>':''}
+      <div class="promo-pack-copy"><b>${esc(p.nomeComercial||p.nome)}</b><strong>${money(price)} <small>cada</small></strong>${isOrderItem(p,1)?'<small style="display:block;color:#84530c;margin-top:5px">'+(readyNeedsConfirmation(p)?'✓ Pronta entrega · quantidade a confirmar':'🕘 Sob encomenda · sujeita à confirmação')+'</small>':''}
       <div class="promo-pack-actions"><button class="soft" data-view="${esc(p.id)}" type="button">Ver</button><button class="primary" data-add="${esc(p.id)}" type="button" ${available&&catalog.loja?.ativo!==false?'':'disabled'}>Adicionar</button></div></div>
     </article>`;
   }).join('');
@@ -865,7 +876,7 @@ async function quickAdd(id,qty){
   const requested=existing?N(existing.quantidade)+(N(qty)>0?wanted:step):wanted;
   if(isOrderItem(p,requested)&&(!existing||!isOrderItem(p,N(existing.quantidade)))){
     const answer=await customerDialog({
-      title:'Produto sob encomenda',icon:'🕘',locked:true,
+      title:readyNeedsConfirmation(p)?'Confirmar pronta entrega':'Produto sob encomenda',icon:'🕘',locked:true,
       html:orderNoticeHtml([{product:p,item:{nome:p.nome}}]),
       actions:[{label:'Voltar',value:false},{label:'Adicionar ao carrinho',value:true,primary:true}]
     });
@@ -906,7 +917,7 @@ function renderCart(){
   });
   const renderItem=({x,i,p,min,step,pricing})=>`<div class="cart-item">
       ${x.imagem?`<img src="${esc(x.imagem)}" alt="">`:'<div class="no-image" style="font-size:25px">🍽️</div>'}
-      <div><h4>${esc(x.nome)}</h4>${isOrderItem(p,N(x.quantidade))?'<small style="display:block;color:#84530c">🕘 Sob encomenda · aguardará confirmação da loja</small>':''}<small>${pricing.unitPrice===0&&pricing.promotionGroupId?'<b style="color:#15803d">Unidade incluída na oferta</b>':`${money(pricing.unitPrice)} cada`}${pricing.promotionLabel&&!pricing.promotionLabel.startsWith('Leve ')?` · <b style="color:#15803d">${esc(pricing.promotionLabel)}</b>`:''}</small>
+      <div><h4>${esc(x.nome)}</h4>${isOrderItem(p,N(x.quantidade))?'<small style="display:block;color:#84530c">'+(readyNeedsConfirmation(p)?'✓ Pronta entrega · quantidade ainda não confirmada':'🕘 Sob encomenda · aguardará confirmação da loja')+'</small>':''}<small>${pricing.unitPrice===0&&pricing.promotionGroupId?'<b style="color:#15803d">Unidade incluída na oferta</b>':`${money(pricing.unitPrice)} cada`}${pricing.promotionLabel&&!pricing.promotionLabel.startsWith('Leve ')?` · <b style="color:#15803d">${esc(pricing.promotionLabel)}</b>`:''}</small>
         <div class="qty"><button data-minus="${i}" type="button">−</button><b>${x.quantidade}</b><button data-plus="${i}" type="button">+</button></div>
       </div>
       <div class="cart-item-price" style="text-align:right"><b>${money(pricing.total)}</b><br><button class="remove" data-remove="${i}" type="button">Remover</button></div>
@@ -1497,7 +1508,7 @@ async function submitOrder(ev){
   const pendingEncomendas=pendingOrderItems();
   if(pendingEncomendas.length){
     const proceed=await customerDialog({
-      title:'Confirmação de itens sob encomenda',icon:'🕘',locked:true,
+      title:pendingEncomendas.some(x=>readyNeedsConfirmation(x.product))?'Confirmação de disponibilidade':'Confirmação de itens sob encomenda',icon:'🕘',locked:true,
       html:orderNoticeHtml(pendingEncomendas),
       actions:[{label:'Revisar carrinho',value:false},{label:'Continuar pedido',value:true,primary:true}]
     });
