@@ -6,8 +6,9 @@ test('Loja só oferece Mercado Pago quando habilitado pelo backend',()=>{
  assert.match(app,/\(mercadoPagoOnline\|\|PAYMENT_UI_PREVIEW\)&&catalogConnected/);
  assert.match(app,/MP_CREDIT_LABEL='Cartão de crédito online \(Mercado Pago\)'/);
  assert.match(app,/MP_DEBIT_LABEL='Cartão de débito online \(Mercado Pago\)'/);
- assert.match(app,/for\(const option of MP_PAYMENT_OPTIONS\)/);
- assert.match(app,/\.filter\(x=>!mpSelected\(x\)\)/);
+ assert.match(app,/function paymentOptionsFor\(mode\)/);
+ assert.match(app,/mode==='ENTREGA'\?online:\[\.\.\.online,\.\.\.onsite\]/);
+ assert.match(app,/const seen=new Set\(\)/);
  assert.match(app,/mercadoPagoOnline\|\|PAYMENT_UI_PREVIEW/);
  assert.match(app,/if\(PAYMENT_UI_PREVIEW\)/);
  assert.match(html,/id="paymentPreviewNotice"/);
