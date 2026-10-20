@@ -47,7 +47,8 @@ let activeQuoteNotice='';
 let mercadoPagoOnline=false;
 const MP_CREDIT_LABEL='Cartão de crédito online (Mercado Pago)';
  const MP_DEBIT_LABEL='Cartão de débito online (Mercado Pago)';
- const MP_PAYMENT_OPTIONS=[MP_CREDIT_LABEL,MP_DEBIT_LABEL];
+ const MP_PIX_LABEL='Pix online (Mercado Pago)';
+ const MP_PAYMENT_OPTIONS=[MP_CREDIT_LABEL,MP_DEBIT_LABEL,MP_PIX_LABEL];
  // Visualização somente da interface: nunca cria pedidos ou cobranças.
  const PAYMENT_UI_PREVIEW=new URLSearchParams(location.search).get('preview_cartoes')==='1';
 const mpSelected=x=>norm(x).includes('MERCADO_PAGO');
@@ -74,11 +75,13 @@ function mpPayable(o){
   return norm(o?.pagamentoOnline?.status)!=='APROVADO';
 }
 function mpStatusHtml(o){
-  if(!mpSelected(o?.formaPagamento)||!mercadoPagoOnline)return'';
+  if(!mpSelected(o?.formaPagamento))return'';
   const status=norm(o?.pagamentoOnline?.status);
   if(status==='APROVADO')return'<div class="cx-note ok">✅ Pagamento Mercado Pago confirmado pelo servidor.</div>';
   if(status==='ESTORNADO')return'<div class="cx-note">⚠️ Pagamento estornado. Aguarde orientações da loja.</div>';
   if(status==='RECUSADO')return'<div class="cx-note">❌ Pagamento recusado. Consulte a loja antes de tentar novamente.</div>';
+  if(status==='CANCELADO')return'<div class="cx-note">⚠️ Cobrança cancelada. Solicite análise da loja antes de tentar novamente.</div>';
+  if(!mercadoPagoOnline)return'<div class="cx-note">🕘 Acompanhamento de pagamento online temporariamente indisponível. A confirmação permanece registrada no pedido.</div>';
   if(!mpPayable(o))return'<div class="cx-note">🕘 Link de pagamento será liberado após a confirmação da encomenda e do frete.</div>';
   return'<div class="cx-note">💳 Pagamento Mercado Pago pendente. A loja só considerará pago após confirmação do servidor.</div>'+
     '<button class="primary" data-mp-pay="'+esc(o.id)+'" type="button">Pagar online com Mercado Pago</button>';
@@ -1042,8 +1045,29 @@ function renderCheckoutConfig(){
   if(E('paymentPreviewNotice'))E('paymentPreviewNotice').hidden=!PAYMENT_UI_PREVIEW;
   E('payment').innerHTML=paymentOptions.map(x=>`<option>${esc(x)}</option>`).join('');
   if(currentPayment&&paymentOptions.includes(currentPayment))E('payment').value=currentPayment;
+  let mpNote=E('mpCheckoutGuidance');
+  if(!mpNote){
+    mpNote=document.createElement('div');
+    mpNote.id='mpCheckoutGuidance';
+    mpNote.className='cx-note';
+    mpNote.style.cssText='margin-top:8px;border:1px solid #b7decf;background:#f3faf7;color:#174c3c';
+    E('payment').closest('label')?.insertAdjacentElement('afterend',mpNote);
+    E('payment').addEventListener('change',updateMpCheckoutGuidance);
+  }
+  updateMpCheckoutGuidance();
   modeChanged();
   updateHoursNotice();
+}
+function updateMpCheckoutGuidance(){
+  const hint=E('mpCheckoutGuidance');
+  if(!hint)return;
+  const selected=S(E('payment')?.value);
+  hint.hidden=!mpSelected(selected);
+  if(hint.hidden)return;
+  const chosen=norm(selected);
+  const method=chosen.includes('PIX')?'Pix pelo aplicativo do seu banco':
+    chosen.includes('DEBITO')?'cartão de débito':'cartão de crédito';
+  hint.innerHTML='<b>🔒 Pagamento seguro pelo Mercado Pago</b><br>Preferência: <b>'+esc(method)+'</b>. Você pode utilizar bancos e cartões aceitos, sem precisar ter conta no Mercado Pago. As formas exibidas no checkout dependem da disponibilidade do Mercado Pago. O pedido só será considerado pago após a confirmação automática.';
 }
 function modeChanged(){
   const delivery=E('mode').value==='ENTREGA';
@@ -1398,6 +1422,8 @@ async function submitOrder(ev){
   if(PAYMENT_UI_PREVIEW)
     return toast('Prévia de interface: nenhum pedido ou pagamento é enviado neste modo.');
   if(mpSelected(E('payment')?.value)&&!mercadoPagoOnline)return toast('O pagamento online ainda não está ativado nesta loja.');
+  if(mpSelected(E('payment')?.value)&&S(E('cPhone')?.value).replace(/\D/g,'').slice(-11)==='11989310929')
+    return toast('Este telefone identifica pedidos de teste. Escolha outra forma de pagamento sem cobrança real.');
   if(!validPhone(E('cPhone').value)){
     E('cPhone').focus();
     return toast('Informe um WhatsApp válido com DDD.');
@@ -1515,7 +1541,7 @@ async function submitOrder(ev){
         ${window.JohnOrderAmounts.celebration(saved)?`<strong style="color:#166534">${esc(window.JohnOrderAmounts.celebration(saved))}</strong><br>`:''}
         ${afterHours?.closed?'<div class="cx-note">🕘 Pedido feito fora do expediente. Atendimento a partir de <b>'+esc(afterHours.nextOpening)+'</b>. Entrega/retirada sujeita à confirmação da loja.</div>':''}
         ${pendingEncomendas.length?'<div class="cx-note">🕘 Este pedido contém produtos sob encomenda. O Caseirinho confirmará a disponibilidade e o prazo pelo WhatsApp antes da preparação.</div>':''}
-        ${mpSelected(saved.formaPagamento)?(pendingEncomendas.length||result.freteStatus==='COTACAO_PENDENTE'?'<div class="cx-note">🕘 Seu link de cartão será liberado quando o Caseirinho confirmar disponibilidade e frete. Acompanhe em Meus pedidos.</div>':'<div class="cx-note">💳 Pagamento online pendente de confirmação.</div><button class="primary" type="button" id="mpPayNow">Pagar agora pelo Mercado Pago</button>'):''}
+        ${mpSelected(saved.formaPagamento)?(pendingEncomendas.length||result.freteStatus==='COTACAO_PENDENTE'?'<div class="cx-note">🕘 Seu link de pagamento online será liberado quando o Caseirinho confirmar disponibilidade e frete. Acompanhe em Meus pedidos.</div>':'<div class="cx-note">💳 Pagamento online aguardando aprovação. Você escolherá uma forma disponível no ambiente seguro do Mercado Pago.</div><button class="primary" type="button" id="mpPayNow">Abrir pagamento seguro</button>'):''}
         ${esc(freightText)}<br>
         ${window.JohnOrderAmounts.lines(saved).map(([label,value])=>esc(label)+': <b>'+esc(value)+'</b>').join('<br>')}<br>
         <button class="soft" type="button" id="openSavedOrders" style="margin-top:9px">Acompanhar pedido</button>
