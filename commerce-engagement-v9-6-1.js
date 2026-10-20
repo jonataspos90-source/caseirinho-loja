@@ -92,11 +92,9 @@ async function submitRating(){
   }catch(_){btn.disabled=false;btn.textContent='Enviar avaliação';status.textContent='Não foi possível enviar agora. Tente novamente.'}
 }
 function renderCheckoutRating(){
+  // O pagamento e a confirmação do pedido não devem ser interrompidos por popups.
+  // Os dois aspectos são avaliados uma vez no histórico, após entrega/retirada.
   cleanupLegacyRatings();
-  if(cfg?.ratings?.enabled===false)return;
-  const host=E('checkoutResult');if(!host||!/pedido\s+.+\s+recebido/i.test(S(host.textContent)))return;
-  const o=latestOrder();if(!o?.id||!o.publicToken||rated(o.id))return;
-  setTimeout(()=>showRatingModal(o),100);
 }
 function enhanceOrderCards(){cleanupLegacyRatings()}
 function watchCheckout(){const host=E('checkoutResult');if(!host)return;checkoutObserver?.disconnect();checkoutObserver=new MutationObserver(()=>setTimeout(renderCheckoutRating,30));checkoutObserver.observe(host,{childList:true,subtree:true,characterData:true});renderCheckoutRating()}
