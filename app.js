@@ -55,6 +55,38 @@ const MP_CREDIT_LABEL='Cartão de crédito online (Mercado Pago)';
  // Only its customer-facing name is neutral (no change to financial processing).
  const paymentPublicLabel=x=>x===MP_CREDIT_LABEL?'Cartão de crédito':x===MP_DEBIT_LABEL?'Cartão de débito':x===MP_PIX_LABEL?'Pix':x;
  const mpSelected=x=>norm(x).includes('MERCADO_PAGO');
+ const BANK_CHOICES=['Nubank','Itaú','Bradesco','Santander','Banco do Brasil','Caixa Econômica Federal','Inter','C6 Bank','Mercado Pago','PicPay','Sicredi','Sicoob','Outro banco / instituição'];
+ const bankOptionsHtml=selected=>'<option value="">Selecione seu banco</option>'+BANK_CHOICES.map(b=>'<option value="'+esc(b)+'"'+(b===selected?' selected':'')+'>'+esc(b)+'</option>').join('');
+ function paymentGroup(method){
+   const key=norm(method);
+   if(key.includes('PIX'))return'PIX';
+   if(key.includes('CREDITO')||key.includes('CREDIT'))return'CREDITO';
+   if(key.includes('DEBITO')||key.includes('DEBIT'))return'DEBITO';
+   if(key.includes('DINHEIRO')||key.includes('ESPECIE'))return'DINHEIRO';
+   return key||'OUTRO';
+ }
+ function paymentOptionsFor(mode){
+   const onsite=A(catalog.loja?.formasPagamento).filter(x=>S(x).trim()&&!mpSelected(x)&&!['A_DEFINIR','NAO_DEFINIDO'].includes(norm(x)));
+   const online=(mercadoPagoOnline||PAYMENT_UI_PREVIEW)&&catalogConnected?MP_PAYMENT_OPTIONS:[];
+   const source=mode==='ENTREGA'?online:[...online,...onsite];
+   const seen=new Set();
+   return source.filter(x=>{const k=paymentGroup(x);if(seen.has(k))return false;seen.add(k);return true});
+ }
+ function renderBankPixField(){
+   let row=E('bankPixRow');
+   if(!row){
+     row=document.createElement('label');
+     row.id='bankPixRow';
+     row.className='full';
+     row.innerHTML='Qual banco você vai usar para pagar com Pix? *<select id="bankPix"></select><small>Essa escolha ajuda a orientar o pagamento. O QR Code Pix pode ser pago por qualquer instituição participante.</small>';
+     E('payment')?.closest('label')?.insertAdjacentElement('afterend',row);
+     E('bankPix').innerHTML=bankOptionsHtml('');
+   }
+   const pix=paymentGroup(E('payment')?.value)==='PIX';
+   row.hidden=!pix;
+   E('bankPix').required=pix;
+   if(!pix)E('bankPix').value='';
+ }
 
 function readJson(k,fallback){try{const x=JSON.parse(localStorage.getItem(k)||'null');return x??fallback}catch(_){return fallback}}
 function writeJson(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(_){}}
@@ -1037,17 +1069,14 @@ function renderCheckoutConfig(){
   E('mode').innerHTML=modes.map(([v,l])=>`<option value="${v}">${l}</option>`).join('')||'<option value="">Indisponível</option>';
   if(currentMode&&modes.some(([v])=>v===currentMode))E('mode').value=currentMode;
 
-  const payments=A(catalog.loja?.formasPagamento);
-  // Evita oferecer um cartão configurado no catálogo se a API ainda não o liberou.
-  const paymentOptions=(payments.length?[...payments]:['A definir']).filter(x=>!mpSelected(x));
-  // O tipo selecionado expressa a preferência; o Mercado Pago determina e
-  // processa os meios efetivamente disponíveis em seu Checkout Pro seguro.
-  if((mercadoPagoOnline||PAYMENT_UI_PREVIEW)&&catalogConnected){
-    for(const option of MP_PAYMENT_OPTIONS)if(!paymentOptions.includes(option))paymentOptions.push(option);
-  }
+  const paymentOptions=paymentOptionsFor(E('mode')?.value);
   if(E('paymentPreviewNotice'))E('paymentPreviewNotice').hidden=!PAYMENT_UI_PREVIEW;
-  E('payment').innerHTML=paymentOptions.map(x=>`<option value="${esc(x)}">${esc(paymentPublicLabel(x))}</option>`).join('');
+  E('payment').innerHTML=paymentOptions.length
+    ?paymentOptions.map(x=>`<option value="${esc(x)}">${esc(paymentPublicLabel(x))}</option>`).join('')
+    :'<option value="">Pagamento online indisponível</option>';
+  E('payment').required=true;
   if(currentPayment&&paymentOptions.includes(currentPayment))E('payment').value=currentPayment;
+  renderBankPixField();
   let mpNote=E('mpCheckoutGuidance');
   if(!mpNote){
     mpNote=document.createElement('div');
@@ -1055,7 +1084,7 @@ function renderCheckoutConfig(){
     mpNote.className='cx-note';
     mpNote.style.cssText='margin-top:8px;border:1px solid #b7decf;background:#f3faf7;color:#174c3c';
     E('payment').closest('label')?.insertAdjacentElement('afterend',mpNote);
-    E('payment').addEventListener('change',updateMpCheckoutGuidance);
+    E('payment').addEventListener('change',()=>{updateMpCheckoutGuidance();renderBankPixField()});
   }
   updateMpCheckoutGuidance();
   modeChanged();
@@ -1088,6 +1117,14 @@ function modeChanged(){
       if(E('time').value==='A combinar')E('time').value='';
     }
   }
+  // Muda a lista de pagamentos imediatamente quando o cliente alterna entrega/retirada.
+  const previous=S(E('payment')?.value);
+  const allowed=paymentOptionsFor(E('mode').value);
+  E('payment').innerHTML=allowed.length
+    ?allowed.map(x=>`<option value="${esc(x)}">${esc(paymentPublicLabel(x))}</option>`).join('')
+    :'<option value="">Pagamento online indisponível</option>';
+  if(allowed.includes(previous))E('payment').value=previous;
+  renderBankPixField();updateMpCheckoutGuidance();
   updateDateMin();renderCart();updateHoursNotice();
 }
 function address(){
@@ -1424,6 +1461,13 @@ async function submitOrder(ev){
   // Visualização de checkout: jamais cria pedidos no banco real, independentemente da forma escolhida.
   if(PAYMENT_UI_PREVIEW)
     return toast('Prévia de interface: nenhum pedido ou pagamento é enviado neste modo.');
+  const paymentChoice=S(E('payment')?.value);
+  if(!paymentChoice||!paymentOptionsFor(E('mode')?.value).includes(paymentChoice))
+    return toast('Selecione um pagamento disponível para entrega ou retirada.');
+  if(E('mode')?.value==='ENTREGA'&&!mpSelected(paymentChoice))
+    return toast('Para entrega, escolha Pix, cartão de crédito ou débito online.');
+  if(paymentGroup(paymentChoice)==='PIX'&&!S(E('bankPix')?.value).trim())
+    return toast('Selecione o banco que vai usar para pagar por Pix.');
   if(mpSelected(E('payment')?.value)&&!mercadoPagoOnline)return toast('O pagamento online ainda não está ativado nesta loja.');
   if(mpSelected(E('payment')?.value)&&S(E('cPhone')?.value).replace(/\D/g,'').slice(-11)==='11989310929')
     return toast('Este telefone identifica pedidos de teste. Escolha outra forma de pagamento sem cobrança real.');
@@ -1479,6 +1523,7 @@ async function submitOrder(ev){
     dataAtendimento:E('date').value,
     horario:mode==='ENTREGA'?'A combinar':E('time').value,
     formaPagamento:E('payment').value,
+    pixBank:paymentGroup(E('payment').value)==='PIX'?S(E('bankPix')?.value):'',
     entrega:mode==='ENTREGA'?address():{},
     itens:cart.map(x=>({produtoId:S(x.produtoId),quantidade:N(x.quantidade)})),
     observacao:[pendingEncomendas.length?'[ITENS SOB ENCOMENDA — disponibilidade, prazo e entrega dependem de confirmação da loja: '+pendingEncomendas.map(x=>x.product?.nome||x.item.nome).join(', ').slice(0,400)+']':'',afterHours?.closed?'[PEDIDO FORA DO HORÁRIO · Primeiro atendimento previsto: '+afterHours.nextOpening+' · Horário da entrega/retirada sujeito à confirmação.]':'',S(E('obs').value).trim()].filter(Boolean).join('\n').slice(0,1000),
