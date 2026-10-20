@@ -55,7 +55,7 @@ const MP_CREDIT_LABEL='Cartão de crédito online (Mercado Pago)';
  // Only its customer-facing name is neutral (no change to financial processing).
  const paymentPublicLabel=x=>x===MP_CREDIT_LABEL?'Cartão de crédito':x===MP_DEBIT_LABEL?'Cartão de débito':x===MP_PIX_LABEL?'Pix':x;
  const mpSelected=x=>norm(x).includes('MERCADO_PAGO');
- const BANK_CHOICES=['Nubank','Itaú','Bradesco','Santander','Banco do Brasil','Caixa Econômica Federal','Inter','C6 Bank','Mercado Pago','PicPay','Sicredi','Sicoob','Outro banco / instituição'];
+ const BANK_CHOICES=['Nubank','Itaú','Bradesco','Santander','Banco do Brasil','Caixa Econômica Federal','Inter','C6 Bank' ,'PicPay','Sicredi','Sicoob','Outro banco / instituição'];
  const bankOptionsHtml=selected=>'<option value="">Selecione seu banco</option>'+BANK_CHOICES.map(b=>'<option value="'+esc(b)+'"'+(b===selected?' selected':'')+'>'+esc(b)+'</option>').join('');
  function paymentGroup(method){
    const key=norm(method);
@@ -1669,6 +1669,64 @@ async function recoverOrdersForm(){
     }
   };
 }
+function canChangeOrderPayment(o){
+  const st=norm(o?.status||'');
+  const status=norm(o?.pagamentoOnline?.status||'');
+  const integration=norm(o?.statusIntegracao||'');
+  return !!o?.id&&!!o?.publicToken&&
+    !['ACEITO','ENTREGUE','RETIRADO','CONCLUIDO','FINALIZADO','REJEITADO','CANCELADO','FRETE_RECUSADO_CLIENTE'].includes(st)&&
+    !['IMPORTADO','IMPORTANDO'].includes(integration)&&
+    !['APROVADO','ESTORNADO','CANCELADO'].includes(status);
+}
+async function editOrderPayment(id){
+  const orders=readJson(ORDERS_KEY,[]);
+  const order=orders.find(o=>S(o?.id)===S(id));
+  if(!order?.publicToken)return toast('Recupere este pedido antes de alterar o pagamento.');
+  if(!canChangeOrderPayment(order))return toast('A alteração de pagamento já não está disponível para este pedido.');
+  await loadMercadoPagoConfig();
+  const options=paymentOptionsFor(norm(order.modalidade));
+  if(!options.length)return toast('Nenhuma forma de pagamento está disponível neste momento.');
+  openSimple('Alterar forma de pagamento',`
+    <form id="paymentChangeForm" class="checkout" style="margin-top:12px">
+      <div class="cx-note">Pedido <b>${esc(order.codigo||order.id)}</b><br>Você só poderá mudar o pagamento enquanto o pedido ainda não tiver sido pago ou importado no ERP. Uma cobrança online já gerada não pode ser trocada por pagamento presencial sem cancelamento seguro.</div>
+      <label>Nova forma de pagamento
+        <select id="paymentChangeChoice" required>
+          ${options.map(option=>`<option value="${esc(option)}"${option===order.formaPagamento?' selected':''}>${esc(paymentPublicLabel(option))}</option>`).join('')}
+        </select>
+      </label>
+      <label id="paymentChangeBankRow">Qual banco você pretende usar para o Pix?
+        <select id="paymentChangeBank">${bankOptionsHtml(S(order.pixBank||''))}</select>
+        <small>O banco escolhido é apenas uma referência; o QR Code Pix funciona com qualquer banco participante.</small>
+      </label>
+      <button class="primary" type="submit">Salvar forma de pagamento</button>
+      <button class="soft" id="cancelPaymentChange" type="button">Voltar aos pedidos</button>
+      <div id="paymentChangeResult" role="status"></div>
+    </form>`);
+  const choice=E('paymentChangeChoice'),bankRow=E('paymentChangeBankRow'),bank=E('paymentChangeBank');
+  const sync=()=>{bankRow.hidden=paymentGroup(choice.value)!=='PIX';bank.required=!bankRow.hidden};
+  choice.addEventListener('change',sync);sync();
+  E('cancelPaymentChange').onclick=showOrders;
+  E('paymentChangeForm').onsubmit=async ev=>{
+    ev.preventDefault();
+    const method=S(choice.value),pixBank=paymentGroup(method)==='PIX'?S(bank.value):'';
+    if(!method)return;
+    if(paymentGroup(method)==='PIX'&&!pixBank)return toast('Selecione um banco para o Pix.');
+    const button=E('paymentChangeForm').querySelector('[type=submit]');
+    button.disabled=true;button.textContent='Salvando...';
+    try{
+      const result=await api('/api/v1/public/store/'+encodeURIComponent(STORE)+'/orders/'+
+        encodeURIComponent(order.id)+'/payment-method',{method:'POST',
+        body:JSON.stringify({publicToken:order.publicToken,formaPagamento:method,pixBank})});
+      saveOrderUpdate({...order,formaPagamento:result.formaPagamento,pixBank:result.pixBank,
+        ...(result.pagamentoOnline?{pagamentoOnline:result.pagamentoOnline}:{})});
+      toast('Pagamento alterado. Você já pode continuar o pedido.');
+      await showOrders();
+    }catch(err){
+      E('paymentChangeResult').textContent=S(err.message||'Não foi possível trocar a forma de pagamento.');
+      button.disabled=false;button.textContent='Salvar forma de pagamento';
+    }
+  };
+}
 function ordersCardsHtml(orders){
   const cards=orders.slice().reverse().map(o=>{
     const st=norm(o.status||'NOVO'),msg=o.mensagemCliente||'',delivery=norm(o.modalidade)==='ENTREGA';
@@ -1694,7 +1752,7 @@ function ordersCardsHtml(orders){
       ${o.encomendaConfirmacao?.status==='AGUARDANDO_CONTATO'?'<div class="cx-note">⚠️ Item indisponível: a loja entrará em contato para combinar uma alternativa.</div>':''}
       ${msg&&!['REJEITADO','CANCELADO','FRETE_RECUSADO_CLIENTE'].includes(st)?`<div class="cx-note">${esc(msg)}</div>`:''}
       ${mpStatusHtml(o)}
-      <div class="order-actions">${['ENTREGUE','RETIRADO','CONCLUIDO','FINALIZADO'].includes(st)&&!window.CaseirinhoReviewsV2?.productRated?.(o.id)?`<button class="primary" data-review-order="${esc(o.id)}" type="button">⭐ Avaliar este pedido</button>`:''}${['CANCELADO','FRETE_RECUSADO_CLIENTE'].includes(st)?`<button class="primary" data-new-order="${esc(o.id)}" type="button">Fazer novo pedido</button>`:''}<button class="soft" data-refresh-orders type="button">Atualizar status</button></div></div>`;
+      <div class="order-actions">${canChangeOrderPayment(o)?`<button class="soft" type="button" data-edit-payment="${esc(o.id)}">✏️ Alterar pagamento</button>`:''}${['ENTREGUE','RETIRADO','CONCLUIDO','FINALIZADO'].includes(st)&&!window.CaseirinhoReviewsV2?.productRated?.(o.id)?`<button class="primary" data-review-order="${esc(o.id)}" type="button">⭐ Avaliar este pedido</button>`:''}${['CANCELADO','FRETE_RECUSADO_CLIENTE'].includes(st)?`<button class="primary" data-new-order="${esc(o.id)}" type="button">Fazer novo pedido</button>`:''}<button class="soft" data-refresh-orders type="button">Atualizar status</button></div></div>`;
   }).join('');
 
   return `
@@ -1714,6 +1772,7 @@ function wireOrdersView(){
     closeOverlay(E('simpleOverlay'));
     E('catalogSection')?.scrollIntoView({behavior:'smooth'});
   });
+  root.querySelectorAll('[data-edit-payment]').forEach(b=>b.onclick=()=>editOrderPayment(b.dataset.editPayment));
   root.querySelectorAll('[data-mp-pay]').forEach(b=>b.onclick=()=>{
     const order=readJson(ORDERS_KEY,[]).find(o=>S(o.id)===S(b.dataset.mpPay));
     if(order)startMercadoPagoPayment(order,b);
