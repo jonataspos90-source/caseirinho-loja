@@ -9,7 +9,7 @@ const A=v=>Array.isArray(v)?v:[];
 const norm=v=>S(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUpperCase().replace(/[\s-]+/g,'_');
 function read(){try{return A(JSON.parse(localStorage.getItem(KEY)||'[]'))}catch(_){return[]}}
 function code(o){return S(o?.codigo||o?.code||o?.id)}
-function acceptedPix(o){return norm(o?.status)==='ACEITO'&&/PIX/i.test(S(o?.formaPagamento||o?.payload?.formaPagamento))}
+function acceptedPix(o){return norm(o?.status)==='ACEITO'&&/PIX/i.test(S(o?.formaPagamento||o?.payload?.formaPagamento))&&!/MERCADO[ _-]?PAGO/i.test(S(o?.formaPagamento||o?.payload?.formaPagamento))}
 function patch(){
   const list=read();
   document.querySelectorAll('.order-card').forEach(card=>{
