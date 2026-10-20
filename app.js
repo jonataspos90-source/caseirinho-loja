@@ -332,7 +332,7 @@ function readyNeedsConfirmation(p){
 }
 function availabilityText(p){
   const d=canonicalAvailability(p),stock=N(p?.saldoDisponivel),days=Math.max(0,N(p?.antecedenciaDias));
-  if(readyNeedsConfirmation(p))return '✓ Pronta entrega cadastrada · quantidade a confirmar';
+  if(readyNeedsConfirmation(p))return 'Pronta entrega · quantidade a confirmar com a loja';
   if(!canBuy(p))return 'Indisponível no momento';
   if(d==='PRONTA_ENTREGA'&&stock>0)return '✓ Pronta entrega disponível';
   if(d==='AMBOS'&&stock>0)return '✓ Pronta entrega · também aceitamos encomenda';
@@ -353,7 +353,7 @@ function pendingOrderItems(){
 function orderNoticeHtml(items){
   const names=items.map(x=>esc(x.product?.nomeComercial||x.product?.nome||x.item.nome));
   if(items.some(x=>readyNeedsConfirmation(x.product))){
-    return '<div class="cx-highlight warn"><b>Confirmar disponibilidade: '+names.join(', ')+'</b></div>'+
+    return '<div class="cx-highlight warn"><b>Pronta entrega: confirmar quantidade de '+names.join(', ')+'</b></div>'+
       '<p>O produto está cadastrado como <b>pronta entrega</b>, mas ainda não há saldo de estoque disponível registrado para venda imediata.</p>'+
       '<p>A equipe confirmará a quantidade disponível antes de preparar ou cobrar o pedido.</p>';
   }
@@ -511,7 +511,7 @@ function promoPackHtml(entries,group){
     const p=entry.rep,price=productPriceInfo(p).regular,im=images(p)[0],available=entry.variants.some(canBuy);
     return `<article class="promo-pack-item">
       <button class="promo-pack-image" data-view="${esc(p.id)}" type="button" aria-label="Ver ${esc(p.nome)}">${im?`<img src="${esc(im)}" alt="">`:'🍽️'}</button>
-      <div class="promo-pack-copy"><b>${esc(p.nomeComercial||p.nome)}</b><strong>${money(price)} <small>cada</small></strong>${isOrderItem(p,1)?'<small style="display:block;color:#84530c;margin-top:5px">'+(readyNeedsConfirmation(p)?'✓ Pronta entrega · quantidade a confirmar':'🕘 Sob encomenda · sujeita à confirmação')+'</small>':''}
+      <div class="promo-pack-copy"><b>${esc(p.nomeComercial||p.nome)}</b><strong>${money(price)} <small>cada</small></strong>${isOrderItem(p,1)?'<small style="display:block;color:#84530c;margin-top:5px">'+(readyNeedsConfirmation(p)?'Pronta entrega · quantidade a confirmar':'🕘 Sob encomenda · sujeita à confirmação')+'</small>':''}
       <div class="promo-pack-actions"><button class="soft" data-view="${esc(p.id)}" type="button">Ver</button><button class="primary" data-add="${esc(p.id)}" type="button" ${available&&catalog.loja?.ativo!==false?'':'disabled'}>Adicionar</button></div></div>
     </article>`;
   }).join('');
@@ -917,7 +917,7 @@ function renderCart(){
   });
   const renderItem=({x,i,p,min,step,pricing})=>`<div class="cart-item">
       ${x.imagem?`<img src="${esc(x.imagem)}" alt="">`:'<div class="no-image" style="font-size:25px">🍽️</div>'}
-      <div><h4>${esc(x.nome)}</h4>${isOrderItem(p,N(x.quantidade))?'<small style="display:block;color:#84530c">'+(readyNeedsConfirmation(p)?'✓ Pronta entrega · quantidade ainda não confirmada':'🕘 Sob encomenda · aguardará confirmação da loja')+'</small>':''}<small>${pricing.unitPrice===0&&pricing.promotionGroupId?'<b style="color:#15803d">Unidade incluída na oferta</b>':`${money(pricing.unitPrice)} cada`}${pricing.promotionLabel&&!pricing.promotionLabel.startsWith('Leve ')?` · <b style="color:#15803d">${esc(pricing.promotionLabel)}</b>`:''}</small>
+      <div><h4>${esc(x.nome)}</h4>${isOrderItem(p,N(x.quantidade))?'<small style="display:block;color:#84530c">'+(readyNeedsConfirmation(p)?'Pronta entrega · quantidade ainda não confirmada':'🕘 Sob encomenda · aguardará confirmação da loja')+'</small>':''}<small>${pricing.unitPrice===0&&pricing.promotionGroupId?'<b style="color:#15803d">Unidade incluída na oferta</b>':`${money(pricing.unitPrice)} cada`}${pricing.promotionLabel&&!pricing.promotionLabel.startsWith('Leve ')?` · <b style="color:#15803d">${esc(pricing.promotionLabel)}</b>`:''}</small>
         <div class="qty"><button data-minus="${i}" type="button">−</button><b>${x.quantidade}</b><button data-plus="${i}" type="button">+</button></div>
       </div>
       <div class="cart-item-price" style="text-align:right"><b>${money(pricing.total)}</b><br><button class="remove" data-remove="${i}" type="button">Remover</button></div>
@@ -1538,7 +1538,7 @@ async function submitOrder(ev){
     pixBank:paymentGroup(E('payment').value)==='PIX'?S(E('bankPix')?.value):'',
     entrega:mode==='ENTREGA'?address():{},
     itens:cart.map(x=>({produtoId:S(x.produtoId),quantidade:N(x.quantidade)})),
-    observacao:[pendingEncomendas.length?'[ITENS SOB ENCOMENDA — disponibilidade, prazo e entrega dependem de confirmação da loja: '+pendingEncomendas.map(x=>x.product?.nome||x.item.nome).join(', ').slice(0,400)+']':'',afterHours?.closed?'[PEDIDO FORA DO HORÁRIO · Primeiro atendimento previsto: '+afterHours.nextOpening+' · Horário da entrega/retirada sujeito à confirmação.]':'',S(E('obs').value).trim()].filter(Boolean).join('\n').slice(0,1000),
+    observacao:[pendingEncomendas.length?'[DISPONIBILIDADE A CONFIRMAR — '+(pendingEncomendas.some(x=>readyNeedsConfirmation(x.product))?'Pronta entrega cadastrada sem saldo registrado':'Produto sob encomenda')+'; prazo e entrega dependem de confirmação da loja: '+pendingEncomendas.map(x=>x.product?.nome||x.item.nome).join(', ').slice(0,400)+']':'',afterHours?.closed?'[PEDIDO FORA DO HORÁRIO · Primeiro atendimento previsto: '+afterHours.nextOpening+' · Horário da entrega/retirada sujeito à confirmação.]':'',S(E('obs').value).trim()].filter(Boolean).join('\n').slice(0,1000),
     lgpd:{
       consent:true,
       consentAt:now,
@@ -1600,7 +1600,7 @@ async function submitOrder(ev){
         <b>Pedido ${esc(result.codigo)} recebido! 🎉</b><br>
         ${window.JohnOrderAmounts.celebration(saved)?`<strong style="color:#166534">${esc(window.JohnOrderAmounts.celebration(saved))}</strong><br>`:''}
         ${afterHours?.closed?'<div class="cx-note">🕘 Pedido feito fora do expediente. Atendimento a partir de <b>'+esc(afterHours.nextOpening)+'</b>. Entrega/retirada sujeita à confirmação da loja.</div>':''}
-        ${pendingEncomendas.length?'<div class="cx-note">🕘 Este pedido contém produtos sob encomenda. O Caseirinho confirmará a disponibilidade e o prazo pelo WhatsApp antes da preparação.</div>':''}
+        ${pendingEncomendas.length?'<div class="cx-note">🕘 '+(pendingEncomendas.some(x=>readyNeedsConfirmation(x.product))?'A modalidade está cadastrada como pronta entrega, mas a quantidade ainda precisa ser confirmada.':'Este pedido contém produtos sob encomenda.')+' O Caseirinho confirmará a disponibilidade e o prazo pelo WhatsApp antes da preparação.</div>':''}
         ${mpSelected(saved.formaPagamento)?(pendingEncomendas.length||result.freteStatus==='COTACAO_PENDENTE'?'<div class="cx-note">🕘 Seu link de pagamento online será liberado quando o Caseirinho confirmar disponibilidade e frete. Acompanhe em Meus pedidos.</div>':'<div class="cx-note">💳 Pagamento online aguardando aprovação. Você escolherá uma forma disponível no ambiente seguro de pagamento.</div><button class="primary" type="button" id="mpPayNow">Abrir pagamento seguro</button>'):''}
         ${esc(freightText)}<br>
         ${window.JohnOrderAmounts.lines(saved).map(([label,value])=>esc(label)+': <b>'+esc(value)+'</b>').join('<br>')}<br>
@@ -1759,7 +1759,7 @@ function ordersCardsHtml(orders){
       ${st==='FRETE_RECUSADO_CLIENTE'||st==='CANCELADO'?`<div class="result err">🛑 <b>Pedido cancelado</b><br>${esc(msg||'Você não aceitou o valor da entrega. Caso queira prosseguir, faça um novo pedido.')}</div>`:''}
       ${st==='ACEITO'?`<div class="result"><b>🎉 Seu pedido foi aceito!</b>${delivery?`<br>Horário de entrega: <b>${esc(orderTimeText(o))}</b>`:''}</div>${pixCard(o.pix)}`:''}
       ${st==='REJEITADO'?`<div class="result err">❌ <b>Pedido rejeitado</b><br>${esc(msg||'Seu pedido não pôde ser aceito. Entre em contato conosco se precisar de ajuda.')}</div>`:''}
-      ${o.encomendaConfirmacao?.status==='PENDENTE'?'<div class="cx-note">🕘 Produto sob encomenda: aguardando confirmação de disponibilidade e prazo da loja.</div>':''}
+      ${o.encomendaConfirmacao?.status==='PENDENTE'?'<div class="cx-note">🕘 Aguardando confirmação de disponibilidade e prazo da loja.</div>':''}
       ${o.encomendaConfirmacao?.status==='CONFIRMADO'?'<div class="cx-note ok">✅ Disponibilidade analisada pelo Caseirinho. Confira a atualização abaixo.</div>':''}
       ${o.encomendaConfirmacao?.status==='AGUARDANDO_CONTATO'?'<div class="cx-note">⚠️ Item indisponível: a loja entrará em contato para combinar uma alternativa.</div>':''}
       ${msg&&!['REJEITADO','CANCELADO','FRETE_RECUSADO_CLIENTE'].includes(st)?`<div class="cx-note">${esc(msg)}</div>`:''}
