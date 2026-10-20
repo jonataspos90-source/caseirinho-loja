@@ -23,7 +23,7 @@ test('cliente consegue editar pagamento com token de pedido antes da aprovação
  assert.match(app,/if\(!canChangeOrderPayment\(order\)\)/);
 });
 test('PWA atualiza versão de pagamento sem usar cache antigo',()=>{
- assert.match(html,/Loja Online · V9\.10\.24/);
- assert.match(sw,/caseirinho-loja-v9\.10\.24-formas-pix-bancos/);
- assert.match(sw,/prefix\+'910240'/);
+ assert.match(html,/Loja Online · V9\.10\.25/);
+ assert.match(sw,/caseirinho-loja-v9\.10\.25-pronta-entrega/);
+ assert.match(sw,/prefix\+'910250'/);
 });
