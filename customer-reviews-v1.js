@@ -22,8 +22,8 @@ let activeReviewKind='ALL',lastReviews=[],reviewCounts={APP:0,PRODUCT:0};
 function orders(){try{const r=JSON.parse(localStorage.getItem(ORDERS_KEY)||'[]');return Array.isArray(r)?r:[]}catch(_){return []}}
 function productRated(id){try{return localStorage.getItem(REVIEWED_PREFIX+id)==='1'}catch(_){return false}}
 function markProductRated(id){try{localStorage.setItem(REVIEWED_PREFIX+id,'1')}catch(_){}}
-function wasShown(id){try{return sessionStorage.getItem(SHOWN_PREFIX+id)==='1'}catch(_){return false}}
-function markShown(id){try{sessionStorage.setItem(SHOWN_PREFIX+id,'1')}catch(_){}}
+function wasShown(id){try{return localStorage.getItem(SHOWN_PREFIX+id)==='1'}catch(_){return false}}
+function markShown(id){try{localStorage.setItem(SHOWN_PREFIX+id,'1')}catch(_){}}
 function date(v){const d=new Date(v);return Number.isFinite(d.getTime())?d.toLocaleDateString('pt-BR'):''}
 function setMessage(text){const el=E('reviewsFetchStatus');if(el)el.textContent=text}
 function paint(reviews){
@@ -96,7 +96,7 @@ function popupToast(msg){
   el.textContent=msg;
   window.setTimeout(()=>{if(el.textContent===msg)el.remove()},4500);
 }
-function renderPopup(order){
+function renderPopup(order,reviewed={}){
   const overlay=document.createElement('div');overlay.id='reviewProductPopup';overlay.className='reviews-overlay';
   overlay.innerHTML=
     '<section class="reviews-dialog" role="dialog" aria-modal="true" aria-labelledby="productReviewTitle">'+
@@ -104,12 +104,17 @@ function renderPopup(order){
     '<div class="reviews-dialog-body">'+
       '<span class="reviews-chip">Pedido '+S(order.codigo||order.code||order.id).replace(/[&<>"']/g,'')+'</span>'+
       '<h2 id="productReviewTitle">😋 Como estavam os produtos?</h2>'+
-      '<p>Conte sobre o <b>sabor, qualidade, temperatura e apresentação</b> dos produtos do Caseirinho.</p>'+
-      '<div class="reviews-aspect-info">📱 <b>Avaliação do App</b>: facilidade para comprar e atendimento são avaliados separadamente após confirmar o pedido.</div>'+
+      '<p>Avalie sua compra uma única vez após a entrega ou retirada. Você pode dar notas diferentes para produtos e aplicativo.</p>'+
+      '<div class="reviews-aspect-info">✅ Avalie os produtos e, se desejar, a experiência no aplicativo nesta mesma tela.</div>'+
       '<label class="reviews-field-label" id="productRatingLabel">Sua nota para os produtos</label>'+
       '<div class="reviews-modal-stars" role="group" aria-labelledby="productRatingLabel">'+
         [1,2,3,4,5].map(x=>'<button type="button" data-product-star="'+x+'" aria-label="'+x+' estrelas" aria-pressed="false">★</button>').join('')+
       '</div><p id="productRatingHint" class="reviews-star-hint">Toque nas estrelas para dar sua nota ⭐</p>'+
+      (reviewed.APP?'<p class="reviews-aspect-info">📱 O aplicativo já foi avaliado neste pedido.</p>':
+        '<label class="reviews-field-label" id="appRatingLabel">📱 Experiência no aplicativo (opcional)</label>'+
+        '<div class="reviews-modal-stars" role="group" aria-labelledby="appRatingLabel">'+
+        [1,2,3,4,5].map(x=>'<button type="button" data-app-star="'+x+'" aria-label="'+x+' estrelas para o app" aria-pressed="false">★</button>').join('')+
+        '</div><p class="reviews-star-hint">Facilidade para comprar e acompanhar o pedido.</p>')+
       '<label class="reviews-field-label" for="productReviewComment">Comentário sobre os produtos <small>(opcional)</small></label>'+
       '<textarea id="productReviewComment" maxlength="500" placeholder="O nhoque estava delicioso? Gostou do sabor, da temperatura e da apresentação?"></textarea>'+
       '<p class="reviews-privacy">🔒 Seu nome será exibido somente pelas iniciais; a nota e o comentário poderão aparecer em Avaliações.</p>'+
@@ -117,7 +122,7 @@ function renderPopup(order){
       '<p id="productReviewStatus" class="reviews-modal-status" role="status"></p>'+
     '</div></section>';
   document.body.appendChild(overlay);
-  let rating=0,submitting=false;
+  let rating=0,appRating=0,appSaved=!!reviewed.APP,submitting=false;
   const close=()=>{overlay.remove();opened=false;};
   E('productReviewClose').onclick=close;
   overlay.addEventListener('click',ev=>{if(ev.target===overlay)close()});
@@ -128,11 +133,27 @@ function renderPopup(order){
     E('productRatingHint').textContent=['','😕 Vamos melhorar','🙂 Obrigado por contar','😊 Que bom!','😍 Que delícia!','🤩 Que alegria!'][rating];
     E('productReviewSend').disabled=false;
   }));
+  const appStars=[...overlay.querySelectorAll('[data-app-star]')];
+  appStars.forEach(button=>button.addEventListener('click',()=>{
+    appRating=Number(button.dataset.appStar);
+    appStars.forEach(b=>{const active=Number(b.dataset.appStar)<=appRating;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active))});
+  }));
   E('productReviewSend').onclick=async()=>{
     if(submitting||!rating)return;
     const button=E('productReviewSend'),msg=E('productReviewStatus');
     submitting=true;button.disabled=true;button.textContent='Enviando avaliação...';msg.textContent='';
     try{
+      // Avaliações independentes por aspecto, com verificação de duplicidade no servidor.
+      if(appRating&&!appSaved){
+        const appResponse=await fetch(url+'/reviews',{
+          method:'POST',cache:'no-store',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({orderId:S(order.id),token:S(order.publicToken),
+            kind:'APP',rating:appRating,comment:''})
+        });
+        const appResult=await appResponse.json();
+        if(!appResponse.ok&&appResponse.status!==409)throw Error(appResult.error||'Erro ao avaliar o aplicativo.');
+        appSaved=true;
+      }
       const response=await fetch(url+'/reviews',{
         method:'POST',cache:'no-store',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({orderId:S(order.id),token:S(order.publicToken),
@@ -160,19 +181,19 @@ async function openProductReview(id,provided,automatic=false){
   if(!check?.ok){if(!automatic)popupToast('Não conseguimos conferir o pedido. Atualize e tente novamente.');return}
   if(!check.allowedProduct){
     if(check.reviewed?.PRODUCT)markProductRated(order.id);
-    if(!automatic)popupToast(check.reviewed?.PRODUCT?'Os produtos deste pedido já foram avaliados.':'A avaliação dos produtos fica disponível após o aceite do pedido.');
+    if(!automatic)popupToast(check.reviewed?.PRODUCT?'Os produtos deste pedido já foram avaliados.':'A avaliação dos produtos fica disponível após a entrega ou retirada do pedido.');
     return;
   }
   if(opened)return;
   opened=true;markShown(order.id);
-  renderPopup(order);
+  renderPopup(order,check.reviewed||{});
 }
 async function onOrdersViewed(list){
   if(checking||opened||!enabled)return;
   const nonce=++latestRequest;checking=true;
   try{
     const recent=(Array.isArray(list)?list:orders()).slice().reverse()
-      .filter(o=>o&&o.id&&o.publicToken&&!productRated(o.id)&&!wasShown(o.id)).slice(0,8);
+      .filter(o=>o&&o.id&&o.publicToken&&['ENTREGUE','RETIRADO','CONCLUIDO','FINALIZADO'].includes(S(o.status||'').toUpperCase())&&!productRated(o.id)&&!wasShown(o.id)).slice(0,8);
     for(const order of recent){
       if(nonce!==latestRequest||opened)break;
       const check=await status(order);
