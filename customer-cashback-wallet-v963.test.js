@@ -4,10 +4,12 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 
 const js=fs.readFileSync('customer-cashback-wallet-v9-6-3.js','utf8');
+const popup=fs.readFileSync('cashback-checkout-popup-v9-6-4.js','utf8');
 const index=fs.readFileSync('index.html','utf8');
 
 test('customer cashback wallet has valid JavaScript',()=>{
   assert.doesNotThrow(()=>new Function(js));
+  assert.doesNotThrow(()=>new Function(popup));
 });
 
 test('cashback is inserted immediately before WhatsApp in bottom navigation',()=>{
@@ -31,7 +33,18 @@ test('bottom navigation displays the customer cashback amount when available',()
 });
 
 test('wallet keeps coupon and cashback non-cumulative rule visible',()=>{
-  assert.match(js,/não acumula com cupom de desconto/i);
+  assert.match(js,/(?:não acumula com cupom de desconto|não é cumulativo com o cupom)/i);
+});
+
+test('checkout popup lets customer choose cashback amount before final order confirmation',()=>{
+  assert.match(js,/cashback-checkout-popup-v9-6-4\.js\?v=9640/);
+  assert.match(popup,/Você tem cashback!/);
+  assert.match(popup,/Quanto deseja usar\?/);
+  assert.match(popup,/Usar máximo/);
+  assert.match(popup,/Não usar agora/);
+  assert.match(popup,/Aplicar cashback e continuar/);
+  assert.match(popup,/\/cashback\/reservations/);
+  assert.match(popup,/form\.addEventListener\('submit',interceptSubmit,true\)/);
 });
 
 test('store loads cashback wallet v9.6.3',()=>{

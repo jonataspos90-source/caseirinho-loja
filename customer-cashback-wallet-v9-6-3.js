@@ -169,7 +169,17 @@ function syncWithCashbackState(){
   setInterval(()=>updateNavAmount(readState()),5000);
 }
 
-function init(){injectStyle();mountNav();mountOverlay();syncWithCashbackState()}
+function ensureCheckoutPopup(){
+  if(window.__CASEIRINHO_CASHBACK_CHECKOUT_964__||document.querySelector('script[src*="cashback-checkout-popup-v9-6-4.js"]'))return;
+  const script=document.createElement('script');
+  script.src='./cashback-checkout-popup-v9-6-4.js?v=9640';
+  script.async=true;
+  script.dataset.cashbackCheckout964='1';
+  script.onerror=()=>console.warn('[Cashback wallet 9.6.3] não foi possível carregar o popup 9.6.4');
+  (document.head||document.documentElement).appendChild(script);
+}
+
+function init(){injectStyle();mountNav();mountOverlay();syncWithCashbackState();ensureCheckoutPopup()}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-window.CaseirinhoCashbackWallet963={open:openWallet,lookupBalance,updateNavAmount};
+window.CaseirinhoCashbackWallet963={open:openWallet,lookupBalance,updateNavAmount,ensureCheckoutPopup};
 })();
