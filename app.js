@@ -120,7 +120,24 @@ function mpStatusHtml(o){
   if(!mercadoPagoOnline)return'<div class="cx-note">🕘 Não conseguimos consultar os meios de pagamento agora. Atualize o pedido para tentar novamente; nenhuma cobrança foi confirmada.</div>';
   if(!mpPayable(o))return'<div class="cx-note">🕘 Link de pagamento será liberado após a confirmação da encomenda e do frete.</div>';
   return'<div class="cx-note">🔐 Próxima etapa: escolha Pix ou cartão para pagar. O pedido só será considerado pago após a confirmação bancária.</div>'+
-    '<button class="primary" data-mp-pay="'+esc(o.id)+'" type="button">Escolher Pix ou cartão</button>';
+    '<button class="primary" data-mp-pay="'+esc(o.id)+'" type="button">'+(paymentGroup(o.formaPagamento)==='PIX'?'Gerar Pix Copia e Cola':'Pagar com cartão')+'</button>';
+}
+function showPixCopyAndPaste(order,pix){
+  document.getElementById('pixOnlineDialog')?.remove();
+  const overlay=document.createElement('div');overlay.id='pixOnlineDialog';
+  overlay.style.cssText='position:fixed;inset:0;z-index:2147483000;background:#0009;display:grid;place-items:center;padding:16px';
+  overlay.innerHTML=`<section role="dialog" aria-modal="true" aria-labelledby="pixOnlineTitle" style="background:white;border-radius:18px;padding:22px;width:min(460px,100%);max-height:90vh;overflow:auto"><h2 id="pixOnlineTitle">Pix — pague com qualquer banco</h2><p>Pedido ${esc(order.codigo||order.id)}</p><p>Copie o código, abra o aplicativo do seu banco e escolha <b>Pix → Copia e Cola</b>.</p><label for="pixOnlineCode">Código Pix Copia e Cola</label><textarea id="pixOnlineCode" readonly style="width:100%;min-height:110px;overflow-wrap:anywhere">${esc(pix.copiaECola)}</textarea><button type="button" class="primary" id="pixOnlineCopy">Copiar código Pix</button><p role="status" id="pixOnlineMessage">O pedido ficará pendente até a confirmação bancária.</p><button type="button" class="soft" id="pixOnlineClose">Fechar</button></section>`;
+  document.body.appendChild(overlay);
+  const close=()=>{overlay.remove();document.removeEventListener('keydown',onKey);};
+  const onKey=e=>{if(e.key==='Escape')close();};
+  document.addEventListener('keydown',onKey);
+  E('pixOnlineClose').onclick=close;
+  E('pixOnlineCopy').onclick=async()=>{
+    const code=E('pixOnlineCode');
+    try{if(!navigator.clipboard?.writeText)throw Error();await navigator.clipboard.writeText(pix.copiaECola);E('pixOnlineMessage').textContent='Código copiado! Abra o aplicativo do seu banco para pagar.';}
+    catch(_){code.focus();code.select();code.setSelectionRange(0,code.value.length);const copied=document.execCommand('copy');E('pixOnlineMessage').textContent=copied?'Código copiado! Abra o aplicativo do seu banco para pagar.':'Selecione e copie o código acima para pagar no seu banco.';}
+  };
+  E('pixOnlineCopy').focus();
 }
 async function startMercadoPagoPayment(order,button){
   if(!order?.id||!order?.publicToken)return toast('Recupere seu pedido antes de pagar.');
@@ -131,6 +148,8 @@ async function startMercadoPagoPayment(order,button){
       encodeURIComponent(order.id)+'/mercadopago/checkout',{
       method:'POST',body:JSON.stringify({publicToken:order.publicToken})
     });
+    if(out.pix?.copiaECola){showPixCopyAndPaste(order,out.pix);if(button){button.disabled=false;button.textContent='Ver código Pix'}return;}
+    if(out.pending)throw Error('O banco está gerando seu Pix. Clique novamente em alguns segundos.');
     const url=new URL(S(out.url));
     if(url.protocol!=='https:'||!/(^|\.)mercadopago\.com(\.br)?$/.test(url.hostname))
       throw Error('Link de pagamento inválido. Não prossiga.');
@@ -1478,6 +1497,7 @@ async function submitOrder(ev){
     return toast('Selecione um pagamento disponível para entrega ou retirada.');
   if(E('mode')?.value==='ENTREGA'&&!mpSelected(paymentChoice))
     return toast('Para entrega, escolha Pix, cartão de crédito ou débito online.');
+  if(paymentGroup(paymentChoice)==='PIX'&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(S(E('cEmail')?.value).trim())){E('cEmail')?.focus();return toast('Informe seu e-mail para gerar o Pix Copia e Cola.');}
   if(paymentGroup(paymentChoice)==='PIX'&&!S(E('bankPix')?.value).trim())
     return toast('Selecione o banco que vai usar para pagar por Pix.');
   if(mpSelected(E('payment')?.value)&&!mercadoPagoOnline)return toast('O pagamento online ainda não está ativado nesta loja.');
