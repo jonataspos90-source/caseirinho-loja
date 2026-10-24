@@ -7,6 +7,10 @@
   const n=v=>Number(v)||0,round=v=>Math.round((n(v)+Number.EPSILON)*100)/100;
   const promo=p=>p?.promocao||p?.ecommerce?.promocao||{};
   const pack=p=>p?.packVirtual||p?.ecommerce?.packVirtual||{};
+  const isPalmitoEmpada=p=>{
+    const text=String([p?.nomeComercial,p?.nome,p?.descricao,p?.categoriaNome,p?.categoria].filter(Boolean).join(' ')).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
+    return text.includes('EMPADA')&&text.includes('PALMITO');
+  };
   const packProductIds=(p,d=pack(p))=>{
     const raw=d.produtoIds||d.produtosIds||d.itensProdutoIds||d.produtos;
     const ids=Array.isArray(raw)?raw.map(x=>String(typeof x==='object'?(x.id??x.produtoId):x)).filter(Boolean):[];
@@ -25,6 +29,7 @@
   };
   const productName=p=>String(p?.nomeComercial||p?.nome||p?.descricao||'produto');
   const base=p=>{
+    if(isPalmitoEmpada(p))return 11.99;
     const ecommerce=n(p?.precoEcommerce),regular=n(p?.preco);
     return Math.max(0,String(p?.precoModo||'').toUpperCase()==='REPLICAR'
       ?(regular>0?regular:ecommerce):(ecommerce>0?ecommerce:regular));
