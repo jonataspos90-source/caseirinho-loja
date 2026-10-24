@@ -458,6 +458,21 @@ function isFlagOn(value){
 function promoApi(){return window.CaseirinhoPromotions}
 function productPriceInfo(p){return promoApi()?.priceInfo(p,catalog.produtos)||{regular:N(p?.preco),current:N(p?.preco),conditional:false}}
 function productOfferText(p){return promoApi()?.offerText(p,catalog.produtos)||''}
+function productDescription(p){
+  const saved=S(p?.gradeDescricao||p?.descricao).trim();
+  if(saved)return saved;
+  const category=norm(p?.categoria||p?.categoriaNome||'');
+  if(category.includes('EMPADA')){
+    const name=S(p?.nomeComercial||p?.nome).replace(/\s*\(Unidade\)\s*$/i,'').replace(/^Empada\s+/i,'').trim();
+    if(name){
+      const connector=/^(com|de)\s+/i.exec(name)?.[1]?.toLowerCase();
+      const filling=name.replace(/^(?:com|de)\s+/i,'').trim();
+      return `Empada individual ${connector||'de'} ${filling}.`;
+    }
+    return 'Empada individual.';
+  }
+  return '';
+}
 function productPriceHtml(p){const x=productPriceInfo(p);return x.current<x.regular?`<span style="font-size:.8em;color:#64748b">De </span><s style="color:#64748b;font-size:.82em">${money(x.regular)}</s> <strong style="color:#15803d">Por ${money(x.current)}</strong>`:money(x.current)}
 function isFeaturedProduct(p){
   return isFlagOn(p?.destaque)||isFlagOn(p?.novidade)||!!promoApi()?.isFeatured(p,catalog.produtos);
@@ -471,7 +486,7 @@ function cardHtml(entry){
   const hasPromo=vars.some(v=>productPriceInfo(v).current<productPriceInfo(v).regular||!!promoApi()?.isFeatured(v,catalog.produtos));
   const offerText=vars.map(productOfferText).find(Boolean)||'';
   const title=grouped?(p.gradeNome||p.nome):p.nome;
-  const desc=grouped?(p.gradeDescricao||p.descricao||''):p.descricao;
+  const desc=productDescription(p);
   const availability=grouped
     ?(ok?`${gm.icon} Escolha ${gm.title.toLowerCase()} para ver disponibilidade`:'Indisponível no momento')
     :availabilityText(p);
@@ -858,7 +873,7 @@ function showProduct(id){
 
   E('modalCategory').textContent=cat.nome;
   E('modalName').textContent=grouped?(p.gradeNome||p.nome):p.nome;
-  E('modalDescription').textContent=(grouped?(p.gradeDescricao||p.descricao):p.descricao)||'Produto selecionado da loja.';
+  E('modalDescription').textContent=productDescription(p)||'Produto selecionado da loja.';
 
   if(grouped){
     E('variantBox').className='variant-box';
@@ -936,7 +951,7 @@ function renderCart(){
   });
   const renderItem=({x,i,p,min,step,pricing})=>`<div class="cart-item">
       ${x.imagem?`<img src="${esc(x.imagem)}" alt="">`:'<div class="no-image" style="font-size:25px">🍽️</div>'}
-      <div><h4>${esc(x.nome)}</h4>${isOrderItem(p,N(x.quantidade))?'<small style="display:block;color:#84530c">'+(readyNeedsConfirmation(p)?'Pronta entrega · quantidade ainda não confirmada':'🕘 Sob encomenda · aguardará confirmação da loja')+'</small>':''}<small>${pricing.unitPrice===0&&pricing.promotionGroupId?'<b style="color:#15803d">Unidade incluída na oferta</b>':`${money(pricing.unitPrice)} cada`}${pricing.promotionLabel&&!pricing.promotionLabel.startsWith('Leve ')?` · <b style="color:#15803d">${esc(pricing.promotionLabel)}</b>`:''}</small>
+      <div><h4>${esc(x.nome)}</h4>${p&&productDescription(p)?`<small class="cart-item-description" style="display:block;color:#5f6368;line-height:1.4;margin:2px 0 5px">${esc(productDescription(p))}</small>`:''}${isOrderItem(p,N(x.quantidade))?'<small style="display:block;color:#84530c">'+(readyNeedsConfirmation(p)?'Pronta entrega · quantidade ainda não confirmada':'🕘 Sob encomenda · aguardará confirmação da loja')+'</small>':''}<small>${pricing.unitPrice===0&&pricing.promotionGroupId?'<b style="color:#15803d">Unidade incluída na oferta</b>':`${money(pricing.unitPrice)} cada`}${pricing.promotionLabel&&!pricing.promotionLabel.startsWith('Leve ')?` · <b style="color:#15803d">${esc(pricing.promotionLabel)}</b>`:''}</small>
         <div class="qty"><button data-minus="${i}" type="button">−</button><b>${x.quantidade}</b><button data-plus="${i}" type="button">+</button></div>
       </div>
       <div class="cart-item-price" style="text-align:right"><b>${money(pricing.total)}</b><br><button class="remove" data-remove="${i}" type="button">Remover</button></div>
@@ -1484,6 +1499,7 @@ async function pollCustomerOrders(){
 async function submitOrder(ev){
   ev.preventDefault();
   E('checkoutResult').innerHTML='';
+  await loadCatalog(true);
   if(!catalogConnected){
     E('checkoutResult').textContent='Sem conexão com a loja. Aguarde o cardápio atualizar antes de finalizar o pedido.';
     return toast('Aguarde a conexão com a loja para confirmar preços e disponibilidade.');
@@ -1590,7 +1606,7 @@ async function submitOrder(ev){
       descontoPromocional:result.descontoPromocional??promoSavings,
       publicToken:result.publicToken,
       savedAt:new Date().toISOString(),
-      itens:cart.map(x=>{const row=appliedPromotions?.lines.get(S(x.produtoId));return{...x,precoUnitario:row?.unitPrice??N(x.precoUnitario),total:row?.total??N(x.quantidade)*N(x.precoUnitario),economia:row?.savings??0,promocaoAplicada:row?.promotionLabel||''}})
+      itens:Array.isArray(result.itens)?result.itens:cart.map(x=>{const row=appliedPromotions?.lines.get(S(x.produtoId));return{...x,precoUnitario:row?.unitPrice??N(x.precoUnitario),total:row?.total??N(x.quantidade)*N(x.precoUnitario),economia:row?.savings??0,promocaoAplicada:row?.promotionLabel||''}})
     };
 
     const orders=readJson(ORDERS_KEY,[]);
