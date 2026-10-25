@@ -494,6 +494,7 @@ function reconcileCartProducts(){
       item.produtoId=S(target.id);
       item.codigo=target.codigo||'';
       item.nome=target.gradeId?`${target.gradeNome||target.nome} · ${target.variacaoLabel||target.nome}`:target.nome;
+      item.precoUnitario=N(target.preco);
       changed=true;
     }
     if(target){
@@ -964,6 +965,8 @@ async function quickAdd(id,qty){
   renderCart();toast('Produto adicionado ao carrinho.');
 }
 function renderCart(){
+  // Repare também carrinhos persistidos antes da atualização do catálogo.
+  reconcileCartProducts();
   cart=cart.filter(x=>x&&x.produtoId);
   writeJson(CART_KEY,cart);
   const count=cart.reduce((s,x)=>s+N(x.quantidade),0);
