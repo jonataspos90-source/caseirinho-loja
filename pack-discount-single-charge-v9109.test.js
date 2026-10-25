@@ -59,6 +59,6 @@ test('legacy double minus glyph removed and cache versions updated',()=>{
   assert.match(app,/updateText\('packDiscountTotal',money\(saved\)\)/);
   assert.match(html,/#packDiscountTotal::before\{content:'−';/);
   assert.match(html,/data-discount-included="true"/);
-  assert.match(sw,/v9\.10\.12-promocoes-packs/);
+  assert.match(sw,/v9\.10\.29-carrinho-empadas-corretas/);
   assert.match(html,/checkout-parmesao-v9-3-6\.js\?v=91090/);
 });
