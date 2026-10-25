@@ -12,6 +12,7 @@ const STORE=String(
  .replace(/[^a-z0-9-]/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'')||'caseirinho';
 
 const STORE_SCOPE='john_store_'+STORE+'_';
+window.CASEIRINHO_STORE_SCOPE=STORE_SCOPE;
 const CATALOG_KEY=STORE_SCOPE+'catalog_v1';
 const CATALOG_PATH='/api/v1/public/store/'+encodeURIComponent(STORE)+'/catalog';
 const CATALOG_BACKUP_CACHE='john-storefront-catalog-backup-v1';
