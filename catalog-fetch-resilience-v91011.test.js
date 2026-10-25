@@ -111,12 +111,12 @@ test('descrição de empada é criada pelo nome e ignora descrição errada de m
 test('carrinho reconcilia nome da empada com ID, preço e imagem do catálogo',()=>{
  const from=app.indexOf('function cartProductNameKey('),to=app.indexOf('function productPriceHtml(',from);
  assert.ok(from>=0&&to>from);
- const ctx={S:v=>String(v??''),A:v=>Array.isArray(v)?v:[],images:p=>p.imagens||[],CART_KEY:'cart',
+ const ctx={S:v=>String(v??''),N:v=>Number(v)||0,A:v=>Array.isArray(v)?v:[],images:p=>p.imagens||[],CART_KEY:'cart',
    catalog:{produtos:[
     {id:'molho',nome:'Molho 500 gr - Sugo',imagens:['molho.webp']},
-    {id:'empada-frango',nome:'Empada Frango com Requeijão (Unidade)',categoria:'Empadas',imagens:['empada-frango.webp']}
+    {id:'empada-frango',nome:'Empada Frango com Requeijão (Unidade)',categoria:'Empadas',preco:9.99,imagens:['empada-frango.webp']}
    ]},
-   cart:[{produtoId:'molho',nome:'Empadas · Empada Frango com Requeijão (Unidade)',imagem:'molho.webp'}],
+   cart:[{produtoId:'molho',nome:'Empadas · Empada Frango com Requeijão (Unidade)',imagem:'molho.webp',precoUnitario:13.99}],
    writeJson:(key,value)=>{ctx.saved={key,value}}
  };
  vm.createContext(ctx);vm.runInContext(app.slice(from,to),ctx);
@@ -124,13 +124,17 @@ test('carrinho reconcilia nome da empada com ID, preço e imagem do catálogo',(
  assert.equal(ctx.cart[0].produtoId,'empada-frango');
  assert.equal(ctx.cart[0].imagem,'empada-frango.webp');
  assert.equal(ctx.cart[0].nome,'Empada Frango com Requeijão (Unidade)');
+ assert.equal(ctx.cart[0].precoUnitario,9.99);
  assert.equal(ctx.saved.key,'cart');
 });
 test('PWA usa versão atual da lógica de cardápio e mantém script único',()=>{
  const sw=fs.readFileSync(path.join(__dirname,'service-worker.js'),'utf8');
  const html=fs.readFileSync(path.join(__dirname,'index.html'),'utf8');
- assert.match(sw,/caseirinho-loja-v9\.10\.29-carrinho-empadas-corretas/);
- assert.match(sw,/prefix\+'910290'/);
+ const engine=fs.readFileSync(path.join(__dirname,'commerce-engine-v9-3-0.js'),'utf8');
+ assert.match(sw,/caseirinho-loja-v9\.10\.31-carrinho-comercial-sem-erro/);
+ assert.match(sw,/prefix\+'910310'/);
  assert.match(html,/id="retryCatalog"/);
- assert.match(html,/\.\/app\.js\?v=910290/);
+ assert.match(html,/\.\/app\.js\?v=910310/);
+ assert.match(engine,/window\.CASEIRINHO_STORE_SCOPE\|\|/);
+ assert.doesNotMatch(engine,/`\$\{STORE_SCOPE\|\|/);
 });
