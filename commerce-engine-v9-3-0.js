@@ -2,7 +2,7 @@
 if(window.__JOHN_STORE_COMMERCE_930)return;window.__JOHN_STORE_COMMERCE_930=true;
 const E=id=>document.getElementById(id),S=v=>String(v??''),N=v=>Number(v)||0,A=v=>Array.isArray(v)?v:[],norm=v=>S(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUpperCase(),esc=v=>S(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const money=v=>(Number(v)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-const LS=k=>`${STORE_SCOPE||('john_store_'+S(window.STORE||'caseirinho')+'_')}${k}`;
+const LS=k=>`${window.CASEIRINHO_STORE_SCOPE||('john_store_'+S(window.STORE||'caseirinho')+'_')}${k}`;
 const FAV_KEY=LS('favorites_v1'),CART_META_KEY=LS('cart_meta_v1'),SESSION_KEY=LS('commerce_session_v1');
 let ceCfg={enabled:false,offers:[],combos:[],coupons:[],loyalty:{},capacity:{},abandonedCart:{enabled:true,minutes:30},recommendations:{enabled:true},ratings:{enabled:true}};
 let couponCode='';
