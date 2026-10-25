@@ -107,6 +107,7 @@ test('descrição de empada é criada pelo nome e ignora descrição errada de m
  const ctx={S:v=>String(v??''),norm:v=>String(v??'').toUpperCase()};
  vm.createContext(ctx);vm.runInContext(src,ctx);
  assert.equal(ctx.productDescription({categoria:'Empadas',nome:'Empada Frango com Requeijão (Unidade)',descricao:'Molhos congelados pronto, apenas descongelar.'}),'Empada individual de Frango com Requeijão.');
+ assert.equal(ctx.productDescription({categoria:{nome:'Empadas'},nome:'Empada com Palmito Cremoso (Unidade)',descricao:'Descrição antiga de molho.'}),'Empada individual com Palmito Cremoso.');
 });
 test('carrinho reconcilia nome da empada com ID, preço e imagem do catálogo',()=>{
  const from=app.indexOf('function cartProductNameKey('),to=app.indexOf('function productPriceHtml(',from);
@@ -131,10 +132,10 @@ test('PWA usa versão atual da lógica de cardápio e mantém script único',()=
  const sw=fs.readFileSync(path.join(__dirname,'service-worker.js'),'utf8');
  const html=fs.readFileSync(path.join(__dirname,'index.html'),'utf8');
  const engine=fs.readFileSync(path.join(__dirname,'commerce-engine-v9-3-0.js'),'utf8');
- assert.match(sw,/caseirinho-loja-v9\.10\.31-carrinho-comercial-sem-erro/);
- assert.match(sw,/prefix\+'910310'/);
+ assert.match(sw,/caseirinho-loja-v9\.10\.32-descricao-empada-por-nome/);
+ assert.match(sw,/prefix\+'910320'/);
  assert.match(html,/id="retryCatalog"/);
- assert.match(html,/\.\/app\.js\?v=910310/);
+ assert.match(html,/\.\/app\.js\?v=910320/);
  assert.match(engine,/window\.CASEIRINHO_STORE_SCOPE\|\|/);
  assert.doesNotMatch(engine,/`\$\{STORE_SCOPE\|\|/);
 });
