@@ -20,6 +20,7 @@ function make(overrides={}){
     STORE:'caseirinho',CATALOG_PATH:'/api/v1/public/store/caseirinho/catalog',
     CATALOG_KEY:'john_store_caseirinho_catalog_v1',
     CATALOG_BACKUP_CACHE:'john-storefront-catalog-backup-v1',
+    CART_KEY:'john_store_caseirinho_cart_v1',cart:overrides.cart||[],
     catalog,catalogBusy:false,catalogConnected:false,catalogRecoveryTimer:null,catalogRecoveryCount:0,
     S:v=>String(v??''),A:v=>Array.isArray(v)?v:[],
     E:id=>elements[id],
@@ -44,6 +45,7 @@ function make(overrides={}){
   ctx.caches=store;
   vm.createContext(ctx);
   vm.runInContext(snippet('async function catalogBackup(){','function showProduct('),ctx);
+  vm.runInContext(snippet('function cartProductNameKey(value){','function productPriceHtml('),ctx);
   return{ctx,elements,queue};
 }
 test('GET público não dispara preflight por Content-Type nem Cache-Control customizados',async()=>{
@@ -100,11 +102,35 @@ test('sem cache, nunca finge que a loja está online e permite nova tentativa',a
  assert.match(elements.syncStatus.textContent,/Tentando reconectar/);
  assert.match(elements.products.innerHTML,/Tentar novamente/);
 });
+test('descrição de empada é criada pelo nome e ignora descrição errada de molho',()=>{
+ const src=snippet('function productDescription(p){','function cartProductNameKey(');
+ const ctx={S:v=>String(v??''),norm:v=>String(v??'').toUpperCase()};
+ vm.createContext(ctx);vm.runInContext(src,ctx);
+ assert.equal(ctx.productDescription({categoria:'Empadas',nome:'Empada Frango com Requeijão (Unidade)',descricao:'Molhos congelados pronto, apenas descongelar.'}),'Empada individual de Frango com Requeijão.');
+});
+test('carrinho reconcilia nome da empada com ID, preço e imagem do catálogo',()=>{
+ const from=app.indexOf('function cartProductNameKey('),to=app.indexOf('function productPriceHtml(',from);
+ assert.ok(from>=0&&to>from);
+ const ctx={S:v=>String(v??''),A:v=>Array.isArray(v)?v:[],images:p=>p.imagens||[],CART_KEY:'cart',
+   catalog:{produtos:[
+    {id:'molho',nome:'Molho 500 gr - Sugo',imagens:['molho.webp']},
+    {id:'empada-frango',nome:'Empada Frango com Requeijão (Unidade)',categoria:'Empadas',imagens:['empada-frango.webp']}
+   ]},
+   cart:[{produtoId:'molho',nome:'Empadas · Empada Frango com Requeijão (Unidade)',imagem:'molho.webp'}],
+   writeJson:(key,value)=>{ctx.saved={key,value}}
+ };
+ vm.createContext(ctx);vm.runInContext(app.slice(from,to),ctx);
+ assert.equal(ctx.reconcileCartProducts(),true);
+ assert.equal(ctx.cart[0].produtoId,'empada-frango');
+ assert.equal(ctx.cart[0].imagem,'empada-frango.webp');
+ assert.equal(ctx.cart[0].nome,'Empada Frango com Requeijão (Unidade)');
+ assert.equal(ctx.saved.key,'cart');
+});
 test('PWA usa versão atual da lógica de cardápio e mantém script único',()=>{
  const sw=fs.readFileSync(path.join(__dirname,'service-worker.js'),'utf8');
  const html=fs.readFileSync(path.join(__dirname,'index.html'),'utf8');
- assert.match(sw,/caseirinho-loja-v9\.10\.12-promocoes-packs/);
- assert.match(sw,/prefix\+'910120'/);
+ assert.match(sw,/caseirinho-loja-v9\.10\.29-carrinho-empadas-corretas/);
+ assert.match(sw,/prefix\+'910290'/);
  assert.match(html,/id="retryCatalog"/);
- assert.match(html,/\.\/app\.js\?v=910120/);
+ assert.match(html,/\.\/app\.js\?v=910290/);
 });
