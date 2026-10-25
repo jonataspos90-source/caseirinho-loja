@@ -461,8 +461,9 @@ function productPriceInfo(p){return promoApi()?.priceInfo(p,catalog.produtos)||{
 function productOfferText(p){return promoApi()?.offerText(p,catalog.produtos)||''}
 function productDescription(p){
   const category=norm(p?.categoria||p?.categoriaNome||'');
-  if(category.includes('EMPADA')){
-    const name=S(p?.nomeComercial||p?.nome).replace(/\s*\(Unidade\)\s*$/i,'').replace(/^Empada\s+/i,'').trim();
+  const rawName=S(p?.nomeComercial||p?.nome);
+  if(category.includes('EMPADA')||/\\bEmpada\\b/i.test(rawName)){
+    const name=rawName.replace(/\s*\(Unidade\)\s*$/i,'').replace(/^Empada\s+/i,'').trim();
     if(name){
       const connector=/^(com|de)\s+/i.exec(name)?.[1]?.toLowerCase();
       const filling=name.replace(/^(?:com|de)\s+/i,'').trim();
