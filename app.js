@@ -459,8 +459,6 @@ function promoApi(){return window.CaseirinhoPromotions}
 function productPriceInfo(p){return promoApi()?.priceInfo(p,catalog.produtos)||{regular:N(p?.preco),current:N(p?.preco),conditional:false}}
 function productOfferText(p){return promoApi()?.offerText(p,catalog.produtos)||''}
 function productDescription(p){
-  const saved=S(p?.gradeDescricao||p?.descricao).trim();
-  if(saved)return saved;
   const category=norm(p?.categoria||p?.categoriaNome||'');
   if(category.includes('EMPADA')){
     const name=S(p?.nomeComercial||p?.nome).replace(/\s*\(Unidade\)\s*$/i,'').replace(/^Empada\s+/i,'').trim();
@@ -471,7 +469,40 @@ function productDescription(p){
     }
     return 'Empada individual.';
   }
+  const saved=S(p?.gradeDescricao||p?.descricao).trim();
+  if(saved)return saved;
   return '';
+}
+function cartProductNameKey(value){
+  const parts=S(value).split(/\s*[·•]\s*/);
+  return S(parts[parts.length-1]).replace(/\s*\(Unidade\)\s*$/i,'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
+}
+function reconcileCartProducts(){
+  const products=A(catalog.produtos);
+  if(!products.length)return false;
+  let changed=false;
+  for(const item of cart){
+    const key=cartProductNameKey(item?.nome);
+    if(!key)continue;
+    const current=products.find(p=>S(p.id)===S(item.produtoId));
+    const matches=products.filter(p=>[p?.nomeComercial,p?.nome,p?.variacaoLabel].some(name=>cartProductNameKey(name)===key));
+    const unique=[...new Map(matches.map(p=>[S(p.id),p])).values()];
+    let target=current;
+    const currentMatches=[current?.nomeComercial,current?.nome,current?.variacaoLabel].some(name=>cartProductNameKey(name)===key);
+    if(!currentMatches&&unique.length===1){
+      target=unique[0];
+      item.produtoId=S(target.id);
+      item.codigo=target.codigo||'';
+      item.nome=target.gradeId?`${target.gradeNome||target.nome} · ${target.variacaoLabel||target.nome}`:target.nome;
+      changed=true;
+    }
+    if(target){
+      const correctImage=images(target)[0]||'';
+      if(S(item.imagem)!==S(correctImage)){item.imagem=correctImage;changed=true}
+    }
+  }
+  if(changed)writeJson(CART_KEY,cart);
+  return changed;
 }
 function productPriceHtml(p){const x=productPriceInfo(p);return x.current<x.regular?`<span style="font-size:.8em;color:#64748b">De </span><s style="color:#64748b;font-size:.82em">${money(x.regular)}</s> <strong style="color:#15803d">Por ${money(x.current)}</strong>`:money(x.current)}
 function isFeaturedProduct(p){
@@ -843,6 +874,7 @@ async function loadCatalog(silent=false){
       return old&&images(old).length?{...p,imagem:images(old)[0],imagens:images(old)}:p;
     });
     catalog=cloud;
+    reconcileCartProducts();
     saveCatalogBackup(catalog).catch(console.warn);
     if(catalogRecoveryTimer){clearTimeout(catalogRecoveryTimer);catalogRecoveryTimer=null}
     catalogRecoveryCount=0;
@@ -852,6 +884,7 @@ async function loadCatalog(silent=false){
     const cached=A(catalog.produtos).length?catalog:await catalogBackup();
     if(cached&&A(cached.produtos).length){
       catalog=cached;
+      reconcileCartProducts();
       setCatalogConnectionStatus(false,'Conexão instável · cardápio salvo disponível para consulta. Compras pausadas até reconectar.');
       mount();
       if(!silent)toast('Conexão temporariamente indisponível. Cardápio salvo exibido.');
