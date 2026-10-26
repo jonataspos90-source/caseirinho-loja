@@ -49,15 +49,14 @@ let mercadoPagoOnline=false;
 const MP_CREDIT_LABEL='Cartão de crédito online (Mercado Pago)';
  const MP_DEBIT_LABEL='Cartão de débito online (Mercado Pago)';
  const MP_PIX_LABEL='Pix online (Mercado Pago)';
- const MP_PAYMENT_OPTIONS=[MP_CREDIT_LABEL,MP_DEBIT_LABEL,MP_PIX_LABEL];
+ const PIX_CNPJ_LABEL='Pix pelo QR Code do CNPJ (conferência manual)';
+ const MP_PAYMENT_OPTIONS=[MP_CREDIT_LABEL,MP_DEBIT_LABEL];
  // Visualização somente da interface: nunca cria pedidos ou cobranças.
  const PAYMENT_UI_PREVIEW=new URLSearchParams(location.search).get('preview_cartoes')==='1';
 // Preserve the gateway method as the option value sent to the API.
  // Only its customer-facing name is neutral (no change to financial processing).
- const paymentPublicLabel=x=>x===MP_CREDIT_LABEL?'Cartão de crédito':x===MP_DEBIT_LABEL?'Cartão de débito':x===MP_PIX_LABEL?'Pix':x;
+ const paymentPublicLabel=x=>x===MP_CREDIT_LABEL?'Cartão de crédito':x===MP_DEBIT_LABEL?'Cartão de débito':x===MP_PIX_LABEL?'Pix online':x===PIX_CNPJ_LABEL?'Pix via QR Code (CNPJ) — confirmação manual':x;
  const mpSelected=x=>norm(x).includes('MERCADO_PAGO');
- const BANK_CHOICES=['Nubank','Itaú','Bradesco','Santander','Banco do Brasil','Caixa Econômica Federal','Inter','C6 Bank' ,'PicPay','Sicredi','Sicoob','Outro banco / instituição'];
- const bankOptionsHtml=selected=>'<option value="">Selecione seu banco</option>'+BANK_CHOICES.map(b=>'<option value="'+esc(b)+'"'+(b===selected?' selected':'')+'>'+esc(b)+'</option>').join('');
  function paymentGroup(method){
    const key=norm(method);
    if(key.includes('PIX'))return'PIX';
@@ -69,26 +68,11 @@ const MP_CREDIT_LABEL='Cartão de crédito online (Mercado Pago)';
  function paymentOptionsFor(mode){
    const onsite=A(catalog.loja?.formasPagamento).filter(x=>S(x).trim()&&!mpSelected(x)&&!['A_DEFINIR','NAO_DEFINIDO'].includes(norm(x)));
    const online=(mercadoPagoOnline||PAYMENT_UI_PREVIEW)&&catalogConnected?MP_PAYMENT_OPTIONS:[];
-   const source=mode==='ENTREGA'?online:[...online,...onsite];
+   const source=catalogConnected?[...online,PIX_CNPJ_LABEL,...(mode==='ENTREGA'?[]:onsite)]:[];
    const seen=new Set();
    return source.filter(x=>{const k=paymentGroup(x);if(seen.has(k))return false;seen.add(k);return true});
  }
- function renderBankPixField(){
-   let row=E('bankPixRow');
-   if(!row){
-     row=document.createElement('label');
-     row.id='bankPixRow';
-     row.className='full';
-     row.innerHTML='Qual banco você vai usar para pagar com Pix? *<select id="bankPix"></select><small>Essa escolha ajuda a orientar o pagamento. O QR Code Pix pode ser pago por qualquer instituição participante.</small>';
-     E('payment')?.closest('label')?.insertAdjacentElement('afterend',row);
-     E('bankPix').innerHTML=bankOptionsHtml('');
-   }
-   const pix=paymentGroup(E('payment')?.value)==='PIX';
-   row.hidden=!pix;
-   row.style.display=pix?'':'none';
-   E('bankPix').required=pix;
-   if(!pix)E('bankPix').value='';
- }
+ function renderBankPixField(){E('bankPixRow')?.remove()}
 
 function readJson(k,fallback){try{const x=JSON.parse(localStorage.getItem(k)||'null');return x??fallback}catch(_){return fallback}}
 function writeJson(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(_){}}
@@ -1108,7 +1092,10 @@ function updateDateMin(){
   E('date').min=min;
   if(!E('date').value||E('date').value<min||!allowedDate(E('date').value,mode))E('date').value=nextAllowed(min,mode);
   const labels=['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
-  E('deliveryDays').innerHTML=`<b>Dias disponíveis para ${mode==='ENTREGA'?'entrega':'retirada'}:</b> ${serviceDays(mode).map(x=>labels[x]).join(', ')}.`;
+  const next=nextAllowed(min,mode);
+  const nextDate=new Date(next+'T12:00:00Z');
+  const nextLabel=new Intl.DateTimeFormat('pt-BR',{timeZone:'UTC',weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'}).format(nextDate);
+  E('deliveryDays').innerHTML=`<b>Dias disponíveis para ${mode==='ENTREGA'?'entrega':'retirada'}:</b> ${serviceDays(mode).map(x=>labels[x]).join(', ')}.<br><b>Próxima data disponível:</b> ${nextLabel}.`;
 }
 
 // Política informativa de pedidos após o expediente (fuso da loja: São Paulo).
@@ -1178,8 +1165,12 @@ function updateMpCheckoutGuidance(){
   const hint=E('mpCheckoutGuidance');
   if(!hint)return;
   const selected=S(E('payment')?.value);
-  hint.hidden=!mpSelected(selected);
+  hint.hidden=!mpSelected(selected)&&selected!==PIX_CNPJ_LABEL;
   if(hint.hidden)return;
+  if(selected===PIX_CNPJ_LABEL){
+    hint.innerHTML='<b>💠 Pix pelo CNPJ do Caseirinho</b><br>O QR Code do CNPJ <b>69.195.483/0001-23</b> ficará disponível em “Meus pedidos” depois que a loja aceitar o pedido. Após pagar, toque em <b>Já paguei</b> para avisar a equipe. O pedido continuará pendente até a conferência do extrato.';
+    return;
+  }
   const chosen=norm(selected);
   const method=chosen.includes('PIX')?'Pix pelo aplicativo do seu banco':
     chosen.includes('DEBITO')?'cartão de débito':'cartão de crédito';
@@ -1549,11 +1540,8 @@ async function submitOrder(ev){
   const paymentChoice=S(E('payment')?.value);
   if(!paymentChoice||!paymentOptionsFor(E('mode')?.value).includes(paymentChoice))
     return toast('Selecione um pagamento disponível para entrega ou retirada.');
-  if(E('mode')?.value==='ENTREGA'&&!mpSelected(paymentChoice))
-    return toast('Para entrega, escolha Pix, cartão de crédito ou débito online.');
-  if(paymentGroup(paymentChoice)==='PIX'&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(S(E('cEmail')?.value).trim())){E('cEmail')?.focus();return toast('Informe seu e-mail para gerar o Pix Copia e Cola.');}
-  if(paymentGroup(paymentChoice)==='PIX'&&!S(E('bankPix')?.value).trim())
-    return toast('Selecione o banco que vai usar para pagar por Pix.');
+  if(E('mode')?.value==='ENTREGA'&&!mpSelected(paymentChoice)&&paymentChoice!==PIX_CNPJ_LABEL)
+    return toast('Para entrega, escolha Pix pelo CNPJ ou cartão online.');
   if(mpSelected(E('payment')?.value)&&!mercadoPagoOnline)return toast('O pagamento online ainda não está ativado nesta loja.');
   if(mpSelected(E('payment')?.value)&&S(E('cPhone')?.value).replace(/\D/g,'').slice(-11)==='11989310929')
     return toast('Este telefone identifica pedidos de teste. Escolha outra forma de pagamento sem cobrança real.');
@@ -1609,7 +1597,6 @@ async function submitOrder(ev){
     dataAtendimento:E('date').value,
     horario:mode==='ENTREGA'?'A combinar':E('time').value,
     formaPagamento:E('payment').value,
-    pixBank:paymentGroup(E('payment').value)==='PIX'?S(E('bankPix')?.value):'',
     entrega:mode==='ENTREGA'?address():{},
     itens:cart.map(x=>({produtoId:S(x.produtoId),quantidade:N(x.quantidade)})),
     observacao:[pendingEncomendas.length?'[DISPONIBILIDADE A CONFIRMAR — '+(pendingEncomendas.some(x=>readyNeedsConfirmation(x.product))?'Pronta entrega cadastrada sem saldo registrado':'Produto sob encomenda')+'; prazo e entrega dependem de confirmação da loja: '+pendingEncomendas.map(x=>x.product?.nome||x.item.nome).join(', ').slice(0,400)+']':'',afterHours?.closed?'[PEDIDO FORA DO HORÁRIO · Primeiro atendimento previsto: '+afterHours.nextOpening+' · Horário da entrega/retirada sujeito à confirmação.]':'',S(E('obs').value).trim()].filter(Boolean).join('\n').slice(0,1000),
@@ -1780,30 +1767,23 @@ async function editOrderPayment(id){
           ${options.map(option=>`<option value="${esc(option)}"${option===order.formaPagamento?' selected':''}>${esc(paymentPublicLabel(option))}</option>`).join('')}
         </select>
       </label>
-      <label id="paymentChangeBankRow">Qual banco você pretende usar para o Pix?
-        <select id="paymentChangeBank">${bankOptionsHtml(S(order.pixBank||''))}</select>
-        <small>O banco escolhido é apenas uma referência; o QR Code Pix funciona com qualquer banco participante.</small>
-      </label>
       <button class="primary" type="submit">Salvar forma de pagamento</button>
       <button class="soft" id="cancelPaymentChange" type="button">Voltar aos pedidos</button>
       <div id="paymentChangeResult" role="status"></div>
     </form>`);
-  const choice=E('paymentChangeChoice'),bankRow=E('paymentChangeBankRow'),bank=E('paymentChangeBank');
-  const sync=()=>{bankRow.hidden=paymentGroup(choice.value)!=='PIX';bankRow.style.display=bankRow.hidden?'none':'';bank.required=!bankRow.hidden};
-  choice.addEventListener('change',sync);sync();
+  const choice=E('paymentChangeChoice');
   E('cancelPaymentChange').onclick=showOrders;
   E('paymentChangeForm').onsubmit=async ev=>{
     ev.preventDefault();
-    const method=S(choice.value),pixBank=paymentGroup(method)==='PIX'?S(bank.value):'';
+    const method=S(choice.value);
     if(!method)return;
-    if(paymentGroup(method)==='PIX'&&!pixBank)return toast('Selecione um banco para o Pix.');
     const button=E('paymentChangeForm').querySelector('[type=submit]');
     button.disabled=true;button.textContent='Salvando...';
     try{
       const result=await api('/api/v1/public/store/'+encodeURIComponent(STORE)+'/orders/'+
         encodeURIComponent(order.id)+'/payment-method',{method:'POST',
-        body:JSON.stringify({publicToken:order.publicToken,formaPagamento:method,pixBank})});
-      saveOrderUpdate({...order,formaPagamento:result.formaPagamento,pixBank:result.pixBank,
+        body:JSON.stringify({publicToken:order.publicToken,formaPagamento:method})});
+      saveOrderUpdate({...order,formaPagamento:result.formaPagamento,pixBank:'',
         ...(result.pagamentoOnline?{pagamentoOnline:result.pagamentoOnline}:{})});
       toast('Pagamento alterado. Você já pode continuar o pedido.');
       await showOrders();
@@ -1837,7 +1817,7 @@ function ordersCardsHtml(orders){
       ${o.encomendaConfirmacao?.status==='CONFIRMADO'?'<div class="cx-note ok">✅ Disponibilidade analisada pelo Caseirinho. Confira a atualização abaixo.</div>':''}
       ${o.encomendaConfirmacao?.status==='AGUARDANDO_CONTATO'?'<div class="cx-note">⚠️ Item indisponível: a loja entrará em contato para combinar uma alternativa.</div>':''}
       ${msg&&!['REJEITADO','CANCELADO','FRETE_RECUSADO_CLIENTE'].includes(st)?`<div class="cx-note">${esc(msg)}</div>`:''}
-      <div class="cx-note" style="font-size:12px"><b>Forma de pagamento:</b> ${esc(paymentPublicLabel(o.formaPagamento||'A definir'))}${o.pixBank?' · Banco Pix escolhido: '+esc(o.pixBank):''}</div>
+      <div class="cx-note" style="font-size:12px"><b>Forma de pagamento:</b> ${esc(paymentPublicLabel(o.formaPagamento||'A definir'))}</div>
       ${mpStatusHtml(o)}
       <div class="order-actions">${canChangeOrderPayment(o)?`<button class="soft" type="button" data-edit-payment="${esc(o.id)}">✏️ Alterar pagamento</button>`:''}${['ENTREGUE','RETIRADO','CONCLUIDO','FINALIZADO'].includes(st)&&!window.CaseirinhoReviewsV2?.productRated?.(o.id)?`<button class="primary" data-review-order="${esc(o.id)}" type="button">⭐ Avaliar este pedido</button>`:''}${['CANCELADO','FRETE_RECUSADO_CLIENTE'].includes(st)?`<button class="primary" data-new-order="${esc(o.id)}" type="button">Fazer novo pedido</button>`:''}<button class="soft" data-refresh-orders type="button">Atualizar status</button></div></div>`;
   }).join('');

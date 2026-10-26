@@ -16,7 +16,7 @@ const A=v=>Array.isArray(v)?v:[];
 const norm=v=>S(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUpperCase().replace(/[\s-]+/g,'_');
 const esc=v=>S(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
 const money=v=>N(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-const CHECKOUT_NOTE_HTML='<b>💠 Pagamento via PIX</b><br>Depois que a loja aceitar seu pedido, o QR Code PIX será liberado em <b>Meus pedidos</b>, já com o valor correto. Chave oficial: <b>69.195.483/0001-23</b>.';
+const CHECKOUT_NOTE_HTML='<b>💠 Pix pelo CNPJ do Caseirinho</b><br>Depois que a loja aceitar seu pedido, o QR Code do CNPJ <b>69.195.483/0001-23</b> ficará disponível em <b>Meus pedidos</b>. Após pagar, avise pelo app; a equipe conferirá o extrato antes de confirmar.';
 
 function read(k,f){try{const x=JSON.parse(localStorage.getItem(k)||'null');return x??f}catch(_){return f}}
 function orders(){
@@ -68,6 +68,17 @@ async function requestPix(o){
   if(!r.ok)throw new Error(j?.error||('Erro HTTP '+r.status));
   return j.pix;
 }
+async function reportPixPayment(o){
+  if(!o?.id)throw new Error('Pedido não localizado. Atualize Meus pedidos.');
+  const auth=credentials(o);
+  if(!auth.token&&!auth.historySession)throw new Error('Atualize Meus pedidos para avisar a loja.');
+  const r=await fetch(API+'/api/v1/public/store/'+encodeURIComponent(STORE)+'/orders/'+encodeURIComponent(o.id)+'/pix/reported?_pix='+Date.now(),{
+    method:'POST',cache:'no-store',headers:{'Content-Type':'application/json','Cache-Control':'no-cache'},body:JSON.stringify(auth)
+  });
+  let j={};try{j=await r.json()}catch(_){}
+  if(!r.ok)throw new Error(j?.error||('Erro HTTP '+r.status));
+  return j;
+}
 function ensureCss(){
   if(document.getElementById('caseirinhoPix937Style'))return;
   const st=document.createElement('style');st.id='caseirinhoPix937Style';st.textContent=`
@@ -82,11 +93,25 @@ function showPix(o,pix){
   ensureCss();closeModal();
   const ov=document.createElement('div');ov.id='pix937Overlay';ov.className='pix937-overlay';
   const key=S(pix?.chave||OFFICIAL_KEY);const pretty=key.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/,'$1.$2.$3/$4-$5');
-  ov.innerHTML=`<div class="pix937-card" role="dialog" aria-modal="true"><div class="pix937-head"><div><small>Pedido ${esc(codeOf(o))}</small><h2>💠 Pagar com PIX</h2></div><button type="button" class="pix937-close" data-pix-close>✕</button></div><div class="pix937-value">${money(pix?.valor)}</div><img class="pix937-qr" src="${esc(pix?.qrCodeDataUrl)}" alt="QR Code PIX do pedido"><div class="pix937-info"><b>Chave PIX oficial:</b> ${esc(pretty)}<br><b>Recebedor:</b> ${esc(pix?.nome||'Caseirinho')}<br><b>TXID:</b> ${esc(pix?.txid||'-')}</div><label><b>PIX copia e cola</b><textarea class="pix937-code" readonly>${esc(pix?.copiaECola||'')}</textarea></label><div class="pix937-actions"><button type="button" class="pix937-copy" data-copy-code>Copiar PIX copia e cola</button><button type="button" class="pix937-secondary" data-copy-key>Copiar somente a chave</button><button type="button" class="pix937-secondary" data-pix-close>Fechar</button></div><div class="pix937-security">O QR Code contém o valor exato deste pedido aceito. Confira o recebedor e o valor no seu banco antes de concluir.</div></div>`;
+  const alreadyReported=S(o?.pagamentoPix?.status)==='INFORMADO_PELO_CLIENTE';
+  ov.innerHTML=`<div class="pix937-card" role="dialog" aria-modal="true"><div class="pix937-head"><div><small>Pedido ${esc(codeOf(o))}</small><h2>💠 Pagar com PIX</h2></div><button type="button" class="pix937-close" data-pix-close>✕</button></div><div class="pix937-value">${money(pix?.valor)}</div><img class="pix937-qr" src="${esc(pix?.qrCodeDataUrl)}" alt="QR Code PIX do pedido"><div class="pix937-info"><b>Chave PIX oficial:</b> ${esc(pretty)}<br><b>Recebedor:</b> ${esc(pix?.nome||'Caseirinho')}<br><b>TXID:</b> ${esc(pix?.txid||'-')}</div><label><b>PIX copia e cola</b><textarea class="pix937-code" readonly>${esc(pix?.copiaECola||'')}</textarea></label><div class="pix937-actions"><button type="button" class="pix937-copy" data-copy-code>Copiar PIX copia e cola</button><button type="button" class="pix937-secondary" data-copy-key>Copiar somente a chave</button><button type="button" class="pix937-secondary" data-pix-reported${alreadyReported?' disabled':''}>${alreadyReported?'✅ Pagamento informado':'Já paguei — avisar o Caseirinho'}</button><button type="button" class="pix937-secondary" data-pix-close>Fechar</button></div><div class="pix937-security" data-pix-report-status>${alreadyReported?'Recebemos seu aviso. O pagamento continua pendente até a equipe conferir o extrato.':'Depois de pagar, avise pelo app. O pedido só será marcado como pago após a conferência do Caseirinho.'}</div></div>`;
   document.body.appendChild(ov);
   ov.onclick=e=>{if(e.target===ov||e.target.closest('[data-pix-close]'))closeModal()};
   ov.querySelector('[data-copy-code]').onclick=()=>copyText(S(pix?.copiaECola),'PIX copia e cola copiado.');
   ov.querySelector('[data-copy-key]').onclick=()=>copyText(key,'Chave PIX copiada.');
+  ov.querySelector('[data-pix-reported]').onclick=async event=>{
+    const button=event.currentTarget,status=ov.querySelector('[data-pix-report-status]');
+    button.disabled=true;button.textContent='Enviando aviso...';
+    try{
+      const result=await reportPixPayment(o);
+      const updated={...o,pagamentoPix:result.pagamentoPix||{status:'INFORMADO_PELO_CLIENTE',informadoEm:new Date().toISOString()}};
+      const all=orders().map(x=>S(x?.id)===S(updated.id)?{...x,...updated}:x);
+      if(!all.some(x=>S(x?.id)===S(updated.id)))all.push(updated);
+      writeJson(ORDERS_KEY,all);
+      button.textContent='✅ Pagamento informado';
+      status.textContent='Recebemos seu aviso. O pagamento continua pendente até a equipe conferir o extrato.';
+    }catch(error){button.disabled=false;button.textContent='Já paguei — avisar o Caseirinho';status.textContent=error.message||'Não foi possível enviar o aviso. Atualize Meus pedidos e tente novamente.';}
+  };
 }
 async function generate(button,o){
   if(button.disabled)return;button.disabled=true;const old=button.textContent;button.textContent='Gerando QR Code...';
@@ -98,7 +123,7 @@ function patchPixCards(){
     if(card.dataset.pix937==='1')return;
     card.dataset.pix937='1';
     const oldTitle=card.querySelector('.pix-title');if(oldTitle&&oldTitle.textContent!=='💠 PIX disponível para pagamento')oldTitle.textContent='💠 PIX disponível para pagamento';
-    const actions=document.createElement('div');actions.className='pix-pay-actions';actions.innerHTML=`<button class="pix-pay-primary" type="button" data-generate-pix-937>Gerar QR Code PIX</button><div class="pix-pay-note">Você também poderá copiar o PIX copia e cola. O valor será preenchido automaticamente com o total do pedido.</div>`;card.appendChild(actions);
+    const actions=document.createElement('div');actions.className='pix-pay-actions';actions.innerHTML=`<button class="pix-pay-primary" type="button" data-generate-pix-937>Gerar QR Code PIX</button><div class="pix-pay-note">Pague com o CNPJ do Caseirinho por qualquer banco. Depois, toque em “Já paguei” para avisar a equipe; o pedido só será confirmado após a conferência.</div>`;card.appendChild(actions);
     actions.querySelector('[data-generate-pix-937]').onclick=()=>generate(actions.querySelector('[data-generate-pix-937]'),findOrderFromCard(card.closest('.order-card'))||latestAcceptedPix());
   });
 }

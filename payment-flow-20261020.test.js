@@ -3,17 +3,21 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 const app=fs.readFileSync('app.js','utf8');
 const sw=fs.readFileSync('service-worker.js','utf8');
 const html=fs.readFileSync('index.html','utf8');
-test('entrega só oferece crédito débito e Pix online sem repetir modalidade',()=>{
- assert.match(app,/mode==='ENTREGA'\?online:\[\.\.\.online,\.\.\.onsite\]/);
+test('Pix CNPJ é oferecido para entrega sem exigir Mercado Pago ou banco',()=>{
+ assert.match(app,/const PIX_CNPJ_LABEL='Pix pelo QR Code do CNPJ \(conferência manual\)'/);
+ assert.match(app,/catalogConnected\?\[\.\.\.online,PIX_CNPJ_LABEL/);
  assert.match(app,/const seen=new Set\(\)/);
  assert.match(app,/if\(seen\.has\(k\)\)return false/);
- assert.match(app,/if\(E\('mode'\)\?\.value==='ENTREGA'&&!mpSelected\(paymentChoice\)\)/);
+ assert.match(app,/paymentChoice!==PIX_CNPJ_LABEL/);
+ assert.doesNotMatch(app,/BANK_CHOICES|Selecione o banco que vai usar/);
+ assert.doesNotMatch(app,/pixBank:paymentGroup\(E\('payment'\)\.value\)/);
 });
-test('Pix pede banco como referência sem vincular autorização a um banco específico',()=>{
- assert.match(app,/BANK_CHOICES=/);
- assert.match(app,/bankPix/);
- assert.match(app,/QR Code Pix pode ser pago por qualquer instituição participante/);
- assert.match(app,/pixBank:paymentGroup\(E\('payment'\)\.value\)==='PIX'/);
+test('cliente informa o pagamento Pix sem confirmar automaticamente a quitação',()=>{
+ const pix=fs.readFileSync('pix-payment-v9-3-7.js','utf8');
+ assert.match(pix,/\/pix\/reported/);
+ assert.match(pix,/Já paguei — avisar o Caseirinho/);
+ assert.match(pix,/continua pendente até a equipe conferir o extrato/);
+ assert.match(app,/Próxima data disponível:/);
 });
 test('cliente consegue editar pagamento com token de pedido antes da aprovação',()=>{
  assert.match(app,/function canChangeOrderPayment/);
@@ -23,7 +27,7 @@ test('cliente consegue editar pagamento com token de pedido antes da aprovação
  assert.match(app,/if\(!canChangeOrderPayment\(order\)\)/);
 });
 test('PWA atualiza versão de pagamento sem usar cache antigo',()=>{
- assert.match(html,/Loja Online · V9\.10\.26/);
- assert.match(sw,/caseirinho-loja-v9\.10\.26-pix-copia-cola/);
- assert.match(sw,/prefix\+'910260'/);
+ assert.match(html,/Loja Online · V9\.10\.33/);
+ assert.match(sw,/caseirinho-loja-v9\.10\.33-pix-cnpj-data-entrega/);
+ assert.match(sw,/prefix\+'910330'/);
 });
