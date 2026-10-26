@@ -50,7 +50,7 @@ const MP_CREDIT_LABEL='Cartão de crédito online (Mercado Pago)';
  const MP_DEBIT_LABEL='Cartão de débito online (Mercado Pago)';
  const MP_PIX_LABEL='Pix online (Mercado Pago)';
  const PIX_CNPJ_LABEL='Pix pelo QR Code do CNPJ (conferência manual)';
- const MP_PAYMENT_OPTIONS=[];
+ const MP_PAYMENT_OPTIONS=[MP_CREDIT_LABEL,MP_DEBIT_LABEL];
  // Visualização somente da interface: nunca cria pedidos ou cobranças.
  const PAYMENT_UI_PREVIEW=new URLSearchParams(location.search).get('preview_cartoes')==='1';
 // Preserve the gateway method as the option value sent to the API.
@@ -66,7 +66,11 @@ const MP_CREDIT_LABEL='Cartão de crédito online (Mercado Pago)';
    return key||'OUTRO';
  }
  function paymentOptionsFor(mode){
-   return catalogConnected?[PIX_CNPJ_LABEL]:[];
+   const onsite=A(catalog.loja?.formasPagamento).filter(x=>S(x).trim()&&!mpSelected(x)&&!['A_DEFINIR','NAO_DEFINIDO'].includes(norm(x)));
+   const online=(mercadoPagoOnline||PAYMENT_UI_PREVIEW)&&catalogConnected?MP_PAYMENT_OPTIONS:[];
+   const source=catalogConnected?[...online,PIX_CNPJ_LABEL,...(mode==='ENTREGA'?[]:onsite)]:[];
+   const seen=new Set();
+   return source.filter(x=>{const k=paymentGroup(x);if(seen.has(k))return false;seen.add(k);return true});
  }
  function renderBankPixField(){E('bankPixRow')?.remove()}
 
@@ -1536,7 +1540,8 @@ async function submitOrder(ev){
   const paymentChoice=S(E('payment')?.value);
   if(!paymentChoice||!paymentOptionsFor(E('mode')?.value).includes(paymentChoice))
     return toast('Selecione um pagamento disponível para entrega ou retirada.');
-  if(paymentChoice!==PIX_CNPJ_LABEL)return toast('O pagamento disponível nesta loja é somente Pix pelo QR Code do CNPJ.');
+  if(E('mode')?.value==='ENTREGA'&&!mpSelected(paymentChoice)&&paymentChoice!==PIX_CNPJ_LABEL)
+    return toast('Para entrega, escolha Pix pelo CNPJ ou cartão online.');
   if(mpSelected(E('payment')?.value)&&!mercadoPagoOnline)return toast('O pagamento online ainda não está ativado nesta loja.');
   if(mpSelected(E('payment')?.value)&&S(E('cPhone')?.value).replace(/\D/g,'').slice(-11)==='11989310929')
     return toast('Este telefone identifica pedidos de teste. Escolha outra forma de pagamento sem cobrança real.');
