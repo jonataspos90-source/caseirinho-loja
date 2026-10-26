@@ -30,6 +30,6 @@ test('saldo zero com bloqueio estrito mostra indisponibilidade, sem habilitar ve
 test('checkout reconhece confirmação de quantidade e publica versão que elimina cache antigo',()=>{
  assert.match(app,/pendingEncomendas\.some\(x=>readyNeedsConfirmation\(x\.product\)\)/);
  assert.match(app,/\[DISPONIBILIDADE A CONFIRMAR/);
- assert.match(sw,/caseirinho-loja-v9\.10\.33-pix-cnpj-data-entrega/);
- assert.match(html,/app\.js\?v=910330/);
+ assert.match(sw,/caseirinho-loja-v9\.10\.34-pix-only-manual-confirmation/);
+ assert.match(html,/app\.js\?v=910340/);
 });

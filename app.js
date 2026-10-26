@@ -50,7 +50,7 @@ const MP_CREDIT_LABEL='Cartão de crédito online (Mercado Pago)';
  const MP_DEBIT_LABEL='Cartão de débito online (Mercado Pago)';
  const MP_PIX_LABEL='Pix online (Mercado Pago)';
  const PIX_CNPJ_LABEL='Pix pelo QR Code do CNPJ (conferência manual)';
- const MP_PAYMENT_OPTIONS=[MP_CREDIT_LABEL,MP_DEBIT_LABEL];
+ const MP_PAYMENT_OPTIONS=[];
  // Visualização somente da interface: nunca cria pedidos ou cobranças.
  const PAYMENT_UI_PREVIEW=new URLSearchParams(location.search).get('preview_cartoes')==='1';
 // Preserve the gateway method as the option value sent to the API.
@@ -66,11 +66,7 @@ const MP_CREDIT_LABEL='Cartão de crédito online (Mercado Pago)';
    return key||'OUTRO';
  }
  function paymentOptionsFor(mode){
-   const onsite=A(catalog.loja?.formasPagamento).filter(x=>S(x).trim()&&!mpSelected(x)&&!['A_DEFINIR','NAO_DEFINIDO'].includes(norm(x)));
-   const online=(mercadoPagoOnline||PAYMENT_UI_PREVIEW)&&catalogConnected?MP_PAYMENT_OPTIONS:[];
-   const source=catalogConnected?[...online,PIX_CNPJ_LABEL,...(mode==='ENTREGA'?[]:onsite)]:[];
-   const seen=new Set();
-   return source.filter(x=>{const k=paymentGroup(x);if(seen.has(k))return false;seen.add(k);return true});
+   return catalogConnected?[PIX_CNPJ_LABEL]:[];
  }
  function renderBankPixField(){E('bankPixRow')?.remove()}
 
@@ -1540,8 +1536,7 @@ async function submitOrder(ev){
   const paymentChoice=S(E('payment')?.value);
   if(!paymentChoice||!paymentOptionsFor(E('mode')?.value).includes(paymentChoice))
     return toast('Selecione um pagamento disponível para entrega ou retirada.');
-  if(E('mode')?.value==='ENTREGA'&&!mpSelected(paymentChoice)&&paymentChoice!==PIX_CNPJ_LABEL)
-    return toast('Para entrega, escolha Pix pelo CNPJ ou cartão online.');
+  if(paymentChoice!==PIX_CNPJ_LABEL)return toast('O pagamento disponível nesta loja é somente Pix pelo QR Code do CNPJ.');
   if(mpSelected(E('payment')?.value)&&!mercadoPagoOnline)return toast('O pagamento online ainda não está ativado nesta loja.');
   if(mpSelected(E('payment')?.value)&&S(E('cPhone')?.value).replace(/\D/g,'').slice(-11)==='11989310929')
     return toast('Este telefone identifica pedidos de teste. Escolha outra forma de pagamento sem cobrança real.');
@@ -1818,6 +1813,7 @@ function ordersCardsHtml(orders){
       ${o.encomendaConfirmacao?.status==='AGUARDANDO_CONTATO'?'<div class="cx-note">⚠️ Item indisponível: a loja entrará em contato para combinar uma alternativa.</div>':''}
       ${msg&&!['REJEITADO','CANCELADO','FRETE_RECUSADO_CLIENTE'].includes(st)?`<div class="cx-note">${esc(msg)}</div>`:''}
       <div class="cx-note" style="font-size:12px"><b>Forma de pagamento:</b> ${esc(paymentPublicLabel(o.formaPagamento||'A definir'))}</div>
+      ${o.pagamentoPix?.status==='CONFIRMADO_MANUALMENTE'?'<div class="cx-note ok">✅ Pix conferido e confirmado manualmente pelo Caseirinho.</div>':o.pagamentoPix?.status==='INFORMADO_PELO_CLIENTE'?'<div class="cx-note">🕘 Seu aviso foi recebido. O pagamento aguarda a conferência do extrato pelo Caseirinho.</div>':''}
       ${mpStatusHtml(o)}
       <div class="order-actions">${canChangeOrderPayment(o)?`<button class="soft" type="button" data-edit-payment="${esc(o.id)}">✏️ Alterar pagamento</button>`:''}${['ENTREGUE','RETIRADO','CONCLUIDO','FINALIZADO'].includes(st)&&!window.CaseirinhoReviewsV2?.productRated?.(o.id)?`<button class="primary" data-review-order="${esc(o.id)}" type="button">⭐ Avaliar este pedido</button>`:''}${['CANCELADO','FRETE_RECUSADO_CLIENTE'].includes(st)?`<button class="primary" data-new-order="${esc(o.id)}" type="button">Fazer novo pedido</button>`:''}<button class="soft" data-refresh-orders type="button">Atualizar status</button></div></div>`;
   }).join('');
