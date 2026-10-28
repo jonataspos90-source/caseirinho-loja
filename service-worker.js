@@ -1,4 +1,4 @@
-const CACHE='caseirinho-loja-v9.10.35-cart-inactivity-20261028';
+const CACHE='caseirinho-loja-v9.10.35-pix-only-change-cards-restored-cart-inactivity-20261028';
 const PROMOTIONJS='./ecommerce-promotions-v910.js';
 const PROMOTIONJS_TAG='<script src="./ecommerce-promotions-v910.js?v=910121" defer></'+'script>';
 const HOTFIX931='./store-hotfix-v9-3-1.js';
@@ -74,4 +74,3 @@ async function cacheNetworkResponse(req,response){if(!response?.ok)return;const 
 self.addEventListener('install',event=>{event.waitUntil((async()=>{const cache=await caches.open(CACHE);for(const url of SHELL){try{const response=await fetch(url,{cache:'reload'});if(response.ok)await cache.put(url,response.clone())}catch(_){}}await self.skipWaiting()})())});
 self.addEventListener('activate',event=>{event.waitUntil((async()=>{const keys=await caches.keys();await Promise.all(keys.filter(k=>k.startsWith('caseirinho-loja-')&&k!==CACHE).map(k=>caches.delete(k)));await self.clients.claim()})())});
 self.addEventListener('fetch',event=>{const req=event.request;if(req.method!=='GET')return;const url=new URL(req.url);if(url.origin!==self.location.origin)return;if(req.mode==='navigate'){event.respondWith((async()=>{try{const net=await fetch(req,{cache:'no-store'});const out=await injectHotfix(net);if(out.ok)(await caches.open(CACHE)).put('./index.html',out.clone()).catch(()=>{});return out}catch(_){const cached=(await caches.match('./index.html'))||Response.error();return injectHotfix(cached)}})());return}event.respondWith((async()=>{try{const net=await fetch(req,{cache:'no-store'});cacheNetworkResponse(req,net).catch(()=>{});return net}catch(_){return (await cachedAsset(req))||Response.error()}})())});
-
