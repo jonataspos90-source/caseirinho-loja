@@ -20,6 +20,8 @@
   <link rel="stylesheet" href="./mobile-variant-carousel-v9-5-7.css?v=9570">
   <link rel="stylesheet" href="./desktop-ux-v9-5-6.css?v=9560">
   <link rel="stylesheet" href="./premium-checkout-v9-7-0.css?v=9700">
+  <link rel="stylesheet" href="./customer-identification.css?v=20261028">
+  <script src="./customer-identification.js?v=20261028" defer></script>
   <style>
     .bottom-nav.instagram-enabled{grid-template-columns:repeat(7,minmax(0,1fr))}
     .totals #packDiscountLine[hidden],.totals #originalProductsLine[hidden]{display:none!important}
@@ -39,7 +41,25 @@
   </style>
 <script src="./order-amounts.js?v=20261008"></script>
 </head>
-<body>
+<body class="customer-identification-required">
+  <section id="customerIdentityGate" role="dialog" aria-modal="true" aria-labelledby="identityTitle" aria-describedby="identityIntro">
+    <div class="identity-card">
+      <img class="identity-logo" src="./icons/icon-192.png?v=clean-20261004" width="88" height="88" alt="Caseirinho Massas Artesanais">
+      <p class="identity-eyebrow">Bem-vindo ao Caseirinho</p>
+      <h1 id="identityTitle">Antes de escolher<br>suas delícias…</h1>
+      <p class="identity-intro" id="identityIntro">Informe ou confirme seu nome e WhatsApp para entrar no cardápio.</p>
+      <form id="customerIdentityForm">
+        <label for="identityName">Seu nome</label>
+        <input id="identityName" name="nome" required minlength="2" maxlength="160" autocomplete="name" placeholder="Como podemos chamar você?">
+        <label for="identityPhone">WhatsApp com DDD</label>
+        <input id="identityPhone" name="telefone" type="tel" inputmode="tel" required maxlength="24" autocomplete="tel" placeholder="(11) 99999-9999">
+        <p class="identity-privacy">Usamos seu nome e WhatsApp para identificar seu atendimento e seus pedidos no Caseirinho.</p>
+        <button id="identityContinue" type="submit">Entrar no cardápio</button>
+        <p id="identityStatus" role="status" aria-live="polite"></p>
+        <noscript>Ative o JavaScript no navegador para salvar seus dados e acessar o cardápio.</noscript>
+      </form>
+    </div>
+  </section>
   <header class="top">
     <div class="wrap top-inner">
       <button class="brand" id="homeBtn" type="button" aria-label="Voltar ao cardápio">
