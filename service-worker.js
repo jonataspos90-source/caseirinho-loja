@@ -1,4 +1,4 @@
-const CACHE='caseirinho-loja-v9.10.35-pix-only-change-cards-restored-customer-identification-20261028';
+const CACHE='caseirinho-loja-v9.10.35-pix-only-change-cards-restored-customer-identification-lgpd-20261028';
 const PROMOTIONJS='./ecommerce-promotions-v910.js';
 const PROMOTIONJS_TAG='<script src="./ecommerce-promotions-v910.js?v=910121" defer></'+'script>';
 const HOTFIX931='./store-hotfix-v9-3-1.js';

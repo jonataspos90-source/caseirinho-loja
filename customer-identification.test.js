@@ -8,10 +8,10 @@ const source=fs.readFileSync(path.join(__dirname,'customer-identification.js'),'
 function harness({profile={},search=''}={}){
   const storage=new Map([['john_store_caseirinho_customer_profile_v1',JSON.stringify(profile)]]);
   const calls=[],nodes={};let unlocked=false,identified=0;
-  for(const id of ['identityName','identityPhone','identityStatus','identityContinue','customerIdentityForm','customerIdentityGate','cName','cPhone','cEmail','cCpf','cep','number','street','district','city','uf','comp','homeBtn'])nodes[id]={value:'',textContent:'',hidden:false,addEventListener(name,fn){this[name]=fn},focus(){}};
-  const context=vm.createContext({window:{CASEIRINHO_CONFIG:{storeSlug:'caseirinho'},dispatchEvent(){},CaseirinhoEngagement961:{sendSnapshot(){identified++}}},document:{readyState:'complete',getElementById:id=>nodes[id],body:{classList:{remove(){unlocked=true}}}},location:{search},URLSearchParams,AbortController,Event,Date,setTimeout,clearTimeout,localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v)},fetch:async(url,opt)=>{calls.push({url,body:JSON.parse(opt.body)});return{ok:true,json:async()=>({ok:true,id:'pre-123'})}}});
+  for(const id of ['identityConsent','identityName','identityPhone','identityStatus','identityContinue','customerIdentityForm','customerIdentityGate','cName','cPhone','cEmail','cCpf','cep','number','street','district','city','uf','comp','homeBtn'])nodes[id]={value:'',textContent:'',hidden:false,addEventListener(name,fn){this[name]=fn},focus(){}};
+  const context=vm.createContext({window:{CASEIRINHO_CONFIG:{storeSlug:'caseirinho'},dispatchEvent(){},CaseirinhoEngagement961:{sendSnapshot(){identified++}}},document:{readyState:'complete',getElementById:id=>nodes[id],body:{classList:{remove(){unlocked=true}}}},location:{search},URLSearchParams,AbortController,Event,Date,setTimeout,clearTimeout,localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v)},fetch:async(url,opt)=>{calls.push({url,body:JSON.parse(opt.body)});assert.equal(calls.at(-1).body.lgpd?.consent,true);return{ok:true,json:async()=>({ok:true,id:'pre-123'})}}});
   vm.runInContext(source,context);
-  return{context,nodes,storage,calls,get unlocked(){return unlocked},get identified(){return identified},submit:()=>nodes.customerIdentityForm.submit({preventDefault(){}}),fill:(name='Cliente Teste',phone='(11) 99999-0000')=>{nodes.identityName.value=name;nodes.identityPhone.value=phone}};
+  return{context,nodes,storage,calls,get unlocked(){return unlocked},get identified(){return identified},submit:()=>nodes.customerIdentityForm.submit({preventDefault(){}}),fill:(name='Cliente Teste',phone='(11) 99999-0000')=>{nodes.identityName.value=name;nodes.identityPhone.value=phone;nodes.identityConsent.checked=true}};
 }
 test('requires name and Brazilian WhatsApp before any server write or catalog access',async()=>{
   const h=harness();h.fill('1','123');await h.submit();assert.equal(h.calls.length,0);assert.equal(h.unlocked,false);
@@ -23,10 +23,19 @@ test('saves a visitor without a cart to the pre-registration base before opening
   assert.equal(h.calls[0].body.cliente.telefone,'11999990000');assert.equal(h.unlocked,true);
   assert.equal(h.nodes.customerIdentityGate.hidden,true);assert.equal(h.nodes.cName.value,'Cliente Teste');assert.equal(h.identified,1);
   assert.equal(JSON.parse(h.storage.get('john_store_caseirinho_customer_profile_v1')).telefone,'11999990000');
+  assert.equal(h.calls[0].body.lgpd.consent,true);assert.equal(h.calls[0].body.lgpd.policyVersion,'1.0');assert.ok(!Number.isNaN(Date.parse(h.calls[0].body.lgpd.consentAt)));
+});
+test('privacy consent starts unchecked and no request is sent without explicit acceptance',async()=>{
+  const h=harness();assert.notEqual(h.nodes.identityConsent.checked,true);h.fill();h.nodes.identityConsent.checked=false;await h.submit();
+  assert.equal(h.calls.length,0);assert.equal(h.unlocked,false);assert.match(h.nodes.identityStatus.textContent,/Política de Privacidade/);
+});
+test('server validation message is displayed instead of a misleading network error',async()=>{
+  const h=harness();h.fill();h.context.fetch=async()=>({ok:false,status:400,json:async()=>({error:'É necessário aceitar a Política de Privacidade / LGPD para continuar.'})});await h.submit();
+  assert.equal(h.unlocked,false);assert.match(h.nodes.identityStatus.textContent,/É necessário aceitar/);assert.doesNotMatch(h.nodes.identityStatus.textContent,/Verifique sua conexão/);
 });
 test('returning visitors must confirm, preserving their existing address and email',async()=>{
   const h=harness({profile:{nome:'Ana',telefone:'11999990000',email:'ana@example.com',cpf:'123',entrega:{cep:'01001000',numero:'10'}}});
-  assert.equal(h.nodes.identityName.value,'Ana');assert.equal(h.unlocked,false);await h.submit();
+  assert.equal(h.nodes.identityName.value,'Ana');assert.equal(h.unlocked,false);h.nodes.identityConsent.checked=true;await h.submit();
   assert.equal(h.calls[0].body.cliente.email,'ana@example.com');assert.equal(h.calls[0].body.endereco.numero,'10');
 });
 test('changing the contact does not copy the previous customer address or personal data',async()=>{
