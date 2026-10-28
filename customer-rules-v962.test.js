@@ -35,6 +35,7 @@ test('cashback não acumula com cupom e reserva é liberada',()=>{
 });
 
 test('index carrega a regra nova diretamente',()=>{
-  assert.match(html,/commerce-engagement-v9-6-1\.js\?v=20261020b/);
+  assert.match(html,/commerce-engagement-v9-6-1\.js\?v=20261028-cart-inactivity/);
   assert.match(html,/engagementVersion:'9\.6\.2'/);
 });
+

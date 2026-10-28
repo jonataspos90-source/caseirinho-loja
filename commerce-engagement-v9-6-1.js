@@ -24,8 +24,7 @@ const N=v=>Number(v)||0;
 const A=v=>Array.isArray(v)?v:[];
 const esc=v=>S(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 let cfg={abandonedCart:{enabled:true,minutes:30},ratings:{enabled:true}};
-let lastSignature='';
-let lastSendAt=0;
+let lastSignature=read(SENT_KEY,{})?.hadCart?S(read(SENT_KEY,{}).signature):'';
 let sending=false;
 let checkoutObserver=null;
 let orderObserver=null;
@@ -46,7 +45,28 @@ function identity(){const p=profile();return{name:S(E('cName')?.value||p.nome||'
 function snapshot(){const c=cart(),who=identity();const itemDetails=c.map(x=>({productId:S(x.produtoId||x.productId||x.id),name:S(x.nome||x.name||x.descricao||'Produto'),quantity:N(x.quantidade||x.quantity),unitPrice:N(x.precoUnitario??x.preco??x.price)}));const total=itemDetails.reduce((s,x)=>s+x.quantity*x.unitPrice,0);return{...who,total,items:itemDetails.reduce((s,x)=>s+x.quantity,0),cartSize:itemDetails.length,itemNames:itemDetails.map(x=>`${x.quantity}x ${x.name}`).join(', '),itemDetails,page:location.pathname,updatedAt:new Date().toISOString()}}
 async function postEvent(type,data={},keepalive=false){const body=JSON.stringify({type,sessionId:sessionId(),phone:S(data.phone||identity().phone),orderId:S(data.orderId||''),data});const r=await fetch(`${API}/api/v1/public/store/${encodeURIComponent(STORE)}/commerce-events?_t=${Date.now()}`,{method:'POST',cache:'no-store',keepalive:!!keepalive,headers:{'Content-Type':'application/json','Cache-Control':'no-cache'},body});if(!r.ok)throw new Error('HTTP '+r.status);return true}
 function signature(s){return JSON.stringify({ids:A(s.itemDetails).map(x=>[x.productId,x.quantity,x.unitPrice]),name:s.name,phone:s.phone,email:s.email,cpf:s.cpf,total:s.total})}
-async function sendSnapshot(force=false,keepalive=false){if(sending)return false;const s=snapshot(),sig=signature(s),now=Date.now();if(!s.cartSize){const prev=read(SENT_KEY,{});if(prev?.hadCart){try{await postEvent('CART_CLEARED',{...s,items:0,cartSize:0},keepalive)}catch(_){}write(SENT_KEY,{hadCart:false,at:now});lastSignature=''}return false}if(!force&&sig===lastSignature&&now-lastSendAt<30000)return false;sending=true;try{await postEvent('CART_SNAPSHOT',s,keepalive);lastSignature=sig;lastSendAt=now;write(SENT_KEY,{hadCart:true,at:now,signature:sig});return true}catch(_){return false}finally{sending=false}}
+async function sendSnapshot(force=false,keepalive=false){
+  if(sending)return false;
+  const s=snapshot(),sig=signature(s),now=Date.now();
+  const clearing=!s.cartSize;
+  if(clearing){
+    if(!lastSignature&&!read(SENT_KEY,{})?.hadCart)return false;
+  }else if(sig===lastSignature){
+    // Timer, reload and visibility events must not restart server inactivity.
+    // Keep the public force argument compatible, but only send changed content.
+    return false;
+  }
+  sending=true;
+  try{
+    await postEvent(clearing?'CART_CLEARED':'CART_SNAPSHOT',clearing?{...s,items:0,cartSize:0}:s,keepalive);
+    lastSignature=clearing?'':sig;
+    write(SENT_KEY,{hadCart:!clearing,at:now,signature:lastSignature});
+    return true;
+  }catch(_){
+    // Leave the last acknowledged state intact so failed snapshots/clears retry.
+    return false;
+  }finally{sending=false}
+}
 function scheduleSnapshot(force=false){setTimeout(()=>sendSnapshot(force,false),120)}
 async function loadConfig(){try{const r=await fetch(`${API}/api/v1/public/store/${encodeURIComponent(STORE)}/commerce-engine?_t=${Date.now()}`,{cache:'no-store'});const j=await r.json();if(r.ok&&j?.config)cfg={...cfg,...j.config}}catch(_){}}
 function latestOrder(){return [...orders()].sort((a,b)=>new Date(b.savedAt||b.criadoEm||b.createdAt||0)-new Date(a.savedAt||a.criadoEm||a.createdAt||0))[0]||null}
@@ -124,8 +144,9 @@ function scheduleBenefitRule(){clearTimeout(benefitTimer);benefitTimer=setTimeou
 function installBenefitGuard(){document.addEventListener('click',e=>{const b=e.target.closest?.('#cashback960Use');if(!b||!couponActive())return;e.preventDefault();e.stopImmediatePropagation();setCashbackBlocked();toast('Cashback não pode ser usado junto com cupom de desconto.')},true);scheduleBenefitRule()}
 
 function watchIdentity(){['cName','cPhone','cEmail','cCpf'].forEach(id=>{const el=E(id);if(!el||el.dataset.ce961Bound==='1')return;el.dataset.ce961Bound='1';el.addEventListener('change',()=>scheduleSnapshot(true));el.addEventListener('blur',()=>scheduleSnapshot(true))})}
-function watchCart(){let previous='';setInterval(()=>{const s=signature(snapshot());if(s!==previous){previous=s;scheduleSnapshot(true)}},1500);setInterval(()=>{if(cart().length)sendSnapshot(false,false)},30000);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')sendSnapshot(true,true);else scheduleSnapshot(false)});window.addEventListener('pagehide',()=>sendSnapshot(true,true))}
+function watchCart(){let previous='';setInterval(()=>{const s=signature(snapshot());if(s!==previous){previous=s;scheduleSnapshot(true)}},1500);setInterval(()=>sendSnapshot(false,false),30000);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')sendSnapshot(true,true);else scheduleSnapshot(false)});window.addEventListener('pagehide',()=>sendSnapshot(true,true))}
 async function install(){injectUx();await loadConfig();watchCheckout();watchOrders();watchIdentity();watchCart();installBenefitGuard();setTimeout(()=>{watchIdentity();scheduleSnapshot(true);cleanupLegacyRatings();renderCheckoutRating();scheduleBenefitRule()},600);setInterval(watchIdentity,3000)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
 window.CaseirinhoEngagement961={snapshot:()=>snapshot(),sendSnapshot,renderCheckoutRating,enhanceOrderCards,showRatingModal,enforceBenefitRule};
 })();
+
