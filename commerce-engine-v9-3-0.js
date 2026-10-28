@@ -1,4 +1,7 @@
 (function(){'use strict';
+// This legacy extension only supports the original globally exposed storefront.
+// The current app keeps its cart/API private; retain its native checkout handler.
+if(typeof window.api!=='function'||typeof window.renderCart!=='function'||typeof window.quickAdd!=='function')return;
 if(window.__JOHN_STORE_COMMERCE_930)return;window.__JOHN_STORE_COMMERCE_930=true;
 const E=id=>document.getElementById(id),S=v=>String(v??''),N=v=>Number(v)||0,A=v=>Array.isArray(v)?v:[],norm=v=>S(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUpperCase(),esc=v=>S(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const money=v=>(Number(v)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -39,3 +42,4 @@ async function loadCfg(){style();try{const d=await ceApi('/commerce-engine');ceC
 function install(){style();ensureCheckoutExtras();const f=E('checkout');if(f)f.onsubmit=window.submitOrder;document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')maybeAbandoned()});setTimeout(enhanceAll,600);loadCfg()}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(install,100),{once:true});else setTimeout(install,100);
 })();
+

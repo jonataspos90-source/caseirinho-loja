@@ -1,4 +1,4 @@
-const CACHE='caseirinho-loja-v9.10.35-pix-only-change-cards-restored-customer-identification-lgpd-20261028';
+const CACHE='caseirinho-loja-v9.10.35-pix-only-change-cards-restored-native-checkout-20261028';
 const PROMOTIONJS='./ecommerce-promotions-v910.js';
 const PROMOTIONJS_TAG='<script src="./ecommerce-promotions-v910.js?v=910121" defer></'+'script>';
 const HOTFIX931='./store-hotfix-v9-3-1.js';
@@ -64,6 +64,7 @@ function stripOldDeliveryScripts(html){return html.split(/<script[^>]*delivery-m
 function injectHotfix(response){if(!response)return response;const ct=response.headers.get('content-type')||'';if(!ct.includes('text/html'))return response;return response.text().then(html=>{html=stripOldCardScripts(html);html=stripOldDeliveryScripts(html);
   html=html.replace(/(ecommerce-promotions-v910\.js\?v=)\d+/g,(_,prefix)=>prefix+'910121');
   html=html.replace(/(commerce-engagement-v9-6-1\.js\?v=)[^"'\s<>]+/g,(_,prefix)=>prefix+'20261028-cart-inactivity');
+  html=html.replace(/(commerce-engine-v9-3-0\.js\?v=)[^"'\s<>]+/g,(_,prefix)=>prefix+'20261028-native-checkout');
   // Atualiza versões nos HTMLs guardados pelo PWA sem inserir um segundo script.
   html=html.replace(/(app\.js\?v=)\d+/g,(_,prefix)=>prefix+'910350');
   html=html.replace(/(checkout-parmesao-v9-3-6\.js\?v=)\d+/g,(_,prefix)=>prefix+'91090');
