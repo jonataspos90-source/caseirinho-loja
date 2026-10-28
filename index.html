@@ -20,8 +20,8 @@
   <link rel="stylesheet" href="./mobile-variant-carousel-v9-5-7.css?v=9570">
   <link rel="stylesheet" href="./desktop-ux-v9-5-6.css?v=9560">
   <link rel="stylesheet" href="./premium-checkout-v9-7-0.css?v=9700">
-  <link rel="stylesheet" href="./customer-identification.css?v=20261028-lgpd">
-  <script src="./customer-identification.js?v=20261028-lgpd" defer></script>
+  <link rel="stylesheet" href="./customer-identification.css?v=20261028-review-history">
+  <script src="./customer-identification.js?v=20261028-review-history" defer></script>
   <style>
     .bottom-nav.instagram-enabled{grid-template-columns:repeat(7,minmax(0,1fr))}
     .totals #packDiscountLine[hidden],.totals #originalProductsLine[hidden]{display:none!important}
@@ -54,6 +54,7 @@
         <label for="identityPhone">WhatsApp com DDD</label>
         <input id="identityPhone" name="telefone" type="tel" inputmode="tel" required maxlength="24" autocomplete="tel" placeholder="(11) 99999-9999">
         <p class="identity-privacy">Usamos seu nome e WhatsApp para identificar seu atendimento e seus pedidos no Caseirinho.</p>
+        <label class="identity-consent" for="identityRecover"><input id="identityRecover" type="checkbox"><span>Já comprei em outro aparelho e quero recuperar meu histórico. Tenha o código de um pedido anterior.</span></label>
         <label class="identity-consent" for="identityConsent"><input id="identityConsent" name="consentimento" type="checkbox" required><span>Li e aceito a <a href="./privacidade.html" target="_blank" rel="noopener">Política de Privacidade</a> para cadastro, atendimento e pedidos.</span></label>
         <button id="identityContinue" type="submit">Entrar no cardápio</button>
         <p id="identityStatus" role="status" aria-live="polite"></p>
@@ -292,9 +293,9 @@
   <script src="./customer-cashback-wallet-v9-6-3.js?v=9630" defer></script>
   <script src="./cashback-auto-refresh-v9-6-7.js?v=9670" defer></script>
   <script src="./ecommerce-promotions-v910.js?v=910121" defer></script>
-  <script src="./app.js?v=910350" defer></script>
+  <script src="./app.js?v=910351" defer></script>
   <script src="./pwa-install-v9-6-6.js?v=9660" defer></script>
-  <script src="./cashback-order-yield-v9-6-4.js?v=9650" defer></script>
+  <script src="./cashback-order-yield-v9-6-4.js?v=9651" defer></script>
   <script src="./commerce-engine-v9-3-0.js?v=20261028-native-checkout" defer></script>
   <script src="./checkout-parmesao-v9-3-6.js?v=91090" defer></script>
   <script src="./pix-payment-v9-3-7.js?v=9371" defer></script>

@@ -91,6 +91,7 @@ function mpPayable(o){
   const freight=norm(o?.freteStatus),confirm=norm(o?.encomendaConfirmacao?.status);
   if(!mercadoPagoOnline||!mpSelected(o?.formaPagamento))return false;
   if(['REJEITADO','CANCELADO','ENTREGUE','RETIRADO','CONCLUIDO','FINALIZADO'].includes(st))return false;
+  if(o?.analisePedido&&norm(o.analisePedido.status)!=='APROVADO')return false;
   if(o?.encomendaConfirmacao&&confirm!=='CONFIRMADO')return false;
   if(['COTACAO_PENDENTE','COTADO'].includes(freight)&&norm(o?.freteDecisaoCliente)!=='ACEITO')return false;
   return norm(o?.pagamentoOnline?.status)!=='APROVADO';
@@ -167,10 +168,13 @@ migrateLegacyCaseirinhoStorage();
 cart=readJson(CART_KEY,cart);
 function customerProfile(){return readJson(CUSTOMER_PROFILE_KEY,{})}
 function customerHistory(){return readJson(CUSTOMER_HISTORY_KEY,{})}
+function historyPhone(v){let d=S(v).replace(/\D/g,'');if(d.startsWith('55')&&d.length>11)d=d.slice(2);return d.slice(-11)}
+function ownOrders(orders){const phone=historyPhone(customerProfile()?.telefone||E('cPhone')?.value);return phone?A(orders).filter(o=>historyPhone(o.cliente?.telefone)===phone):[]}
 function saveCustomerHistory(session,meta={}){
   if(!S(session).trim())return;
   writeJson(CUSTOMER_HISTORY_KEY,{
     session:S(session).trim(),
+    phone:historyPhone(meta.phone||customerProfile()?.telefone||E('cPhone')?.value),
     phoneSuffix:S(meta.phoneSuffix||''),
     expiresInDays:N(meta.expiresInDays)||90,
     savedAt:new Date().toISOString()
@@ -205,14 +209,15 @@ async function bootstrapHistorySession(order){
 }
 async function ensureHistorySession(){
   const h=customerHistory();
-  if(S(h.session).trim())return true;
+  const phone=historyPhone(customerProfile()?.telefone||E('cPhone')?.value);
+  if(S(h.session).trim()&&h.phone===phone)return true;
   const orders=readJson(ORDERS_KEY,[]);
-  const candidate=[...orders].reverse().find(x=>x?.id&&x?.publicToken);
+  const candidate=[...ownOrders(orders)].reverse().find(x=>x?.id&&x?.publicToken);
   return candidate?bootstrapHistorySession(candidate):false;
 }
 async function syncCustomerHistory(){
   const h=customerHistory();
-  if(!S(h.session).trim())return readJson(ORDERS_KEY,[]);
+  if(!S(h.session).trim()||h.phone!==historyPhone(customerProfile()?.telefone||E('cPhone')?.value))return ownOrders(readJson(ORDERS_KEY,[]));
   if(historySyncBusy)return historySyncBusy;
   historySyncBusy=(async()=>{
     try{
@@ -220,9 +225,9 @@ async function syncCustomerHistory(){
         '/api/v1/public/store/'+encodeURIComponent(STORE)+'/orders/history?session='+
         encodeURIComponent(h.session)
       );
-      return mergeHistoryOrders(r.orders||[]);
+      return ownOrders(mergeHistoryOrders(r.orders||[]));
     }catch(_){
-      return readJson(ORDERS_KEY,[]);
+      return ownOrders(readJson(ORDERS_KEY,[]));
     }finally{
       historySyncBusy=null;
     }
@@ -1499,12 +1504,13 @@ async function pollCustomerOrders(){
   if(document.hidden||pollBusy)return;
   pollBusy=true;
   try{
-    const beforeOrders=readJson(ORDERS_KEY,[]);
+    const beforeOrders=ownOrders(readJson(ORDERS_KEY,[]));
     const beforeMap=new Map(beforeOrders.map(x=>[S(x.id),x]));
     const hasHistory=await ensureHistorySession();
 
     if(hasHistory){
       const afterOrders=await syncCustomerHistory();
+      if(E('ordersCardsArea')){E('ordersCardsArea').innerHTML=ordersCardsHtml(afterOrders);wireOrdersView()}
       for(const after of afterOrders.slice(-20)){
         const before=beforeMap.get(S(after.id))||{};
         if(JSON.stringify(after)!==JSON.stringify(before)){
@@ -1520,6 +1526,7 @@ async function pollCustomerOrders(){
       if(JSON.stringify(after)!==JSON.stringify(before))saveOrderUpdate(after);
       await notifyOrderChange(before,after);
     }
+    if(E('ordersCardsArea')){E('ordersCardsArea').innerHTML=ordersCardsHtml(ownOrders(readJson(ORDERS_KEY,[])));wireOrdersView()}
   }finally{
     pollBusy=false;
   }
@@ -1731,10 +1738,14 @@ async function recoverOrdersForm(){
         method:'POST',
         body:JSON.stringify({telefone:phone,codigoPedido:code})
       });
-      saveCustomerHistory(r.session,r);
+      saveCustomerHistory(r.session,{...r,phone});
       mergeHistoryOrders(r.orders||[]);
+      const recovered=[...A(r.orders)].sort((a,b)=>S(b.criadoEm||b.createdAt).localeCompare(S(a.criadoEm||a.createdAt)))[0];
+      if(recovered?.cliente)saveCustomerProfileFromBody({...recovered,cliente:{...customerProfile(),...recovered.cliente}});
       const old=customerProfile();
       writeJson(CUSTOMER_PROFILE_KEY,{...old,telefone:phone,updatedAt:new Date().toISOString()});
+      if(E('cPhone'))E('cPhone').value=formatPhone(phone);
+      try{await window.CaseirinhoCashback960?.queryBalance?.(true)}catch(_){}
       toast('Pedidos recuperados com sucesso.');
       await showOrders();
     }catch(err){
@@ -1793,6 +1804,12 @@ async function editOrderPayment(id){
     }
   };
 }
+function reviewDetailsHtml(order){
+  const review=order.analisePedido,items=A(order.encomendaConfirmacao?.itens),cash=order.cashbackAprovacao;
+  if(!review&&!items.length&&!cash)return'';
+  const states={PENDENTE:'Aguardando análise',PRONTA_ENTREGA:'Pronta entrega confirmada',PRODUZIR:'Produção sob encomenda',INDISPONIVEL:'Indisponível'};
+  return '<div class="cx-note"><b>Análise do pedido: '+esc(({PENDENTE:'aguardando análise',APROVADO:'aprovada',REJEITADO:'não aprovado'})[review?.status]||'atualizada')+'</b>'+items.map(i=>'<p style="margin:8px 0">'+esc(i.nome||i.produtoId)+': <b>'+esc(states[i.decisao]||'Aguardando análise')+'</b>'+(i.previsao?' · Previsão: '+esc(S(i.previsao).split('-').reverse().join('/')):'')+(i.observacao?'<br>'+esc(i.observacao):'')+'</p>').join('')+(cash?'<p><b>Cashback:</b> '+esc(({PENDENTE:'aguardando aprovação da loja',APROVADO:'aprovado; disponível após a conclusão da compra',REJEITADO:'não aprovado para este pedido'})[cash.status]||'em análise')+'</p>':'')+'</div>';
+}
 function ordersCardsHtml(orders){
   const cards=orders.slice().reverse().map(o=>{
     const st=norm(o.status||'NOVO'),msg=o.mensagemCliente||'',delivery=norm(o.modalidade)==='ENTREGA';
@@ -1816,6 +1833,7 @@ function ordersCardsHtml(orders){
       ${o.encomendaConfirmacao?.status==='PENDENTE'?'<div class="cx-note">🕘 Aguardando confirmação de disponibilidade e prazo da loja.</div>':''}
       ${o.encomendaConfirmacao?.status==='CONFIRMADO'?'<div class="cx-note ok">✅ Disponibilidade analisada pelo Caseirinho. Confira a atualização abaixo.</div>':''}
       ${o.encomendaConfirmacao?.status==='AGUARDANDO_CONTATO'?'<div class="cx-note">⚠️ Item indisponível: a loja entrará em contato para combinar uma alternativa.</div>':''}
+      ${reviewDetailsHtml(o)}
       ${msg&&!['REJEITADO','CANCELADO','FRETE_RECUSADO_CLIENTE'].includes(st)?`<div class="cx-note">${esc(msg)}</div>`:''}
       <div class="cx-note" style="font-size:12px"><b>Forma de pagamento:</b> ${esc(paymentPublicLabel(o.formaPagamento||'A definir'))}</div>
       ${o.pagamentoPix?.status==='CONFIRMADO_MANUALMENTE'?'<div class="cx-note ok">✅ Pix conferido e confirmado manualmente pelo Caseirinho.</div>':o.pagamentoPix?.status==='INFORMADO_PELO_CLIENTE'?'<div class="cx-note">🕘 Seu aviso foi recebido. O pagamento aguarda a conferência do extrato pelo Caseirinho.</div>':''}
@@ -1850,7 +1868,7 @@ function wireOrdersView(){
 
 async function showOrders(){
   loadMercadoPagoConfig().catch(()=>{});
-  const cached=readJson(ORDERS_KEY,[]);
+  const cached=ownOrders(readJson(ORDERS_KEY,[]));
   openSimple('Meus pedidos',`
     <div class="cx-note" id="ordersSyncState">🔄 Atualizando pedidos…</div>
     <div id="ordersCardsArea">${cached.length?ordersCardsHtml(cached):'<div class="empty">Carregando seu histórico…</div>'}</div>
@@ -1989,6 +2007,8 @@ function start(){
   window.addEventListener('online',()=>{if(!catalogConnected)loadCatalog(true);checkCatalogVersion();pollCustomerOrders()});
   document.addEventListener('visibilitychange',()=>{if(!document.hidden){if(!catalogConnected)loadCatalog(true);checkCatalogVersion();pollCustomerOrders()}});
 }
+window.CaseirinhoCustomerHistory={recover:recoverOrdersForm,sync:async()=>{await ensureHistorySession();return syncCustomerHistory()}};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 
 })();
+

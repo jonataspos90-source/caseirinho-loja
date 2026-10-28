@@ -50,6 +50,8 @@
       E('customerIdentityGate').hidden=true;
       window.dispatchEvent(new Event('resize'));
       E('homeBtn')?.focus();
+      if(E('identityRecover')?.checked)await window.CaseirinhoCustomerHistory?.recover?.();
+      else await window.CaseirinhoCustomerHistory?.sync?.();
     }catch(_){
       status.textContent=serverMessage||'Não conseguimos salvar agora. Verifique sua conexão e toque em Entrar no cardápio para tentar novamente.';
     }finally{clearTimeout(timer);busy=false;button.disabled=false;button.textContent='Entrar no cardápio'}

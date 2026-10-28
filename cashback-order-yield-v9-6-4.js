@@ -37,6 +37,8 @@ function fieldFor(o){
   const reversed=cashbackValue(o,'cashbackEstornado','estornado');
   if(generated>0||status==='GERADO')return{label:'Cashback gerado',value:'+'+money(generated),className:''};
   if(status==='ESTORNADO'&&reversed>0)return{label:'Cashback estornado',value:money(reversed),className:'reversed'};
+  if(status==='NAO_APROVADO')return{label:'Cashback não aprovado',value:money(0),className:'pending'};
+  if(status==='AGUARDANDO_APROVACAO'&&predicted>0)return{label:'Cashback em análise',value:money(predicted),className:'pending'};
   if(['AGUARDANDO_CONCLUSAO','AGUARDANDO_CREDITO'].includes(status)&&predicted>0){
     return{label:status==='AGUARDANDO_CREDITO'?'Cashback processando':'Cashback previsto',value:money(predicted),className:'pending'};
   }
@@ -123,3 +125,4 @@ function init(){
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 window.CaseirinhoCashbackOrderYield964={decorate:scheduleDecorate,fieldFor};
 })();
+

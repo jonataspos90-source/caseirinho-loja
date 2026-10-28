@@ -12,7 +12,7 @@ body.customer-identification-required>:not(#customerIdentityGate):not(script):no
 #customerIdentityForm input:focus{border-color:#7b1438;box-shadow:0 0 0 3px #7b143815}
 .identity-privacy{margin:18px 0;color:#71796f;font-size:12px;line-height:1.6}
 #customerIdentityForm .identity-consent{display:flex;align-items:flex-start;gap:10px;margin:0 0 20px;font-size:13px;line-height:1.5;font-weight:400;color:#515e54;cursor:pointer}
-#customerIdentityForm #identityConsent{flex:0 0 20px;width:20px;min-height:20px;height:20px;margin:0;accent-color:#7b1438;cursor:pointer}
+#customerIdentityForm #identityConsent,#customerIdentityForm #identityRecover{flex:0 0 20px;width:20px;min-height:20px;height:20px;margin:0;accent-color:#7b1438;cursor:pointer}
 .identity-consent a{color:#7b1438;text-decoration:underline}.identity-consent a:focus-visible{outline:2px solid #7b1438;outline-offset:2px}
 #identityContinue{width:100%;min-height:54px;border:0;border-radius:13px;background:#7b1438;color:#fff;font:inherit;font-weight:800;cursor:pointer}
 #identityContinue:hover{background:#63102d}#identityContinue:focus-visible{outline:3px solid #a1b990;outline-offset:3px}#identityContinue:disabled{opacity:.65;cursor:wait}
