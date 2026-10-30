@@ -330,6 +330,9 @@ function canBuy(p){
   // O cache de emergência é apenas para consulta; estoque e preço devem
   // ser confirmados pela API antes de permitir nova compra.
   if(!catalogConnected)return false;
+  // No Caseirinho a quantidade é conferida no ERP após o pedido, sem bloquear a compra.
+  if(p?.ativo===false||['INATIVO','ARQUIVADO','EXCLUIDO'].includes(norm(p?.status)))return false;
+  if(STORE==='caseirinho')return true;
   if(typeof p?.podeComprar==='boolean')return p.podeComprar;
   const d=canonicalAvailability(p);
   return d==='SOB_ENCOMENDA'||d==='AMBOS'||N(p?.saldoDisponivel)>0;
@@ -341,6 +344,7 @@ function readyNeedsConfirmation(p){
 }
 function availabilityText(p){
   const d=canonicalAvailability(p),stock=N(p?.saldoDisponivel),days=Math.max(0,N(p?.antecedenciaDias));
+  if(STORE==='caseirinho'&&canBuy(p))return '✓ Disponível para pedido';
   if(readyNeedsConfirmation(p))return 'Pronta entrega · quantidade a confirmar com a loja';
   if(!canBuy(p))return 'Indisponível no momento';
   if(d==='PRONTA_ENTREGA'&&stock>0)return '✓ Pronta entrega disponível';
@@ -933,14 +937,7 @@ async function quickAdd(id,qty){
   const min=minQty(p),step=stepQty(p),wanted=Math.max(min,N(qty)||min),limit=N(p.limitePedido);
   const existing=cart.find(x=>S(x.produtoId)===S(id));
   const requested=existing?N(existing.quantidade)+(N(qty)>0?wanted:step):wanted;
-  if(isOrderItem(p,requested)&&(!existing||!isOrderItem(p,N(existing.quantidade)))){
-    const answer=await customerDialog({
-      title:readyNeedsConfirmation(p)?'Confirmar pronta entrega':'Produto sob encomenda',icon:'🕘',locked:true,
-      html:orderNoticeHtml([{product:p,item:{nome:p.nome}}]),
-      actions:[{label:'Voltar',value:false},{label:'Adicionar ao carrinho',value:true,primary:true}]
-    });
-    if(!answer)return;
-  }
+  // O cliente pode solicitar qualquer produto ativo; a falta será analisada no ERP.
   const row=cart.find(x=>S(x.produtoId)===S(id));
   const add=row?(N(qty)>0?wanted:step):wanted;
   if(limit&&N(row?.quantidade)+add>limit+1e-9)return toast('Limite por pedido: '+limit);
@@ -978,7 +975,7 @@ function renderCart(){
   });
   const renderItem=({x,i,p,min,step,pricing})=>`<div class="cart-item">
       ${x.imagem?`<img src="${esc(x.imagem)}" alt="">`:'<div class="no-image" style="font-size:25px">🍽️</div>'}
-      <div><h4>${esc(x.nome)}</h4>${p&&productDescription(p)?`<small class="cart-item-description" style="display:block;color:#5f6368;line-height:1.4;margin:2px 0 5px">${esc(productDescription(p))}</small>`:''}${isOrderItem(p,N(x.quantidade))?'<small style="display:block;color:#84530c">'+(readyNeedsConfirmation(p)?'Pronta entrega · quantidade ainda não confirmada':'🕘 Sob encomenda · aguardará confirmação da loja')+'</small>':''}<small>${pricing.unitPrice===0&&pricing.promotionGroupId?'<b style="color:#15803d">Unidade incluída na oferta</b>':`${money(pricing.unitPrice)} cada`}${pricing.promotionLabel&&!pricing.promotionLabel.startsWith('Leve ')?` · <b style="color:#15803d">${esc(pricing.promotionLabel)}</b>`:''}</small>
+      <div><h4>${esc(x.nome)}</h4>${p&&productDescription(p)?`<small class="cart-item-description" style="display:block;color:#5f6368;line-height:1.4;margin:2px 0 5px">${esc(productDescription(p))}</small>`:''}<small>${pricing.unitPrice===0&&pricing.promotionGroupId?'<b style="color:#15803d">Unidade incluída na oferta</b>':`${money(pricing.unitPrice)} cada`}${pricing.promotionLabel&&!pricing.promotionLabel.startsWith('Leve ')?` · <b style="color:#15803d">${esc(pricing.promotionLabel)}</b>`:''}</small>
         <div class="qty"><button data-minus="${i}" type="button">−</button><b>${x.quantidade}</b><button data-plus="${i}" type="button">+</button></div>
       </div>
       <div class="cart-item-price" style="text-align:right"><b>${money(pricing.total)}</b><br><button class="remove" data-remove="${i}" type="button">Remover</button></div>
@@ -1582,15 +1579,6 @@ async function submitOrder(ev){
     if(!confirmed)return;
   }
 
-  const pendingEncomendas=pendingOrderItems();
-  if(pendingEncomendas.length){
-    const proceed=await customerDialog({
-      title:pendingEncomendas.some(x=>readyNeedsConfirmation(x.product))?'Confirmação de disponibilidade':'Confirmação de itens sob encomenda',icon:'🕘',locked:true,
-      html:orderNoticeHtml(pendingEncomendas),
-      actions:[{label:'Revisar carrinho',value:false},{label:'Continuar pedido',value:true,primary:true}]
-    });
-    if(!proceed)return;
-  }
   const afterHours=storeHoursStatus();
   if(afterHours?.closed){
     const proceed=await customerDialog({
@@ -1614,7 +1602,7 @@ async function submitOrder(ev){
     formaPagamento:E('payment').value,
     entrega:mode==='ENTREGA'?address():{},
     itens:cart.map(x=>({produtoId:S(x.produtoId),quantidade:N(x.quantidade)})),
-    observacao:[pendingEncomendas.length?'[DISPONIBILIDADE A CONFIRMAR — '+(pendingEncomendas.some(x=>readyNeedsConfirmation(x.product))?'Pronta entrega cadastrada sem saldo registrado':'Produto sob encomenda')+'; prazo e entrega dependem de confirmação da loja: '+pendingEncomendas.map(x=>x.product?.nome||x.item.nome).join(', ').slice(0,400)+']':'',afterHours?.closed?'[PEDIDO FORA DO HORÁRIO · Primeiro atendimento previsto: '+afterHours.nextOpening+' · Horário da entrega/retirada sujeito à confirmação.]':'',S(E('obs').value).trim()].filter(Boolean).join('\n').slice(0,1000),
+    observacao:[afterHours?.closed?'[PEDIDO FORA DO HORÁRIO · Primeiro atendimento previsto: '+afterHours.nextOpening+' · Horário da entrega/retirada sujeito à confirmação.]':'',S(E('obs').value).trim()].filter(Boolean).join('\n').slice(0,1000),
     lgpd:{
       consent:true,
       consentAt:now,
@@ -1676,8 +1664,8 @@ async function submitOrder(ev){
         <b>Pedido ${esc(result.codigo)} recebido! 🎉</b><br>
         ${window.JohnOrderAmounts.celebration(saved)?`<strong style="color:#166534">${esc(window.JohnOrderAmounts.celebration(saved))}</strong><br>`:''}
         ${afterHours?.closed?'<div class="cx-note">🕘 Pedido feito fora do expediente. Atendimento a partir de <b>'+esc(afterHours.nextOpening)+'</b>. Entrega/retirada sujeita à confirmação da loja.</div>':''}
-        ${pendingEncomendas.length?'<div class="cx-note">🕘 '+(pendingEncomendas.some(x=>readyNeedsConfirmation(x.product))?'A modalidade está cadastrada como pronta entrega, mas a quantidade ainda precisa ser confirmada.':'Este pedido contém produtos sob encomenda.')+' O Caseirinho confirmará a disponibilidade e o prazo pelo WhatsApp antes da preparação.</div>':''}
-        ${mpSelected(saved.formaPagamento)?(pendingEncomendas.length||result.freteStatus==='COTACAO_PENDENTE'?'<div class="cx-note">🕘 Seu link de pagamento online será liberado quando o Caseirinho confirmar disponibilidade e frete. Acompanhe em Meus pedidos.</div>':'<div class="cx-note">💳 Pagamento online aguardando aprovação. Você escolherá uma forma disponível no ambiente seguro de pagamento.</div><button class="primary" type="button" id="mpPayNow">Abrir pagamento seguro</button>'):''}
+
+        ${mpSelected(saved.formaPagamento)?(result.freteStatus==='COTACAO_PENDENTE'?'<div class="cx-note">🕘 Seu link de pagamento online será liberado quando o Caseirinho confirmar disponibilidade e frete. Acompanhe em Meus pedidos.</div>':'<div class="cx-note">💳 Pagamento online aguardando aprovação. Você escolherá uma forma disponível no ambiente seguro de pagamento.</div><button class="primary" type="button" id="mpPayNow">Abrir pagamento seguro</button>'):''}
         ${esc(freightText)}<br>
         ${window.JohnOrderAmounts.lines(saved).map(([label,value])=>esc(label)+': <b>'+esc(value)+'</b>').join('<br>')}<br>
         <button class="soft" type="button" id="openSavedOrders" style="margin-top:9px">Acompanhar pedido</button>
