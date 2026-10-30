@@ -1451,6 +1451,18 @@ async function notifyOrderChange(before,after){
     }
     return;
   }
+  // O ERP só alerta sobre indisponibilidade quando registra a proposta de revisão.
+  if(st==='AGUARDANDO_CLIENTE_REVISAO'){
+    const revisionKey=`${after.id}:revision:${after.updatedAt||after.atualizadoEm||st}`;
+    if(!seen[revisionKey]&&(old!==st||S(before?.updatedAt)!==S(after.updatedAt))){
+      markNotice(revisionKey);
+      if(window.CaseirinhoOrderRevision938?.openForOrder){
+        try{await window.CaseirinhoOrderRevision938.openForOrder(after.id);return}catch(e){console.warn('[revisão] Abrir proposta:',e)}
+      }
+      await customerDialog({title:'Atenção: item indisponível',icon:'⚠️',html:'<p>O Caseirinho avisou que um item não está disponível. Abra <b>Meus pedidos</b> para conferir a proposta, o novo valor e escolher se aceita.</p>'});
+      return;
+    }
+  }
   const confirmationAt=S(after.encomendaConfirmacao?.atualizadoEm||'');
   const oldConfirmationAt=S(before?.encomendaConfirmacao?.atualizadoEm||'');
   const decisionKey=after.id+':encomenda:'+confirmationAt;
