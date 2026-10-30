@@ -1535,12 +1535,6 @@ async function pollCustomerOrders(){
 async function submitOrder(ev){
   ev.preventDefault();
   E('checkoutResult').innerHTML='';
-  await loadCatalog(true);
-  if(!catalogConnected){
-    E('checkoutResult').textContent='Sem conexão com a loja. Aguarde o cardápio atualizar antes de finalizar o pedido.';
-    return toast('Aguarde a conexão com a loja para confirmar preços e disponibilidade.');
-  }
-  if(!cart.length)return toast('Seu carrinho está vazio.');
   // O link de prévia não envia pedidos: ofereça saída clara para a loja real sem apagar o carrinho.
   if(PAYMENT_UI_PREVIEW){
     const liveUrl=new URL(location.href);
@@ -1552,6 +1546,12 @@ async function submitOrder(ev){
       '<small>Os itens do carrinho permanecem salvos neste navegador.</small></div>';
     return toast('Prévia de interface: nenhum pedido ou pagamento é enviado neste modo.');
   }
+  await loadCatalog(true);
+  if(!catalogConnected){
+    E('checkoutResult').textContent='Sem conexão com a loja. Aguarde o cardápio atualizar antes de finalizar o pedido.';
+    return toast('Aguarde a conexão com a loja para confirmar preços e disponibilidade.');
+  }
+  if(!cart.length)return toast('Seu carrinho está vazio.');
   const paymentChoice=S(E('payment')?.value);
   if(!paymentChoice||!paymentOptionsFor(E('mode')?.value).includes(paymentChoice))
     return toast('Selecione um pagamento disponível para entrega ou retirada.');
