@@ -14,7 +14,7 @@ function harness({preview=false,connected=true,fail=false}={}){
   const document={getElementById:id=>nodes[id]};const requests=[],messages=[],storage={};
   const window={JohnOrderAmounts:{celebration:()=>'',lines:()=>[]}};
   const deps={E:id=>nodes[id],document,window,cart:[{produtoId:'produto-teste',quantidade:1,precoUnitario:10}],catalog:{produtos:[],loja:{}},catalogConnected:connected,loadCatalog:async()=>{},toast:msg=>messages.push(msg),PAYMENT_UI_PREVIEW:preview,S:v=>String(v??''),N:v=>Number(v)||0,STORE:'caseirinho',paymentOptionsFor:()=>['Dinheiro'],mpSelected:()=>false,mercadoPagoOnline:false,PIX_CNPJ_LABEL:'Pix CNPJ',validPhone:()=>true,allowedDate:()=>true,pendingOrderItems:()=>[],storeHoursStatus:()=>null,clientRequestIdFor:()=> 'stable-request',ORDERS_KEY:'orders',PENDING_ORDER_KEY:'pending',api:async(url,opt)=>{requests.push({url,body:JSON.parse(opt.body)});if(fail)throw Error('Falha simulada');return{id:'pedido-simulado',codigo:'TESTE',publicToken:'token-simulado',subtotal:10,total:10}},promoApi:()=>null,roundMoney:x=>x,readJson:(key,fallback)=>storage[key]||fallback,writeJson:(key,value)=>{storage[key]=value},saveCustomerProfileFromBody:()=>{},bootstrapHistorySession:async()=>{},syncCustomerHistory:async()=>{},removeLocal:key=>{delete storage[key]},esc:v=>String(v??''),money:v=>String(v),showOrders:()=>{},renderCart:()=>{}};
-  const ctx=vm.createContext({window,document,deps,console,URLSearchParams,location:{search:''},setTimeout:()=>{throw Error('Incompatible legacy module must not install timers')}});
+  const ctx=vm.createContext({window,document,deps,console,URL,URLSearchParams,location:{search:preview?'?preview_cartoes=1&utm_source=chatgpt.com':'',href:'https://jonataspos90-source.github.io/caseirinho-loja/'+(preview?'?preview_cartoes=1&utm_source=chatgpt.com':'')},setTimeout:()=>{throw Error('Incompatible legacy module must not install timers')}});
   const names=Object.keys(deps).filter(x=>x!=='cart').join(',');
   const getCart=vm.runInContext('(function(){const {'+names+'}=deps;let cart=deps.cart;'+native+';document.getElementById("checkout").onsubmit=submitOrder;return()=>cart})()',ctx);
   const handler=nodes.checkout.onsubmit;
@@ -31,7 +31,7 @@ test('failed order keeps cart and shows an actionable error',async()=>{
   const h=harness({fail:true});await h.submit();assert.equal(h.getCart().length,1);assert.match(h.nodes.checkoutResult.innerHTML,/Pedido não enviado/);assert.match(h.nodes.checkoutResult.innerHTML,/Falha simulada/);assert.equal(h.button.disabled,false);
 });
 test('preview mode continues to block real orders',async()=>{
-  const h=harness({preview:true});await h.submit();assert.equal(h.requests.length,0);assert.equal(h.getCart().length,1);assert.match(h.messages[0],/Prévia de interface/);
+  const h=harness({preview:true});await h.submit();assert.equal(h.requests.length,0);assert.equal(h.getCart().length,1);assert.match(h.messages[0],/Prévia de interface/);assert.match(h.nodes.checkoutResult.innerHTML,/Abrir loja oficial e finalizar/);assert.doesNotMatch(h.nodes.checkoutResult.innerHTML,/preview_cartoes/);
 });
 test('disconnected catalog cannot submit an unverified order',async()=>{
   const h=harness({connected:false});await h.submit();assert.equal(h.requests.length,0);assert.match(h.nodes.checkoutResult.textContent,/Sem conexão/);
