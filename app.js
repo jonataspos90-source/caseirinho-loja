@@ -1541,9 +1541,17 @@ async function submitOrder(ev){
     return toast('Aguarde a conexão com a loja para confirmar preços e disponibilidade.');
   }
   if(!cart.length)return toast('Seu carrinho está vazio.');
-  // Visualização de checkout: jamais cria pedidos no banco real, independentemente da forma escolhida.
-  if(PAYMENT_UI_PREVIEW)
+  // O link de prévia não envia pedidos: ofereça saída clara para a loja real sem apagar o carrinho.
+  if(PAYMENT_UI_PREVIEW){
+    const liveUrl=new URL(location.href);
+    liveUrl.searchParams.delete('preview_cartoes');
+    E('checkoutResult').innerHTML=
+      '<div class="result err" role="alert"><b>Você está no modo de demonstração.</b><br>'+
+      'Seu pedido não foi enviado e nenhum pagamento foi iniciado.<br>'+
+      '<a class="primary" style="display:inline-block;margin:12px 0;text-align:center" href="'+esc(liveUrl.toString())+'">Abrir loja oficial e finalizar →</a><br>'+
+      '<small>Os itens do carrinho permanecem salvos neste navegador.</small></div>';
     return toast('Prévia de interface: nenhum pedido ou pagamento é enviado neste modo.');
+  }
   const paymentChoice=S(E('payment')?.value);
   if(!paymentChoice||!paymentOptionsFor(E('mode')?.value).includes(paymentChoice))
     return toast('Selecione um pagamento disponível para entrega ou retirada.');
