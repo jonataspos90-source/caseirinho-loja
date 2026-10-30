@@ -33,10 +33,35 @@ async function decide(o,rev,decision,btn){if(busy)return;busy=S(o.id);if(btn)btn
 function modal(o,rev){css();close();const ov=document.createElement('div');ov.id='revision938Overlay';ov.className='revision938-overlay';ov.innerHTML=`<div class="revision938-box"><h2>Revisão do seu pedido</h2><p>${esc(rev?.message||'A loja precisou alterar um item e enviou uma nova proposta.')}</p>${A(rev?.changes).map(changeHtml).join('')}<div class="revision938-totals"><div><small>Pedido anterior</small><br><b>${money(rev?.originalTotal)}</b></div><div><small>Novo pedido</small><br><b>${money(rev?.newTotal)}</b></div></div><p><b>Se você aceitar, um novo número de pedido será criado automaticamente e este pedido será marcado como substituído.</b></p><div class="revision938-actions"><button class="revision938-no" data-rev-no>Não aceitar</button><button class="revision938-yes" data-rev-yes>Aceitar novo pedido</button></div><button class="revision938-close" data-rev-close>Fechar</button></div>`;document.body.appendChild(ov);ov.onclick=e=>{if(e.target===ov||e.target.closest('[data-rev-close]'))close()};ov.querySelector('[data-rev-no]').onclick=e=>decide(o,rev,'REJECT',e.currentTarget);ov.querySelector('[data-rev-yes]').onclick=e=>decide(o,rev,'ACCEPT',e.currentTarget)}
 async function openRevision(o,btn){if(btn){btn.disabled=true;btn.textContent='Carregando...'}try{const rev=await revision(o,true);if(!rev)throw new Error('Proposta não encontrada.');modal(o,rev)}catch(e){toast(e.message)}finally{if(btn){btn.disabled=false;btn.textContent='Ver proposta revisada'}}}
 function desiredBox(st,o){if(st==='AGUARDANDO_CLIENTE_REVISAO')return{cls:'revision938-card',html:'<h4>⚠️ Um item está indisponível</h4><div>A loja enviou uma proposta com substituição/remoção e um novo valor.</div><button class="primary" type="button" data-open-revision938>Ver proposta revisada</button>'};if(st==='REVISAO_RECUSADA')return{cls:'revision938-card err',html:'<h4>Proposta não aceita</h4><div>A loja recebeu sua resposta e poderá enviar outra opção.</div>'};if(st==='SUBSTITUIDO')return{cls:'revision938-card ok',html:`<h4>✅ Pedido substituído</h4><div>${esc(o.mensagemCliente||'O novo pedido já foi criado e aparece no seu histórico.')}</div>`};return null}
+// Notificação dentro da loja ao receber uma proposta de alteração do ERP.
+// Somente o telefone do pedido atual pode abrir o alerta; cada versão aparece uma vez.
+let revisionAlertBusy=false;
+async function alertPendingRevision(){
+ if(revisionAlertBusy||document.hidden||document.getElementById('revision938Overlay'))return;
+ const currentPhone=S(document.getElementById('cPhone')?.value).replace(/\D/g,'').slice(-11);
+ if(currentPhone.length!==11)return;
+ for(const o of orders()){
+  if(norm(o?.status)!=='AGUARDANDO_CLIENTE_REVISAO'||S(o?.cliente?.telefone).replace(/\D/g,'').slice(-11)!==currentPhone)continue;
+  const auth=credentials(o);if(!auth.token&&!auth.historySession)continue;
+  revisionAlertBusy=true;
+  try{
+   const rev=await revision(o,true);
+   if(norm(rev?.status)!=='PENDENTE')continue;
+   const key=PREFIX+'revision_alert_seen_'+S(o.id)+'_v'+N(rev.version);
+   if(read(key,false))continue;
+   write(key,true);
+   modal(o,rev);
+   toast('⚠️ Um item do seu pedido precisa de confirmação. Veja a proposta.');
+   return;
+  }catch(e){console.warn('[Caseirinho] alerta de revisão não disponível:',S(e?.message||e))}
+  finally{revisionAlertBusy=false}
+ }
+}
 function patchCards(){if(scanning)return;scanning=true;try{css();document.querySelectorAll('.order-card').forEach(card=>{const code=S(card.querySelector('.order-top b')?.textContent).trim(),o=findOrder(code);if(!o)return;const st=norm(o.status);const badge=card.querySelector('.status-badge');const badgeText=st==='AGUARDANDO_CLIENTE_REVISAO'?'Aguardando sua aprovação':st==='REVISAO_RECUSADA'?'Revisão não aceita':st==='SUBSTITUIDO'?'Substituído':'';if(badge&&badgeText&&badge.textContent!==badgeText)badge.textContent=badgeText;let box=card.querySelector('[data-revision938]');const wanted=desiredBox(st,o);if(!wanted){if(box)box.remove();return}const sig=st+'|'+S(o.mensagemCliente||'');if(!box){box=document.createElement('div');box.dataset.revision938='1';card.appendChild(box)}if(box.dataset.sig===sig)return;box.dataset.sig=sig;box.className=wanted.cls;box.innerHTML=wanted.html;const b=box.querySelector('[data-open-revision938]');if(b)b.onclick=e=>openRevision(o,e.currentTarget)})}finally{scanning=false}}
 function scheduleScan(){if(scanQueued)return;scanQueued=true;requestAnimationFrame(()=>{scanQueued=false;patchCards()})}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(scheduleScan,250),{once:true});else setTimeout(scheduleScan,120);
 const mo=new MutationObserver(()=>scheduleScan());try{mo.observe(document.documentElement,{childList:true,subtree:true})}catch(_){}
-[800,1800,4000].forEach(ms=>setTimeout(scheduleScan,ms));setInterval(()=>{if(!document.hidden)scheduleScan()},5000);
+[800,1800,4000].forEach(ms=>setTimeout(scheduleScan,ms));setInterval(()=>{if(!document.hidden){scheduleScan();alertPendingRevision().catch(console.warn)}},5000);
+setTimeout(()=>alertPendingRevision().catch(console.warn),2300);
 window.CaseirinhoOrderRevision938={version:'9.3.8.1',openForOrder:async id=>{const o=orders().find(x=>S(x.id)===S(id));const rev=await revision(o,true);modal(o,rev)},scan:scheduleScan};
 })();
