@@ -473,29 +473,51 @@ function cartProductNameKey(value){
   return S(parts[parts.length-1]).replace(/\s*\(Unidade\)\s*$/i,'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
 }
 function reconcileCartProducts(){
+  // A identificação do item salvo no celular não pode prevalecer sobre o catálogo publicado.
+  // Carrinhos antigos podem ter um ID de molho, por exemplo, associado ao nome de uma empada.
   const products=A(catalog.produtos);
   if(!products.length)return false;
+  const byId=new Map(products.map(p=>[S(p.id),p]));
+  const byName=new Map();
+  for(const p of products){
+    const names=[p.nomeComercial,p.nome,p.variacaoLabel,
+      p.gradeId?`${p.gradeNome||p.nome} · ${p.variacaoLabel||p.nome}`:''];
+    for(const name of names){
+      const key=cartProductNameKey(name);
+      if(!key)continue;
+      if(!byName.has(key))byName.set(key,new Map());
+      byName.get(key).set(S(p.id),p);
+    }
+  }
   let changed=false;
   for(const item of cart){
-    const key=cartProductNameKey(item?.nome);
-    if(!key)continue;
-    const current=products.find(p=>S(p.id)===S(item.produtoId));
-    const matches=products.filter(p=>[p?.nomeComercial,p?.nome,p?.variacaoLabel].some(name=>cartProductNameKey(name)===key));
-    const unique=[...new Map(matches.map(p=>[S(p.id),p])).values()];
-    let target=current;
-    const currentMatches=[current?.nomeComercial,current?.nome,current?.variacaoLabel].some(name=>cartProductNameKey(name)===key);
-    if(!currentMatches&&unique.length===1){
-      target=unique[0];
-      item.produtoId=S(target.id);
-      item.codigo=target.codigo||'';
-      item.nome=target.gradeId?`${target.gradeNome||target.nome} · ${target.variacaoLabel||target.nome}`:target.nome;
-      item.precoUnitario=N(target.preco);
-      changed=true;
+    if(!item)continue;
+    const key=cartProductNameKey(item.nome);
+    const current=byId.get(S(item.produtoId));
+    const currentKeys=current?[current.nomeComercial,current.nome,current.variacaoLabel,
+      current.gradeId?`${current.gradeNome||current.nome} · ${current.variacaoLabel||current.nome}`:'']
+      .map(cartProductNameKey):[];
+    const currentMatches=!key||(current&&currentKeys.includes(key));
+    const candidates=[...(byName.get(key)?.values()||[])];
+    // Sem correspondência exclusiva, nunca trocar silenciosamente por um produto de outro tipo.
+    const target=currentMatches?current:(candidates.length===1?candidates[0]:null);
+    if(!target){
+      if(item.catalogMismatch!==true){item.catalogMismatch=true;changed=true}
+      continue;
     }
-    if(target){
-      const correctImage=images(target)[0]||'';
-      if(S(item.imagem)!==S(correctImage)){item.imagem=correctImage;changed=true}
-    }
+    const canonicalName=target.gradeId?
+      `${target.gradeNome||target.nome} · ${target.variacaoLabel||target.nome}`:
+      S(target.nomeComercial||target.nome);
+    const correctImage=images(target)[0]||'';
+    const correctPrice=roundMoney(productPriceInfo(target).current);
+    const correctCode=S(target.codigo||'');
+    const set=(key,value)=>{if(item[key]!==value){item[key]=value;changed=true}};
+    set('produtoId',S(target.id));
+    set('codigo',correctCode);
+    set('nome',canonicalName);
+    set('precoUnitario',correctPrice);
+    set('imagem',correctImage);
+    if(item.catalogMismatch){delete item.catalogMismatch;changed=true}
   }
   if(changed)writeJson(CART_KEY,cart);
   return changed;
@@ -961,6 +983,7 @@ function renderCart(){
   E('cartCount').textContent=count;E('navCartCount').textContent=count;
 
   const promoTotals=promoApi()?.cartTotals(cart,catalog.produtos)||{lines:new Map(),subtotal:cart.reduce((s,x)=>s+N(x.quantidade)*N(x.precoUnitario),0),savings:0};
+  const hasCatalogMismatch=cart.some(x=>x.catalogMismatch);
   const entries=cart.map((x,i)=>{
     const p=A(catalog.produtos).find(y=>S(y.id)===S(x.produtoId));
     const min=p?minQty(p):1,step=p?stepQty(p):1;
@@ -973,13 +996,23 @@ function renderCart(){
     if(!groups.has(key))groups.set(key,{key,promoted:!!entry.pricing.promotionGroupId,label:entry.pricing.promotionGroupLabel||'',hint:entry.pricing.promotionGroupHint||'',progress:entry.pricing.promotionGroupProgress||null,entries:[]});
     groups.get(key).entries.push(entry);
   });
-  const renderItem=({x,i,p,min,step,pricing})=>`<div class="cart-item">
-      ${x.imagem?`<img src="${esc(x.imagem)}" alt="">`:'<div class="no-image" style="font-size:25px">🍽️</div>'}
-      <div><h4>${esc(x.nome)}</h4>${p&&productDescription(p)?`<small class="cart-item-description" style="display:block;color:#5f6368;line-height:1.4;margin:2px 0 5px">${esc(productDescription(p))}</small>`:''}<small>${pricing.unitPrice===0&&pricing.promotionGroupId?'<b style="color:#15803d">Unidade incluída na oferta</b>':`${money(pricing.unitPrice)} cada`}${pricing.promotionLabel&&!pricing.promotionLabel.startsWith('Leve ')?` · <b style="color:#15803d">${esc(pricing.promotionLabel)}</b>`:''}</small>
+  const renderItem=({x,i,p,min,step,pricing})=>{
+    const valid=!!p&&!x.catalogMismatch;
+    const standardUnit=valid?productPriceInfo(p).current:N(x.precoUnitario);
+    const packDiscount=valid&&!!pricing.promotionGroupId&&N(pricing.savings)>0;
+    const unitText=packDiscount?
+      `${money(standardUnit)} cada · <b style="color:#15803d">desconto do combo no total</b>`:
+      pricing.unitPrice===0&&pricing.promotionGroupId?
+        '<b style="color:#15803d">Unidade incluída na oferta</b>':
+        `${money(pricing.unitPrice)} cada`;
+    return `<div class="cart-item">
+      ${valid&&x.imagem?`<img src="${esc(x.imagem)}" alt="">`:'<div class="no-image" style="font-size:25px">🍽️</div>'}
+      <div><h4>${esc(x.nome)}</h4>${valid&&productDescription(p)?`<small class="cart-item-description" style="display:block;color:#5f6368;line-height:1.4;margin:2px 0 5px">${esc(productDescription(p))}</small>`:''}<small>${valid?unitText:'<b style="color:#b91c1c">Produto desatualizado · remova e escolha novamente</b>'}${valid&&pricing.promotionLabel&&!pricing.promotionLabel.startsWith('Leve ')?` · <b style="color:#15803d">${esc(pricing.promotionLabel)}</b>`:''}</small>
         <div class="qty"><button data-minus="${i}" type="button">−</button><b>${x.quantidade}</b><button data-plus="${i}" type="button">+</button></div>
       </div>
-      <div class="cart-item-price" style="text-align:right"><b>${money(pricing.total)}</b><br><button class="remove" data-remove="${i}" type="button">Remover</button></div>
+      <div class="cart-item-price" style="text-align:right"><b>${valid?money(pricing.total):'A confirmar'}</b><br><button class="remove" data-remove="${i}" type="button">Remover</button></div>
     </div>`;
+  };
   const renderGroup=group=>{
     if(!group.promoted)return renderItem(group.entries[0]);
     const savings=roundMoney(group.entries.reduce((sum,e)=>sum+N(e.pricing.savings),0));
@@ -995,7 +1028,7 @@ function renderCart(){
       <div class="cart-promo-items${group.entries.length>1||progress?' is-pack':''}">${group.entries.map(renderItem).join('')}</div>
     </section>`;
   };
-  E('cartItems').innerHTML=[...groups.values()].map(renderGroup).join('')||'<div class="empty">Seu carrinho está vazio.</div>';
+  E('cartItems').innerHTML=(hasCatalogMismatch?'<div class="cx-highlight warn" role="alert"><b>Há um produto antigo no carrinho que não confere com o catálogo atual.</b> Remova esse item e selecione-o novamente antes de finalizar. A loja não enviará um produto diferente do escolhido.</div>':'')+([...groups.values()].map(renderGroup).join('')||'<div class="empty">Seu carrinho está vazio.</div>');
   if(promoTotals.savings>0)E('cartItems').insertAdjacentHTML('afterbegin',`<div style="margin-bottom:10px;padding:10px 12px;border-radius:10px;background:#f0fdf4;color:#166534;font-weight:800">Você economiza ${money(promoTotals.savings)} nas promoções do carrinho.</div>`);
 
   E('cartItems').querySelectorAll('[data-minus]').forEach(b=>b.onclick=()=>{
@@ -1561,6 +1594,10 @@ async function submitOrder(ev){
     return toast('Aguarde a conexão com a loja para confirmar preços e disponibilidade.');
   }
   if(!cart.length)return toast('Seu carrinho está vazio.');
+  if(cart.some(x=>x.catalogMismatch||!A(catalog.produtos).some(p=>S(p.id)===S(x.produtoId)))){
+    E('checkoutResult').textContent='Um produto do seu carrinho está desatualizado. Remova-o e selecione novamente no catálogo.';
+    return toast('Confira o carrinho: há um produto sem correspondência segura no catálogo.');
+  }
   const paymentChoice=S(E('payment')?.value);
   if(!paymentChoice||!paymentOptionsFor(E('mode')?.value).includes(paymentChoice))
     return toast('Selecione um pagamento disponível para entrega ou retirada.');
