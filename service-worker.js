@@ -1,6 +1,6 @@
-const CACHE='caseirinho-loja-v9.10.38-cart-catalog-repair';
+const CACHE='caseirinho-loja-v9.10.39-authoritative-product-prices';
 const PROMOTIONJS='./ecommerce-promotions-v910.js';
-const PROMOTIONJS_TAG='<script src="./ecommerce-promotions-v910.js?v=910121" defer></'+'script>';
+const PROMOTIONJS_TAG='<script src="./ecommerce-promotions-v910.js?v=910139" defer></'+'script>';
 const HOTFIX931='./store-hotfix-v9-3-1.js';
 const HOTFIX932='./store-hotfix-v9-3-2.js';
 const HOTFIX933='./store-hotfix-v9-3-3.js';
@@ -62,7 +62,7 @@ function injectBeforeApp(html,needle,tag){if(html.includes(needle))return html;c
 function stripOldCardScripts(html){return html.split(/<script[^>]*product-cards-mobile-v9-4-(?:8|9)\.js[^>]*><\/script>/gi).join('')}
 function stripOldDeliveryScripts(html){return html.split(/<script[^>]*delivery-moto-v9-5-3\.js[^>]*><\/script>/gi).join('')}
 function injectHotfix(response){if(!response)return response;const ct=response.headers.get('content-type')||'';if(!ct.includes('text/html'))return response;return response.text().then(html=>{html=stripOldCardScripts(html);html=stripOldDeliveryScripts(html);
-  html=html.replace(/(ecommerce-promotions-v910\.js\?v=)\d+/g,(_,prefix)=>prefix+'910121');
+  html=html.replace(/(ecommerce-promotions-v910\.js\?v=)\d+/g,(_,prefix)=>prefix+'910139');
   html=html.replace(/(commerce-engagement-v9-6-1\.js\?v=)[^"'\s<>]+/g,(_,prefix)=>prefix+'20261028-cart-inactivity');
   html=html.replace(/(commerce-engine-v9-3-0\.js\?v=)[^"'\s<>]+/g,(_,prefix)=>prefix+'20261028-native-checkout');
   html=html.replace(/(customer-identification\.(?:js|css)\?v=)[^"'\s<>]+/g,(_,prefix)=>prefix+'20261028-review-history');
