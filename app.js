@@ -91,8 +91,8 @@ function mpPayable(o){
   const freight=norm(o?.freteStatus),confirm=norm(o?.encomendaConfirmacao?.status);
   if(!mercadoPagoOnline||!mpSelected(o?.formaPagamento))return false;
   if(['REJEITADO','CANCELADO','ENTREGUE','RETIRADO','CONCLUIDO','FINALIZADO'].includes(st))return false;
-  if(o?.analisePedido&&norm(o.analisePedido.status)!=='APROVADO')return false;
-  if(o?.encomendaConfirmacao&&confirm!=='CONFIRMADO')return false;
+  if(norm(o?.analisePedido?.status)==='REJEITADO'||confirm==='REJEITADO')return false;
+  if(st==='AGUARDANDO_CLIENTE_REVISAO')return false;
   if(['COTACAO_PENDENTE','COTADO'].includes(freight)&&norm(o?.freteDecisaoCliente)!=='ACEITO')return false;
   return norm(o?.pagamentoOnline?.status)!=='APROVADO';
 }
@@ -104,7 +104,7 @@ function mpStatusHtml(o){
   if(status==='RECUSADO')return'<div class="cx-note">❌ Pagamento recusado. Consulte a loja antes de tentar novamente.</div>';
   if(status==='CANCELADO')return'<div class="cx-note">⚠️ Cobrança cancelada. Solicite análise da loja antes de tentar novamente.</div>';
   if(!mercadoPagoOnline)return'<div class="cx-note">🕘 Não conseguimos consultar os meios de pagamento agora. Atualize o pedido para tentar novamente; nenhuma cobrança foi confirmada.</div>';
-  if(!mpPayable(o))return'<div class="cx-note">🕘 Link de pagamento será liberado após a confirmação da encomenda e do frete.</div>';
+  if(!mpPayable(o))return'<div class="cx-note">🕘 O pagamento poderá ser realizado assim que o valor final do pedido e da entrega estiver definido.</div>';
   return'<div class="cx-note">🔐 Próxima etapa: escolha Pix ou cartão para pagar. O pedido só será considerado pago após a confirmação bancária.</div>'+
     '<button class="primary" data-mp-pay="'+esc(o.id)+'" type="button">'+(paymentGroup(o.formaPagamento)==='PIX'?'Gerar Pix Copia e Cola':'Pagar com cartão')+'</button>';
 }
