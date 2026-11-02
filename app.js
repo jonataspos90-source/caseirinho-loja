@@ -68,7 +68,7 @@ const MP_CREDIT_LABEL='Cartão de crédito online (Mercado Pago)';
  function paymentOptionsFor(mode){
    const onsite=A(catalog.loja?.formasPagamento).filter(x=>S(x).trim()&&!mpSelected(x)&&!['A_DEFINIR','NAO_DEFINIDO'].includes(norm(x)));
    const online=(mercadoPagoOnline||PAYMENT_UI_PREVIEW)&&catalogConnected?MP_PAYMENT_OPTIONS:[];
-   const source=catalogConnected?[...online,PIX_CNPJ_LABEL,...(mode==='ENTREGA'?[]:onsite)]:[];
+   const source=catalogConnected?[...online,PIX_CNPJ_LABEL,...onsite]:[];
    const seen=new Set();
    return source.filter(x=>{const k=paymentGroup(x);if(seen.has(k))return false;seen.add(k);return true});
  }
@@ -91,8 +91,8 @@ function mpPayable(o){
   const freight=norm(o?.freteStatus),confirm=norm(o?.encomendaConfirmacao?.status);
   if(!mercadoPagoOnline||!mpSelected(o?.formaPagamento))return false;
   if(['REJEITADO','CANCELADO','ENTREGUE','RETIRADO','CONCLUIDO','FINALIZADO'].includes(st))return false;
-  if(o?.analisePedido&&norm(o.analisePedido.status)!=='APROVADO')return false;
-  if(o?.encomendaConfirmacao&&confirm!=='CONFIRMADO')return false;
+  if(norm(o?.analisePedido?.status)==='REJEITADO'||confirm==='REJEITADO')return false;
+  if(st==='AGUARDANDO_CLIENTE_REVISAO')return false;
   if(['COTACAO_PENDENTE','COTADO'].includes(freight)&&norm(o?.freteDecisaoCliente)!=='ACEITO')return false;
   return norm(o?.pagamentoOnline?.status)!=='APROVADO';
 }
@@ -104,7 +104,7 @@ function mpStatusHtml(o){
   if(status==='RECUSADO')return'<div class="cx-note">❌ Pagamento recusado. Consulte a loja antes de tentar novamente.</div>';
   if(status==='CANCELADO')return'<div class="cx-note">⚠️ Cobrança cancelada. Solicite análise da loja antes de tentar novamente.</div>';
   if(!mercadoPagoOnline)return'<div class="cx-note">🕘 Não conseguimos consultar os meios de pagamento agora. Atualize o pedido para tentar novamente; nenhuma cobrança foi confirmada.</div>';
-  if(!mpPayable(o))return'<div class="cx-note">🕘 Link de pagamento será liberado após a confirmação da encomenda e do frete.</div>';
+  if(!mpPayable(o))return'<div class="cx-note">🕘 O pagamento poderá ser realizado assim que o valor final do pedido e da entrega estiver definido.</div>';
   return'<div class="cx-note">🔐 Próxima etapa: escolha Pix ou cartão para pagar. O pedido só será considerado pago após a confirmação bancária.</div>'+
     '<button class="primary" data-mp-pay="'+esc(o.id)+'" type="button">'+(paymentGroup(o.formaPagamento)==='PIX'?'Gerar Pix Copia e Cola':'Pagar com cartão')+'</button>';
 }
@@ -1601,8 +1601,6 @@ async function submitOrder(ev){
   const paymentChoice=S(E('payment')?.value);
   if(!paymentChoice||!paymentOptionsFor(E('mode')?.value).includes(paymentChoice))
     return toast('Selecione um pagamento disponível para entrega ou retirada.');
-  if(E('mode')?.value==='ENTREGA'&&!mpSelected(paymentChoice)&&paymentChoice!==PIX_CNPJ_LABEL)
-    return toast('Para entrega, escolha Pix pelo CNPJ ou cartão online.');
   if(mpSelected(E('payment')?.value)&&!mercadoPagoOnline)return toast('O pagamento online ainda não está ativado nesta loja.');
   if(mpSelected(E('payment')?.value)&&S(E('cPhone')?.value).replace(/\D/g,'').slice(-11)==='11989310929')
     return toast('Este telefone identifica pedidos de teste. Escolha outra forma de pagamento sem cobrança real.');
@@ -1624,8 +1622,6 @@ async function submitOrder(ev){
     if(a.cep.length!==8||!cepResolved||!a.logradouro||!a.numero||!a.cidade){
       return toast('Consulte o CEP e informe o número do endereço.');
     }
-    const confirmed=await confirmDeliveryExperience();
-    if(!confirmed)return;
   }
 
   const afterHours=storeHoursStatus();
@@ -1710,7 +1706,7 @@ async function submitOrder(ev){
 
     E('checkoutResult').innerHTML=
       `<div class="result">
-        <b>Pedido ${esc(result.codigo)} recebido! 🎉</b><br>
+        <b>Pedido nº ${esc(result.codigo)} recebido! 🎉</b><br>
         ${window.JohnOrderAmounts.celebration(saved)?`<strong style="color:#166534">${esc(window.JohnOrderAmounts.celebration(saved))}</strong><br>`:''}
         ${afterHours?.closed?'<div class="cx-note">🕘 Pedido feito fora do expediente. Atendimento a partir de <b>'+esc(afterHours.nextOpening)+'</b>. Entrega/retirada sujeita à confirmação da loja.</div>':''}
 
@@ -1764,7 +1760,7 @@ async function recoverOrdersForm(){
     <div class="cx-note">Use o mesmo WhatsApp do pedido e o código de um pedido anterior. Isso é necessário para proteger seus dados.</div>
     <form id="recoverOrdersForm" class="checkout" style="margin-top:12px">
       <label>WhatsApp<input id="recoverPhone" required inputmode="tel" value="${esc(formatPhone(p.telefone||''))}" placeholder="(11) 99999-9999"></label>
-      <label>Código do pedido<input id="recoverCode" required autocomplete="off" placeholder="Ex.: WEB-20260913-ABC12345"></label>
+      <label>Número do pedido<input id="recoverCode" required autocomplete="off" placeholder="Ex.: 100001 (ou código de pedido antigo)"></label>
       <button class="primary" type="submit">Recuperar pedidos</button>
       <div id="recoverOrdersResult"></div>
     </form>
@@ -1888,7 +1884,7 @@ function ordersCardsHtml(orders){
 
   return `
     <div class="order-actions" style="margin-bottom:12px">
-      <button class="soft" id="recoverOrdersBtn" type="button">🔐 Recuperar pedidos</button>
+      <button class="soft" id="recoverOrdersBtn" type="button">📱 Troquei de celular</button>
     </div>
     ${cards||'<div class="empty">Nenhum pedido foi encontrado neste aparelho. Se você já comprou antes, use “Recuperar pedidos”.</div>'}
   `;

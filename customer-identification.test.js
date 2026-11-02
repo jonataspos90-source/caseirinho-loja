@@ -62,6 +62,6 @@ test('store parameters scope registration and local profile to the same tenant',
 });
 test('identification gate is in initial HTML and its assets are cached for the PWA',()=>{
   const html=fs.readFileSync(path.join(__dirname,'index.html'),'utf8');const worker=fs.readFileSync(path.join(__dirname,'service-worker.js'),'utf8');
-  assert.match(html,/<body class="customer-identification-required">/);assert.match(html,/id="customerIdentityGate"/);assert.match(html,/customer-identification\.js\?v=20261028/);
+  assert.match(html,/<body class="customer-identification-required">/);assert.match(html,/id="customerIdentityGate"/);assert.match(html,/customer-identification\.js\?v=20261102/);
   assert.match(worker,/const SHELL=\['\.\/customer-identification\.js','\.\/customer-identification\.css'/);
 });
