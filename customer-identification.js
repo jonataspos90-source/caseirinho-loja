@@ -46,6 +46,7 @@
       if(E('cPhone'))E('cPhone').value=formatPhone(phone);
       // Keep cart identification in sync, including carts restored from earlier visits.
       window.CaseirinhoEngagement961?.sendSnapshot?.(true);
+      window.dispatchEvent(new CustomEvent('caseirinho:customer-identified',{detail:{name,phone,consent:true}}));
       document.body.classList.remove('customer-identification-required');
       E('customerIdentityGate').hidden=true;
       window.dispatchEvent(new Event('resize'));
