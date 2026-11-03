@@ -37,9 +37,15 @@
     return (grade.includes('PANQUECA')&&flavor.includes('PALMITO'))
       ||(flavor.includes('PANQUECA')&&flavor.includes('PALMITO'));
   }
+  function blackFridayLive(p,at=Date.now()){
+    const d=promo(p);
+    if(String(d.tipo||'').toUpperCase()!=='BLACK_FRIDAY')return true;
+    const start=Date.parse(d.inicioEm),end=Date.parse(d.fimEm);
+    return Number.isFinite(start)&&Number.isFinite(end)&&start<end&&at>=start&&at<end;
+  }
   function fixedPromo(p){
     const v=n(promo(p).precoPromocional),b=base(p);
-    if(promo(p).ativo===true&&v>0&&b>v)return v;
+    if(promo(p).ativo===true&&blackFridayLive(p)&&v>0&&b>v)return v;
     // Desativação explícita prevalece sobre a promoção histórica de Palmito.
     if(Object.prototype.hasOwnProperty.call(promo(p),'ativo'))return null;
     return isPalmitoPanqueca(p)&&b>11.99?11.99:null;
@@ -67,7 +73,7 @@
     if(d.ativo===true&&d.tipo==='COMPRA_X_LEVE_Y_POR_VALOR')return`Compre ${Math.floor(n(d.quantidadeGatilho))} ${p?.nome||'unidades'} e leve ${products.find(x=>String(x.id)===String(d.produtoBeneficioId))?.nome||'outro produto'} por R$ ${n(d.precoBeneficio).toFixed(2).replace('.',',')}`;
     const info=priceInfo(p,products);
     if(info.conditional)return`Na compra de ${Math.floor(n(info.deal.quantidadeGatilho))} ${info.triggerProduct.nome||'unidades'}, este produto sai por R$ ${info.benefitPrice.toFixed(2).replace('.',',')}`;
-    return fixedPromo(p)!==null?'Preço especial por tempo de promoção':'';
+    return fixedPromo(p)!==null?(String(promo(p).tipo||'').toUpperCase()==='BLACK_FRIDAY'?'BLACK FRIDAY • preço especial por tempo limitado':'Preço especial por tempo de promoção'):'';
   }
   function linePrice(productId,quantity,products=[],quantities=new Map()){
     const map=products instanceof Map?products:new Map(products.map(p=>[String(p.id),p]));
