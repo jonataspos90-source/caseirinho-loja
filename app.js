@@ -57,7 +57,7 @@ const MP_CREDIT_LABEL='Cartão de crédito online (Mercado Pago)';
  const PAYMENT_UI_PREVIEW=new URLSearchParams(location.search).get('preview_cartoes')==='1';
 // Preserve the gateway method as the option value sent to the API.
  // Only its customer-facing name is neutral (no change to financial processing).
- const paymentPublicLabel=x=>x===MP_CREDIT_LABEL?'Cartão de crédito':x===MP_DEBIT_LABEL?'Cartão de débito':x===MP_PIX_LABEL?'Pix online':x===PIX_CNPJ_LABEL?'Pix via QR Code (CNPJ) — confirmação manual':x;
+ const paymentPublicLabel=x=>x==='PIX_SINAL_50_MANUAL'?'Pix · Sinal de 50% (conferência manual)':x===MP_CREDIT_LABEL?'Cartão de crédito':x===MP_DEBIT_LABEL?'Cartão de débito':x===MP_PIX_LABEL?'Pix online':x===PIX_CNPJ_LABEL?'Pix via QR Code (CNPJ) — confirmação manual':x;
  const mpSelected=x=>norm(x).includes('MERCADO_PAGO');
  function paymentGroup(method){
    const key=norm(method);
@@ -68,7 +68,7 @@ const MP_CREDIT_LABEL='Cartão de crédito online (Mercado Pago)';
    return key||'OUTRO';
  }
  function paymentOptionsFor(mode){
-   if(seasonalCampaignId){const online=(mercadoPagoOnline||PAYMENT_UI_PREVIEW)&&catalogConnected?MP_PAYMENT_OPTIONS:[];return catalogConnected?[...online,PIX_CNPJ_LABEL]:[];}
+   if(seasonalCampaignId)return catalogConnected?['PIX_SINAL_50_MANUAL']:[];
    const onsite=A(catalog.loja?.formasPagamento).filter(x=>S(x).trim()&&!mpSelected(x)&&!['A_DEFINIR','NAO_DEFINIDO'].includes(norm(x)));
    const online=(mercadoPagoOnline||PAYMENT_UI_PREVIEW)&&catalogConnected?MP_PAYMENT_OPTIONS:[];
    const source=catalogConnected?[...online,PIX_CNPJ_LABEL,...onsite]:[];
@@ -1044,7 +1044,8 @@ async function quickAdd(id,qty){
   if(seasonalCampaignId&&cart.length&&!(selectedSeasonalCampaign()?.products||[]).some(x=>S(x.id)===S(id)))return toast('Carrinho de encomenda: inclua somente produtos da campanha.');
   const p=A(catalog.produtos).find(x=>S(x.id)===S(id));if(!p)return;
   if(!canBuy(p))return toast('Este produto está indisponível no momento.');
-  const min=minQty(p),step=stepQty(p),wanted=Math.max(min,N(qty)||min),limit=N(p.limitePedido);
+  const seasonRule=selectedSeasonalCampaign()?.products?.find(x=>S(x.id)===S(id));
+  const min=Math.max(minQty(p),N(seasonRule?.minQuantity)||1),step=stepQty(p),wanted=Math.max(min,N(qty)||min),limit=N(seasonRule?.maxQuantity)||N(p.limitePedido);
   const existing=cart.find(x=>S(x.produtoId)===S(id));
   const requested=existing?N(existing.quantidade)+(N(qty)>0?wanted:step):wanted;
   // O cliente pode solicitar qualquer produto ativo; a falta será analisada no ERP.
@@ -1202,7 +1203,7 @@ function dayOf(iso){
   if(!/^\d{4}-\d{2}-\d{2}$/.test(S(iso)))return -1;
   const [y,m,d]=iso.split('-').map(Number);return new Date(Date.UTC(y,m-1,d)).getUTCDay();
 }
-function allowedDate(iso,mode){return serviceDays(mode).includes(dayOf(iso))}
+function allowedDate(iso,mode){const campaign=selectedSeasonalCampaign();if(campaign&&seasonalCampaignId)return (campaign.fulfillmentDates||[]).includes(iso);return serviceDays(mode).includes(dayOf(iso))}
 function nextAllowed(min,mode){
   let d=new Date(min+'T12:00:00');
   for(let i=0;i<30;i++){const x=d.toISOString().slice(0,10);if(allowedDate(x,mode))return x;d.setDate(d.getDate()+1)}
@@ -1210,6 +1211,11 @@ function nextAllowed(min,mode){
 }
 function updateDateMin(){
   if(!E('date'))return;
+  const season=selectedSeasonalCampaign();
+  if(season&&seasonalCampaignId){const ds=A(season.fulfillmentDates).slice().sort();E('date').min=ds[0]||'';E('date').max=ds.at(-1)||'';
+   if(!ds.includes(E('date').value))E('date').value=E('seasonalFulfillmentDate')?.value||ds[0]||'';
+   E('deliveryDays').textContent='Datas de '+(E('mode')?.value==='ENTREGA'?'entrega':'retirada')+' para '+season.title+': '+ds.map(seasonalDateBR).join(' · ');return;}
+  E('date').max='';
   let days=Math.max(0,N(catalog.loja?.antecedenciaPadraoDias));
   for(const x of cart){const p=A(catalog.produtos).find(y=>S(y.id)===S(x.produtoId));days=Math.max(days,N(p?.antecedenciaDias))}
   const d=new Date();d.setDate(d.getDate()+days);
@@ -1704,6 +1710,7 @@ async function submitOrder(ev){
     return toast('Aceite a Política de Privacidade / LGPD para continuar.');
   }
 
+  if(seasonalCampaignId&&paymentChoice!=='PIX_SINAL_50_MANUAL')return toast('Para encomendas, escolha Pix de 50% de sinal.');
   const mode=E('mode').value;
   if(!mode)return toast('Selecione Retirada ou Entrega.');
   if(seasonalCampaignId){
@@ -1723,7 +1730,7 @@ async function submitOrder(ev){
     }
   }
 
-  const afterHours=storeHoursStatus();
+  const afterHours=seasonalCampaignId?null:storeHoursStatus();
   if(afterHours?.closed){
     const proceed=await customerDialog({
       title:'Loja fechada no momento',icon:'🕘',locked:true,
