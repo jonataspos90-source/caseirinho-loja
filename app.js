@@ -452,6 +452,16 @@ function isFlagOn(value){
 function promoApi(){return window.CaseirinhoPromotions}
 function productPriceInfo(p){return promoApi()?.priceInfo(p,catalog.produtos)||{regular:N(p?.preco),current:N(p?.preco),conditional:false}}
 function productOfferText(p){return promoApi()?.offerText(p,catalog.produtos)||''}
+
+function blackFridayDetails(p){
+ const d=p?.promocao||p?.ecommerce?.promocao||{};
+ if(S(d.tipo).toUpperCase()!=='BLACK_FRIDAY'||d.ativo!==true)return null;
+ const start=Date.parse(d.inicioEm),end=Date.parse(d.fimEm),now=Date.now();
+ if(!Number.isFinite(start)||!Number.isFinite(end)||start>=end||now<start||now>=end)return null;
+ const dateText=value=>new Intl.DateTimeFormat('pt-BR',{timeZone:'America/Sao_Paulo',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}).format(new Date(value));
+ return {until:dateText(end),from:dateText(start),regular:Number(p.precoEcommerce||p.preco)||0,price:Number(d.precoPromocional)||0};
+}
+
 function productDescription(p){
   const category=norm(p?.categoria||p?.categoriaNome||'');
   const rawName=S(p?.nomeComercial||p?.nome);
@@ -534,6 +544,7 @@ function cardHtml(entry){
   const prices=priceInfos.map(v=>v.current),min=prices.length?Math.min(...prices):N(p.preco),max=prices.length?Math.max(...prices):N(p.preco);
   const hasPromo=vars.some(v=>productPriceInfo(v).current<productPriceInfo(v).regular||!!promoApi()?.isFeatured(v,catalog.produtos));
   const offerText=vars.map(productOfferText).find(Boolean)||'';
+  const blackFriday=vars.map(blackFridayDetails).find(Boolean)||null;
   const title=grouped?(p.gradeNome||p.nome):p.nome;
   const desc=productDescription(p);
   const availability=grouped
@@ -542,13 +553,15 @@ function cardHtml(entry){
   return `<article class="product-card">
     <div class="product-pic" data-view="${esc(p.id)}">
       ${im?`<img src="${esc(im)}" alt="${esc(title)}" loading="lazy"><span class="image-note">Imagem meramente ilustrativa</span>`:'<div class="no-image">🍽️</div>'}
-      <div class="tags">${hasPromo?'<span class="tag" style="background:#15803d;color:#fff">PROMOÇÃO</span>':''}${vars.some(v=>isFlagOn(v.novidade))?'<span class="tag hot">NOVIDADE</span>':''}${vars.some(v=>isFlagOn(v.destaque))?'<span class="tag">DESTAQUE</span>':''}</div>
+      ${blackFriday?'<span class="bf-black-ribbon" aria-label="Oferta Black Friday">BLACK FRIDAY</span>':''}
+      <div class="tags">${hasPromo&&!blackFriday?'<span class="tag" style="background:#15803d;color:#fff">PROMOÇÃO</span>':''}${vars.some(v=>isFlagOn(v.novidade))?'<span class="tag hot">NOVIDADE</span>':''}${vars.some(v=>isFlagOn(v.destaque))?'<span class="tag">DESTAQUE</span>':''}</div>
     </div>
     <div class="product-body">
       <div class="category-label">${esc(c.nome)}</div>
       <h3>${esc(title)}</h3>
       <div class="description">${esc(desc||'Produto selecionado da loja.')}</div>
       <div class="price">${grouped&&max>min+.001?'A partir de ':''}${priceInfo.current<priceInfo.regular?`<span style="font-size:.8em;color:#64748b">De </span><s style="color:#64748b;font-size:.82em">${money(priceInfo.regular)}</s> <strong style="color:#15803d">Por ${money(priceInfo.current)}</strong>`:money(min)}</div>
+      ${blackFriday?`<div class="bf-validity" aria-label="Vigência Black Friday">🔴 BLACK FRIDAY · ${esc(blackFriday.from)} até ${esc(blackFriday.until)}</div>`:''}
       ${offerText?`<div style="margin-top:5px;color:#15803d;font-size:12px;font-weight:800">${esc(offerText)}</div>`:''}
       ${grouped?`<div class="variant-summary">${gm.icon} ${esc(gm.plural)}: ${vars.map(v=>esc(v.variacaoLabel||v.nome)).join(' · ')}</div>`:''}
       <div class="availability ${ok?'':'no'}">${esc(availability)}</div>
@@ -936,7 +949,8 @@ function showProduct(id){
     E('variantBox').className='';E('variantBox').innerHTML='';
   }
 
-  E('modalPrice').innerHTML=productPriceHtml(p);
+  const bfModal=blackFridayDetails(p);
+  E('modalPrice').innerHTML=(bfModal?'<span class="bf-modal-badge">BLACK FRIDAY</span><span class="bf-modal-validity">🔴 Válido de '+esc(bfModal.from)+' até '+esc(bfModal.until)+'</span>':'')+productPriceHtml(p);
   E('modalAvailability').textContent=availabilityText(p);
   E('modalAvailability').className='availability '+(canBuy(p)?'':'no');
   E('modalQty').min=minQty(p);E('modalQty').step=stepQty(p);E('modalQty').value=minQty(p);
