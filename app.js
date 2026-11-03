@@ -18,6 +18,7 @@ const CATALOG_PATH='/api/v1/public/store/'+encodeURIComponent(STORE)+'/catalog';
 const CATALOG_BACKUP_CACHE='john-storefront-catalog-backup-v1';
 const CART_KEY=STORE_SCOPE+'cart_v1';
 const ORDERS_KEY=STORE_SCOPE+'orders_v1';
+const SEASON_KEY=STORE_SCOPE+'seasonal_cart_v1';
 const PENDING_ORDER_KEY=STORE_SCOPE+'pending_order_v1';
 const CUSTOMER_NOTICE_KEY=STORE_SCOPE+'customer_notice_v1';
 const CUSTOMER_PROFILE_KEY=STORE_SCOPE+'customer_profile_v1';
@@ -31,6 +32,7 @@ const norm=v=>S(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUppe
 const money=v=>N(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 
 let catalog={loja:{},produtos:[]};
+let seasonalCampaigns=[],seasonalSelected='',seasonalCampaignId='';
 let cart=readJson(CART_KEY,[]);
 let activeCategory='';
 let selectedProduct=null;
@@ -66,6 +68,7 @@ const MP_CREDIT_LABEL='Cartão de crédito online (Mercado Pago)';
    return key||'OUTRO';
  }
  function paymentOptionsFor(mode){
+   if(seasonalCampaignId){const online=(mercadoPagoOnline||PAYMENT_UI_PREVIEW)&&catalogConnected?MP_PAYMENT_OPTIONS:[];return catalogConnected?[...online,PIX_CNPJ_LABEL]:[];}
    const onsite=A(catalog.loja?.formasPagamento).filter(x=>S(x).trim()&&!mpSelected(x)&&!['A_DEFINIR','NAO_DEFINIDO'].includes(norm(x)));
    const online=(mercadoPagoOnline||PAYMENT_UI_PREVIEW)&&catalogConnected?MP_PAYMENT_OPTIONS:[];
    const source=catalogConnected?[...online,PIX_CNPJ_LABEL,...onsite]:[];
@@ -294,7 +297,8 @@ function orderFingerprint(body){
     formaPagamento:body?.formaPagamento,
     entrega:body?.modalidade==='ENTREGA'?body?.entrega:{},
     itens:A(body?.itens).map(x=>({produtoId:S(x.produtoId),quantidade:N(x.quantidade)})),
-    observacao:S(body?.observacao)
+    observacao:S(body?.observacao),
+    campanhaSazonal:S(body?.encomendaSazonal?.campanhaId)
   });
 }
 function clientRequestIdFor(body){
@@ -744,6 +748,75 @@ function renderSearchSuggestions(){
     E('catalogSection')?.scrollIntoView({behavior:'smooth',block:'start'});
   };
 }
+
+function seasonalCampaign(id){return seasonalCampaigns.find(c=>S(c.id)===S(id))||null}
+function selectedSeasonalCampaign(){return seasonalCampaign(seasonalCampaignId)}
+const seasonalSplit=amount=>{const cents=Math.round(N(amount)*100),deposit=Math.ceil(cents/2);return{deposit:deposit/100,balance:(cents-deposit)/100}};
+function seasonalDateBR(x){if(!x)return'—';const [y,m,d]=S(x).split('-');return d+'/'+m+'/'+y}
+async function loadSeasonalCampaigns(){
+ if(STORE!=='caseirinho')return;
+ try{
+  const r=await api('/api/v1/public/store/'+encodeURIComponent(STORE)+'/seasonal-campaigns');
+  seasonalCampaigns=A(r.campaigns);
+  const saved=readJson(SEASON_KEY,{});
+  if(cart.length&&saved.campaignId&&seasonalCampaign(saved.campaignId))seasonalCampaignId=saved.campaignId;
+  if(!seasonalCampaign(seasonalSelected))seasonalSelected=seasonalCampaigns.find(c=>c.status==='ABERTA')?.id||seasonalCampaigns[0]?.id||'';
+  renderSeasonalCampaigns();renderSeasonalCheckout();
+ }catch(err){console.warn('[Caseirinho sazonal] campanhas não disponíveis',err.message)}
+}
+function renderSeasonalCampaigns(){
+ const enabled=seasonalCampaigns.length>0;
+ E('seasonalBanner').hidden=!enabled;E('seasonalSection').hidden=!enabled;
+ if(!enabled)return;
+ const chosen=seasonalCampaign(seasonalSelected)||seasonalCampaigns[0],orderable=chosen.status==='ABERTA';
+ E('seasonalBannerTitle').textContent=chosen.title||'Encomendas especiais';
+ E('seasonalBannerText').textContent=chosen.bannerText||chosen.description||'Reserve seus produtos para datas especiais.';
+ E('seasonalCampaignTabs').innerHTML=seasonalCampaigns.map(c=>'<button type="button" data-season-tab="'+esc(c.id)+'" class="'+(c.id===chosen.id?'active':'')+'">'+esc(c.title)+'</button>').join('');
+ E('seasonalCampaignDetails').innerHTML='<div class="seasonal-campaign-details"><strong>'+esc(chosen.title)+'</strong> · '+esc(chosen.description||'')+
+ '<br>📅 Encomendas: '+esc(seasonalDateBR(chosen.orderFrom))+' até '+esc(seasonalDateBR(chosen.orderUntil))+
+ ' · Recebimento: '+chosen.fulfillmentDates.map(seasonalDateBR).map(esc).join(' · ')+
+ '<br>📦 Quantidade mínima total: '+N(chosen.minTotalQuantity)+
+ (N(chosen.minimumOrderValue)>0?' · Pedido mínimo '+money(chosen.minimumOrderValue):'')+
+ (N(chosen.maximumOrderValue)>0?' · Valor máximo '+money(chosen.maximumOrderValue):'')+
+ '<br><strong>'+ (orderable?'✅ Encomendas abertas · 50% de sinal':'🗓️ Em breve — aguarde a abertura')+'</strong></div>';
+ E('seasonalProducts').innerHTML=chosen.products.map(p=>
+ '<article class="seasonal-item">'+(p.image?'<img alt="'+esc(p.name)+'" src="'+esc(p.image)+'" loading="lazy">':'')+
+ '<div class="seasonal-item-content"><h3>'+esc(p.name)+'</h3><span class="seasonal-price">'+money(p.price)+'</span>'+
+ '<small>Pedido mínimo: '+N(p.minQuantity)+(N(p.maxQuantity)>0?' · máximo: '+N(p.maxQuantity):'')+'</small>'+
+ '<button type="button" data-season-add="'+esc(p.id)+'" '+(!orderable?'disabled':'')+'>🎁 Adicionar à encomenda</button></div></article>'
+ ).join('')||'<p>Sem produtos disponíveis nesta campanha.</p>';
+}
+function renderSeasonalCheckout(){
+ const c=selectedSeasonalCampaign(),visible=!!c&&cart.length>0;
+ E('seasonalCheckout').hidden=!visible;
+ if(!visible){if(!cart.length&&seasonalCampaignId){seasonalCampaignId='';removeLocal(SEASON_KEY);}return;}
+ E('seasonalCheckoutTitle').textContent=c.title+' · 50% no pedido e o restante na '+(E('mode').value==='ENTREGA'?'entrega':'retirada');
+ const select=E('seasonalFulfillmentDate'),prev=select.value;
+ select.innerHTML='<option value="">Selecione a data da encomenda</option>'+c.fulfillmentDates.map(date=>'<option value="'+esc(date)+'">'+esc(seasonalDateBR(date))+'</option>').join('');
+ const chosen=c.fulfillmentDates.includes(prev)?prev:c.fulfillmentDates.includes(E('date').value)?E('date').value:'';
+ select.value=chosen;
+ if(chosen)E('date').value=chosen;
+ const price=promoApi()?.cartTotals(cart,catalog.produtos)?.subtotal??cart.reduce((sum,x)=>sum+N(x.precoUnitario)*N(x.quantidade),0);
+ const fees=E('mode').value==='ENTREGA'?N(E('shipping')?.textContent?.replace(/[^0-9,]/g,'').replace(',','.')):0;
+ const split=seasonalSplit(price+fees);
+ E('seasonalFinanceSummary').innerHTML='Total previsto: <b>'+money(price+fees)+'</b><br>💚 Sinal (50%): <b>'+money(split.deposit)+'</b><br>📦 Na entrega/retirada (50%): <b>'+money(split.balance)+'</b><br><small>Frete final e valores serão conferidos no servidor antes do pagamento.</small>';
+}
+function seasonalAdd(id){
+ const c=seasonalCampaign(seasonalSelected),line=c?.products.find(x=>x.id===id);
+ if(!c||c.status!=='ABERTA'||!line)return toast('A campanha está fechada ou o produto não participa.');
+ if(cart.length&&!seasonalCampaignId)return toast('Você já tem produtos no carrinho normal. Finalize esse pedido antes de começar a encomenda especial.');
+ if(cart.length&&seasonalCampaignId!==c.id)return toast('Finalize primeiro a encomenda da outra campanha.');
+ seasonalCampaignId=c.id;writeJson(SEASON_KEY,{campaignId:c.id});
+ quickAdd(id,Math.max(1,N(line.minQuantity)));
+ modeChanged();renderSeasonalCheckout();
+ toast('🎁 Produto adicionado à encomenda de '+c.title);
+}
+function bindSeasonal(){
+ E('seasonalBannerButton').addEventListener('click',()=>E('seasonalSection').scrollIntoView({behavior:'smooth',block:'start'}));
+ E('seasonalCampaignTabs').addEventListener('click',e=>{const b=e.target.closest('[data-season-tab]');if(b){seasonalSelected=b.dataset.seasonTab;renderSeasonalCampaigns();}});
+ E('seasonalProducts').addEventListener('click',e=>{const b=e.target.closest('[data-season-add]');if(b)seasonalAdd(b.dataset.seasonAdd);});
+ E('seasonalFulfillmentDate').addEventListener('change',()=>{E('date').value=E('seasonalFulfillmentDate').value;});
+}
 function renderProducts(){
   const raw=S(E('search')?.value).trim();
   const root=E('products');
@@ -968,6 +1041,7 @@ function renderGallery(imgs,index){
   E('thumbs').querySelectorAll('[data-thumb]').forEach(b=>b.onclick=()=>renderGallery(imgs,N(b.dataset.thumb)));
 }
 async function quickAdd(id,qty){
+  if(seasonalCampaignId&&cart.length&&!(selectedSeasonalCampaign()?.products||[]).some(x=>S(x.id)===S(id)))return toast('Carrinho de encomenda: inclua somente produtos da campanha.');
   const p=A(catalog.produtos).find(x=>S(x.id)===S(id));if(!p)return;
   if(!canBuy(p))return toast('Este produto está indisponível no momento.');
   const min=minQty(p),step=stepQty(p),wanted=Math.max(min,N(qty)||min),limit=N(p.limitePedido);
@@ -989,11 +1063,13 @@ async function quickAdd(id,qty){
   renderCart();toast('Produto adicionado ao carrinho.');
 }
 function renderCart(){
+  if(!cart.length&&seasonalCampaignId){seasonalCampaignId='';removeLocal(SEASON_KEY);}
   // Repare também carrinhos persistidos antes da atualização do catálogo.
   reconcileCartProducts();
   cart=cart.filter(x=>x&&x.produtoId);
   writeJson(CART_KEY,cart);
   const count=cart.reduce((s,x)=>s+N(x.quantidade),0);
+  if(E('seasonalCheckout')&&!E('seasonalCheckout').hidden||seasonalCampaignId)setTimeout(renderSeasonalCheckout,0);
   E('cartCount').textContent=count;E('navCartCount').textContent=count;
 
   const promoTotals=promoApi()?.cartTotals(cart,catalog.produtos)||{lines:new Map(),subtotal:cart.reduce((s,x)=>s+N(x.quantidade)*N(x.precoUnitario),0),savings:0};
@@ -1249,7 +1325,8 @@ function modeChanged(){
     :'<option value="">Pagamento online indisponível</option>';
   if(allowed.includes(previous))E('payment').value=previous;
   renderBankPixField();updateMpCheckoutGuidance();
-  updateDateMin();renderCart();updateHoursNotice();
+  if(!seasonalCampaignId)updateDateMin();
+  renderCart();renderSeasonalCheckout();updateHoursNotice();
 }
 function address(){
   return {
@@ -1629,7 +1706,15 @@ async function submitOrder(ev){
 
   const mode=E('mode').value;
   if(!mode)return toast('Selecione Retirada ou Entrega.');
-  if(!allowedDate(E('date').value,mode))return toast('A data escolhida não está disponível.');
+  if(seasonalCampaignId){
+    const c=selectedSeasonalCampaign();
+    const date=E('seasonalFulfillmentDate').value;
+    if(!c||c.status!=='ABERTA'||!c.fulfillmentDates.includes(date))return toast('Escolha uma data válida da encomenda sazonal.');
+    E('date').value=date;
+    if(cart.some(x=>!c.products.some(p=>p.id===x.produtoId)))return toast('O carrinho de encomenda contém produtos fora da campanha.');
+    if(cart.some(x=>{const rule=c.products.find(p=>p.id===x.produtoId);return N(x.quantidade)<N(rule.minQuantity)||N(rule.maxQuantity)>0&&N(x.quantidade)>N(rule.maxQuantity)}))return toast('Revise as quantidades mínimas/máximas da campanha.');
+    if(cart.reduce((sum,x)=>sum+N(x.quantidade),0)<N(c.minTotalQuantity))return toast('Quantidade mínima total da encomenda: '+c.minTotalQuantity);
+  }else if(!allowedDate(E('date').value,mode))return toast('A data escolhida não está disponível.');
 
   if(mode==='ENTREGA'){
     const a=address();
@@ -1656,6 +1741,7 @@ async function submitOrder(ev){
       cpf:S(E('cCpf').value).trim()
     },
     modalidade:mode,
+    ...(seasonalCampaignId?{encomendaSazonal:{campanhaId:seasonalCampaignId}}:{}),
     dataAtendimento:E('date').value,
     horario:mode==='ENTREGA'?'A combinar':E('time').value,
     formaPagamento:E('payment').value,
@@ -1707,6 +1793,7 @@ async function submitOrder(ev){
 
     // Somente depois de uma resposta válida podemos liberar o requestId.
     removeLocal(PENDING_ORDER_KEY);
+    if(seasonalCampaignId){seasonalCampaignId='';removeLocal(SEASON_KEY);}
 
     let freightText='';
     if(mode==='RETIRADA'){
@@ -1725,6 +1812,7 @@ async function submitOrder(ev){
         ${afterHours?.closed?'<div class="cx-note">🕘 Pedido feito fora do expediente. Atendimento a partir de <b>'+esc(afterHours.nextOpening)+'</b>. Entrega/retirada sujeita à confirmação da loja.</div>':''}
 
         ${mpSelected(saved.formaPagamento)?(result.freteStatus==='COTACAO_PENDENTE'?'<div class="cx-note">🕘 Seu link de pagamento online será liberado quando o Caseirinho confirmar disponibilidade e frete. Acompanhe em Meus pedidos.</div>':'<div class="cx-note">💳 Pagamento online aguardando aprovação. Você escolherá uma forma disponível no ambiente seguro de pagamento.</div><button class="primary" type="button" id="mpPayNow">Abrir pagamento seguro</button>'):''}
+        ${result.encomendaSazonal?'<div class="cx-note" style="background:#eaf7e9;border-color:#b8d5b5"><b>🎄 Encomenda especial · '+esc(result.encomendaSazonal.campaignTitle)+'</b><br>Data: '+esc(seasonalDateBR(result.encomendaSazonal.fulfillmentDate))+'<br>💚 Sinal de 50%: <b>'+money(result.encomendaSazonal.depositDue)+'</b> — pagamento pendente de confirmação.<br>📦 Restante na entrega/retirada: <b>'+money(result.encomendaSazonal.balanceDue)+'</b><br>Produção após confirmação do sinal.</div>':''}
         ${esc(freightText)}<br>
         ${window.JohnOrderAmounts.lines(saved).map(([label,value])=>esc(label)+': <b>'+esc(value)+'</b>').join('<br>')}<br>
         <button class="soft" type="button" id="openSavedOrders" style="margin-top:9px">Acompanhar pedido</button>
@@ -2059,7 +2147,7 @@ function refreshBlackFridayBoundary(){
  }
 }
 function start(){
-  wire();
+  wire();bindSeasonal();
   E('retryCatalog')?.addEventListener('click',()=>loadCatalog(false));
   watchPackPriceRows();
   renderCart();
@@ -2067,6 +2155,7 @@ function start(){
     lastCatalogMarker=S(catalog?.publicadoEm||'');
     checkCatalogVersion();
     refreshBlackFridayBoundary();
+    loadSeasonalCampaigns();
     loadMercadoPagoConfig().catch(console.warn);
   });
   installPwa();
