@@ -13,7 +13,7 @@
   <link rel="manifest" href="./manifest.webmanifest?v=clean-20261004">
   <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png?v=clean-20261004">
   <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png?v=clean-20261004">
-  <link rel="stylesheet" href="./styles.css?v=910150">
+  <link rel="stylesheet" href="./styles.css?v=910160">
   <link rel="stylesheet" href="./customer-reviews-v1.css?v=20261018a">
   <link rel="stylesheet" href="./mobile-ux-v9-4-7.css?v=9490">
   <link rel="stylesheet" href="./product-cards-mobile-v9-4-8.css?v=9510">
@@ -80,7 +80,23 @@
   </header>
 
   <main>
-    <section class="hero hero-party">
+    <section class="seasonal-banner" id="seasonalBanner" hidden aria-label="Encomendas sazonais">
+  <div class="wrap seasonal-banner-inner">
+    <div><span class="seasonal-pill">🎄 ENCOMENDAS ESPECIAIS</span>
+     <h2 id="seasonalBannerTitle">Encomendas Caseirinho</h2>
+     <p id="seasonalBannerText">Garanta suas delícias para uma data especial.</p>
+     <div class="seasonal-banner-notice">💚 50% de sinal na encomenda · 50% na entrega ou retirada</div>
+    </div>
+    <button id="seasonalBannerButton" type="button" class="seasonal-cta">Ver cardápio de encomendas ↓</button>
+  </div>
+</section>
+<section class="seasonal-section wrap" id="seasonalSection" hidden>
+ <div class="seasonal-heading"><h2>🎁 Cardápio de Encomendas</h2><p>Escolha a campanha, confira as datas e faça seu pedido especial.</p></div>
+ <div id="seasonalCampaignTabs" class="seasonal-campaign-tabs"></div>
+ <div id="seasonalCampaignDetails"></div>
+ <div id="seasonalProducts" class="seasonal-products"></div>
+</section>
+<section class="hero hero-party">
       <div class="wrap party-banner">
         <div class="party-visual" aria-hidden="true">
           <img
@@ -230,7 +246,13 @@
           <label>Horário<input id="time" type="time"></label>
           <label>Pagamento *<select id="payment"></select></label>
         </div>
-        <div id="paymentPreviewNotice" class="cx-note" role="status" hidden style="background:#fff4db;border:1px solid #dca947;color:#704a14;margin:10px 0;font-weight:700">
+        <div id="seasonalCheckout" class="seasonal-checkout" hidden>
+ <h3>🎄 Fechamento de Encomenda</h3><p id="seasonalCheckoutTitle"></p>
+ <label>Data escolhida para entrega/retirada *<select id="seasonalFulfillmentDate"><option value="">Escolha uma data da campanha</option></select></label>
+ <div class="seasonal-finance-summary" id="seasonalFinanceSummary">Sinal de 50% ao encomendar · saldo de 50% na entrega/retirada.</div>
+ <small id="seasonalCheckoutNotice">A produção é confirmada após o recebimento do sinal. Não pague o valor total antecipadamente.</small>
+ </div>
+ <div id="paymentPreviewNotice" class="cx-note" role="status" hidden style="background:#fff4db;border:1px solid #dca947;color:#704a14;margin:10px 0;font-weight:700">
           ⚠️ Você abriu um link de demonstração: nenhum pedido ou pagamento será enviado. <a href="./" style="color:#704a14;font-weight:800;text-decoration:underline">Abrir a loja oficial para comprar</a>.
         </div>
 
@@ -291,8 +313,8 @@
   <script src="./caseirinho-cashback-v9-6-0.js?v=9600" defer></script>
   <script src="./customer-cashback-wallet-v9-6-3.js?v=9630" defer></script>
   <script src="./cashback-auto-refresh-v9-6-7.js?v=9670" defer></script>
-  <script src="./ecommerce-promotions-v910.js?v=910150" defer></script>
-  <script src="./app.js?v=910151" defer></script>
+  <script src="./ecommerce-promotions-v910.js?v=910160" defer></script>
+  <script src="./app.js?v=910160" defer></script>
   <script src="./pwa-install-v9-6-6.js?v=9660" defer></script>
   <script src="./cashback-order-yield-v9-6-4.js?v=9651" defer></script>
   <script src="./commerce-engine-v9-3-0.js?v=20261028-native-checkout" defer></script>
