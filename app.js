@@ -2039,6 +2039,25 @@ async function checkCatalogVersion(){
     }
   }catch(_){}
 }
+
+let previousBlackFridayActive=null;
+function refreshBlackFridayBoundary(){
+ const products=A(catalog.produtos).filter(p=>S(p?.promocao?.tipo||p?.ecommerce?.promocao?.tipo).toUpperCase()==='BLACK_FRIDAY');
+ if(!products.length){previousBlackFridayActive=null;return;}
+ const signature=products.filter(p=>!!blackFridayDetails(p)).map(p=>S(p.id)).sort().join('|');
+ if(previousBlackFridayActive===null){previousBlackFridayActive=signature;return;}
+ if(previousBlackFridayActive===signature)return;
+ previousBlackFridayActive=signature;
+ // Start/end automatically updates badges, sale prices, cart, and open product modal.
+ renderProducts();renderFeatured();renderCart();
+ if(selectedProduct){
+  const p=A(catalog.produtos).find(x=>S(x.id)===S(selectedProduct.id));
+  if(p){
+   const bf=blackFridayDetails(p);
+   E('modalPrice').innerHTML=(bf?'<span class="bf-modal-badge">BLACK FRIDAY</span><span class="bf-modal-validity">🔴 Válido de '+esc(bf.from)+' até '+esc(bf.until)+'</span>':'')+productPriceHtml(p);
+  }
+ }
+}
 function start(){
   wire();
   E('retryCatalog')?.addEventListener('click',()=>loadCatalog(false));
@@ -2047,12 +2066,14 @@ function start(){
   loadCatalog().then(()=>{
     lastCatalogMarker=S(catalog?.publicadoEm||'');
     checkCatalogVersion();
+    refreshBlackFridayBoundary();
     loadMercadoPagoConfig().catch(console.warn);
   });
   installPwa();
 
   // Heartbeats leves: catálogo por versão e pedidos do próprio aparelho por token público.
   setInterval(()=>{if(!document.hidden)checkCatalogVersion()},30000);
+  setInterval(()=>{if(!document.hidden)refreshBlackFridayBoundary()},15000);
   setInterval(()=>{if(!document.hidden)pollCustomerOrders()},4000);
   setTimeout(()=>pollCustomerOrders(),1200);
   if(new URLSearchParams(location.search).get('mp')==='retorno'){
