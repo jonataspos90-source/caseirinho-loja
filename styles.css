@@ -881,3 +881,38 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}.wrap{width:min(
 .bf-modal-badge{display:block;background:#090909;color:white;width:max-content;padding:6px 11px;border-radius:5px;font-size:13px;letter-spacing:1px;font-weight:900;margin:0 0 7px}
 .bf-modal-validity{display:block;color:#b0162f;background:#fff0f1;font-size:13px;font-weight:800;border-radius:6px;padding:6px 8px;margin-bottom:7px}
 @media(max-width:450px){.bf-black-ribbon{font-size:11px;padding:8px 10px 8px 14px}.bf-validity{font-size:11px}}
+
+
+/* Encomendas sazonais — campanha, produtos, sinal e data de entrega */
+.seasonal-banner{background:linear-gradient(125deg,#173b2b 0%,#0b271d 55%,#60172b 100%);color:#fff;margin:0;padding:25px 0;box-shadow:0 5px 18px #1b301c24}
+.seasonal-banner-inner{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:22px}
+.seasonal-pill{font-size:12px;font-weight:950;letter-spacing:1.4px;color:#ffdc8d}
+.seasonal-banner h2{font-family:Georgia,serif;font-size:clamp(25px,4vw,37px);color:#fff;line-height:1.15;margin:10px 0}
+.seasonal-banner p{color:#f6e6de;font-size:14px;max-width:600px}
+.seasonal-banner-notice{font-weight:900;color:#ffdf99;background:#ffffff15;display:inline-block;padding:8px 12px;border-radius:8px;margin-top:10px;font-size:12px}
+.seasonal-cta{cursor:pointer;white-space:normal;text-align:center;color:#19432e;background:#ffdb8a;border:0;border-radius:12px;padding:16px 20px;font-size:14px;font-weight:900;box-shadow:0 3px 0 #aa823e}
+.seasonal-section{padding-top:26px;padding-bottom:35px}
+.seasonal-heading h2{font-family:Georgia,serif;color:#164631;font-size:27px}
+.seasonal-heading p{color:#596c5d;margin-top:5px}
+.seasonal-campaign-tabs{display:flex;gap:9px;flex-wrap:wrap;margin:14px 0}
+.seasonal-campaign-tabs button{border-radius:22px;border:1px solid #c9d5c1;padding:10px 14px;color:#244b33;background:#fff;font-weight:850;cursor:pointer}
+.seasonal-campaign-tabs button.active{color:#fff;background:#175037;border-color:#175037}
+.seasonal-campaign-details{border:1px solid #e1d9b9;background:#fffaeb;border-radius:12px;padding:14px 16px;color:#5e4c2f;margin:9px 0 18px;font-size:13px;line-height:1.6}
+.seasonal-campaign-details strong{color:#12503a}
+.seasonal-products{display:grid;grid-template-columns:repeat(auto-fill,minmax(225px,1fr));gap:12px}
+.seasonal-item{border:1px solid #e0e8dc;border-radius:15px;background:#fff;overflow:hidden;box-shadow:0 3px 13px #18442a16;display:flex;flex-direction:column}
+.seasonal-item img{width:100%;height:158px;object-fit:cover}
+.seasonal-item-content{padding:15px;display:flex;flex-direction:column;gap:8px;flex:1}
+.seasonal-item h3{font-size:16px;color:#1b432d;margin:0}
+.seasonal-item small{color:#6a786d;font-size:12px}
+.seasonal-item .seasonal-price{font-weight:900;font-size:18px;color:#89243d}
+.seasonal-item button{margin-top:auto;background:#154a32;color:#fff;border:0;border-radius:8px;padding:11px;cursor:pointer;font-weight:850}
+.seasonal-item button[disabled]{background:#8c9c91;cursor:not-allowed}
+.seasonal-checkout{background:#f2f9ee;border:2px solid #b8cfb6;border-radius:12px;padding:14px;margin:14px 0;color:#164b34}
+.seasonal-checkout h3{margin:0 0 6px;font-size:18px}
+.seasonal-checkout label{display:flex;flex-direction:column;gap:8px;font-weight:800;margin:10px 0}
+.seasonal-checkout select{width:100%;min-height:45px;padding:10px;border:1px solid #c6d6c3;border-radius:8px;background:white;color:#244c36}
+.seasonal-finance-summary{background:#fff;border:1px solid #b4d4bc;border-radius:8px;padding:12px;margin:10px 0;font-weight:850;color:#1a643e;line-height:1.7}
+.seasonal-checkout small{color:#744529;line-height:1.5}
+@media(max-width:660px){.seasonal-banner-inner{grid-template-columns:1fr}.seasonal-cta{width:100%}.seasonal-products{grid-template-columns:repeat(2,minmax(0,1fr))}.seasonal-item img{height:115px}}
+@media(max-width:390px){.seasonal-products{grid-template-columns:1fr}}
