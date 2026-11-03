@@ -812,6 +812,11 @@ function seasonalAdd(id){
  toast('🎁 Produto adicionado à encomenda de '+c.title);
 }
 function bindSeasonal(){
+ document.addEventListener('click',async e=>{
+  const b=e.target.closest?.('[data-copy-season-pix]');if(!b)return;
+  try{await navigator.clipboard.writeText('69195483000123');toast('CNPJ copiado! Pague somente o sinal de 50%.');}
+  catch(_){toast('Chave Pix: 69.195.483/0001-23');}
+ });
  E('seasonalBannerButton').addEventListener('click',()=>E('seasonalSection').scrollIntoView({behavior:'smooth',block:'start'}));
  E('seasonalCampaignTabs').addEventListener('click',e=>{const b=e.target.closest('[data-season-tab]');if(b){seasonalSelected=b.dataset.seasonTab;renderSeasonalCampaigns();}});
  E('seasonalProducts').addEventListener('click',e=>{const b=e.target.closest('[data-season-add]');if(b)seasonalAdd(b.dataset.seasonAdd);});
@@ -1296,8 +1301,12 @@ function updateMpCheckoutGuidance(){
   const hint=E('mpCheckoutGuidance');
   if(!hint)return;
   const selected=S(E('payment')?.value);
-  hint.hidden=!mpSelected(selected)&&selected!==PIX_CNPJ_LABEL;
+  hint.hidden=!mpSelected(selected)&&selected!==PIX_CNPJ_LABEL&&selected!=='PIX_SINAL_50_MANUAL';
   if(hint.hidden)return;
+  if(selected==='PIX_SINAL_50_MANUAL'){
+    hint.innerHTML='<b>💚 Encomenda: sinal de 50% via Pix</b><br>Chave Pix CNPJ: <b>69.195.483/0001-23</b>. Após finalizar, pague apenas o valor do sinal informado no pedido. O restante será recebido na entrega/retirada e a produção só começa após conferência bancária.';
+    return;
+  }
   if(selected===PIX_CNPJ_LABEL){
     hint.innerHTML='<b>💠 Pix pelo CNPJ do Caseirinho</b><br>O QR Code do CNPJ <b>69.195.483/0001-23</b> ficará disponível em “Meus pedidos” depois que a loja aceitar o pedido. Após pagar, toque em <b>Já paguei</b> para avisar a equipe. O pedido continuará pendente até a conferência do extrato.';
     return;
@@ -1819,7 +1828,7 @@ async function submitOrder(ev){
         ${afterHours?.closed?'<div class="cx-note">🕘 Pedido feito fora do expediente. Atendimento a partir de <b>'+esc(afterHours.nextOpening)+'</b>. Entrega/retirada sujeita à confirmação da loja.</div>':''}
 
         ${mpSelected(saved.formaPagamento)?(result.freteStatus==='COTACAO_PENDENTE'?'<div class="cx-note">🕘 Seu link de pagamento online será liberado quando o Caseirinho confirmar disponibilidade e frete. Acompanhe em Meus pedidos.</div>':'<div class="cx-note">💳 Pagamento online aguardando aprovação. Você escolherá uma forma disponível no ambiente seguro de pagamento.</div><button class="primary" type="button" id="mpPayNow">Abrir pagamento seguro</button>'):''}
-        ${result.encomendaSazonal?'<div class="cx-note" style="background:#eaf7e9;border-color:#b8d5b5"><b>🎄 Encomenda especial · '+esc(result.encomendaSazonal.campaignTitle)+'</b><br>Data: '+esc(seasonalDateBR(result.encomendaSazonal.fulfillmentDate))+'<br>💚 Sinal de 50%: <b>'+money(result.encomendaSazonal.depositDue)+'</b> — pagamento pendente de confirmação.<br>📦 Restante na entrega/retirada: <b>'+money(result.encomendaSazonal.balanceDue)+'</b><br>Produção após confirmação do sinal.</div>':''}
+        ${result.encomendaSazonal?'<div class="cx-note" style="background:#eaf7e9;border-color:#b8d5b5"><b>🎄 Encomenda especial · '+esc(result.encomendaSazonal.campaignTitle)+'</b><br>Data: '+esc(seasonalDateBR(result.encomendaSazonal.fulfillmentDate))+'<br>💚 Sinal de 50%: <b>'+money(result.encomendaSazonal.depositDue)+'</b> — pagamento pendente de confirmação.<br><b>Chave Pix: 69.195.483/0001-23</b> <button class="soft" type="button" data-copy-season-pix>📋 Copiar CNPJ</button><br>📦 Restante na entrega/retirada: <b>'+money(result.encomendaSazonal.balanceDue)+'</b><br>Produção após confirmação do sinal.</div>':''}
         ${esc(freightText)}<br>
         ${window.JohnOrderAmounts.lines(saved).map(([label,value])=>esc(label)+': <b>'+esc(value)+'</b>').join('<br>')}<br>
         <button class="soft" type="button" id="openSavedOrders" style="margin-top:9px">Acompanhar pedido</button>
