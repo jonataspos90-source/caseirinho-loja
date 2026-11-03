@@ -1123,12 +1123,12 @@ function renderCart(){
   if(promoTotals.savings>0)E('cartItems').insertAdjacentHTML('afterbegin',`<div style="margin-bottom:10px;padding:10px 12px;border-radius:10px;background:#f0fdf4;color:#166534;font-weight:800">Você economiza ${money(promoTotals.savings)} nas promoções do carrinho.</div>`);
 
   E('cartItems').querySelectorAll('[data-minus]').forEach(b=>b.onclick=()=>{
-    const i=N(b.dataset.minus),x=cart[i],p=A(catalog.produtos).find(y=>S(y.id)===S(x.produtoId)),min=p?minQty(p):1,step=p?stepQty(p):1;
+    const i=N(b.dataset.minus),x=cart[i],p=A(catalog.produtos).find(y=>S(y.id)===S(x.produtoId)),rule=selectedSeasonalCampaign()?.products?.find(y=>S(y.id)===S(x.produtoId)),min=Math.max(p?minQty(p):1,N(rule?.minQuantity)||1),step=p?stepQty(p):1;
     if(N(x.quantidade)-step<min-1e-9)return toast('Use Remover para retirar o produto do carrinho.');
     x.quantidade=Math.max(min,N(x.quantidade)-step);renderCart();
   });
   E('cartItems').querySelectorAll('[data-plus]').forEach(b=>b.onclick=()=>{
-    const i=N(b.dataset.plus),x=cart[i],p=A(catalog.produtos).find(y=>S(y.id)===S(x.produtoId)),step=p?stepQty(p):1,limit=N(p?.limitePedido);
+    const i=N(b.dataset.plus),x=cart[i],p=A(catalog.produtos).find(y=>S(y.id)===S(x.produtoId)),rule=selectedSeasonalCampaign()?.products?.find(y=>S(y.id)===S(x.produtoId)),step=p?stepQty(p):1,limit=N(rule?.maxQuantity)||N(p?.limitePedido);
     if(limit&&N(x.quantidade)+step>limit+1e-9)return toast('Limite por pedido: '+limit);
     x.quantidade+=step;renderCart();
   });
