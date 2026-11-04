@@ -31,12 +31,6 @@
       ?(regular>0?regular:ecommerce):(ecommerce>0?ecommerce:regular));
   };
   const packKey=(deal,ids,x,y)=>String(deal.packId||JSON.stringify([ids.slice().sort(),x,y]));
-  function isPalmitoPanqueca(p){
-    const grade=String(p?.gradeNome||p?.grade?.nome||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
-    const flavor=String([p?.variacaoLabel,p?.nomeComercial,p?.nome].filter(Boolean).join(' ')).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
-    return (grade.includes('PANQUECA')&&flavor.includes('PALMITO'))
-      ||(flavor.includes('PANQUECA')&&flavor.includes('PALMITO'));
-  }
   function blackFridayLive(p,at=Date.now()){
     const d=promo(p);
     if(String(d.tipo||'').toUpperCase()!=='BLACK_FRIDAY')return true;
@@ -46,9 +40,7 @@
   function fixedPromo(p){
     const v=n(promo(p).precoPromocional),b=base(p);
     if(promo(p).ativo===true&&blackFridayLive(p)&&v>0&&b>v)return v;
-    // Desativação explícita prevalece sobre a promoção histórica de Palmito.
-    if(Object.prototype.hasOwnProperty.call(promo(p),'ativo'))return null;
-    return isPalmitoPanqueca(p)&&b>11.99?11.99:null;
+    return null;
   }
   function priceInfo(p,products=[]){
     const b=base(p),fixed=fixedPromo(p);if(fixed!==null)return{regular:b,current:fixed,conditional:false};
