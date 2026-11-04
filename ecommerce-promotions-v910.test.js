@@ -73,20 +73,30 @@ test('promoção fixa de um sabor não altera o preço nem o destaque do restant
   assert.equal(promo.isFeatured(carne,[palmito,carne]),false);
 });
 
-test('panqueca Palmito mantém preço promocional sem alterar os outros recheios',()=>{
+test('panqueca Palmito respeita preço publicado sem afetar outros recheios',()=>{
   const palmito={id:'palmito',nome:'Palmito',gradeNome:'Panqueca Unitária',variacaoLabel:'Palmito',preco:13.99};
   const carne={id:'carne',nome:'Carne',gradeNome:'Panqueca Unitária',variacaoLabel:'Carne',preco:11.99};
-  assert.equal(promo.priceInfo(palmito,[palmito,carne]).current,11.99);
+  assert.equal(promo.priceInfo(palmito,[palmito,carne]).current,13.99);
   assert.equal(promo.priceInfo(carne,[palmito,carne]).current,11.99);
 });
 
-test('panqueca Palmito sem grade é identificada para preço de R$ 11,99',()=>{
+test('panqueca Palmito sem grade mantém preço do ERP até promoção explícita',()=>{
  const p={id:'pan',nome:'Panqueca Palmito',precoEcommerce:13.99};
  const regular={id:'carne',nome:'Panqueca Carne',precoEcommerce:13.99};
- assert.equal(promo.fixedPromo(p),11.99);
- assert.equal(promo.priceInfo(p,[p,regular]).current,11.99);
+ assert.equal(promo.fixedPromo(p),null);
+ assert.equal(promo.priceInfo(p,[p,regular]).current,13.99);
  assert.equal(promo.priceInfo(regular,[p,regular]).current,13.99);
  const totals=promo.cartTotals([{produtoId:'pan',quantidade:1}], [p,regular]);
- assert.equal(totals.subtotal,11.99);
- assert.equal(totals.savings,2);
+ assert.equal(totals.subtotal,13.99);
+ assert.equal(totals.savings,0);
+});
+
+test('Black Friday usa vigência e não altera preço regular',()=>{
+ const start=new Date(Date.now()-3600000).toISOString();
+ const end=new Date(Date.now()+3600000).toISOString();
+ const product={id:'x',precoEcommerce:29.99,promocao:{ativo:true,tipo:'BLACK_FRIDAY',precoPromocional:19.99,inicioEm:start,fimEm:end}};
+ assert.deepEqual(promo.priceInfo(product),{regular:29.99,current:19.99,conditional:false});
+ product.promocao.fimEm=new Date(Date.now()-1000).toISOString();
+ assert.equal(promo.fixedPromo(product),null);
+ assert.equal(promo.priceInfo(product).current,29.99);
 });
