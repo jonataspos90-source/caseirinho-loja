@@ -335,7 +335,7 @@ function canBuy(p){
   // ser confirmados pela API antes de permitir nova compra.
   if(!catalogConnected)return false;
   // No Caseirinho a quantidade é conferida no ERP após o pedido, sem bloquear a compra.
-  if(p?.ativo===false||['INATIVO','ARQUIVADO','EXCLUIDO'].includes(norm(p?.status)))return false;
+  if(p?.ativo===false||p?.disponivelVenda===false||['INATIVO','ARQUIVADO','EXCLUIDO'].includes(norm(p?.status)))return false;
   if(STORE==='caseirinho')return true;
   if(typeof p?.podeComprar==='boolean')return p.podeComprar;
   const d=canonicalAvailability(p);
@@ -554,10 +554,11 @@ function cardHtml(entry){
   const availability=grouped
     ?(ok?`${gm.icon} Escolha ${gm.title.toLowerCase()} para ver disponibilidade`:'Indisponível no momento')
     :availabilityText(p);
-  return `<article class="product-card">
+  return `<article class="product-card ${ok?'':'product-unavailable'}">
     <div class="product-pic" data-view="${esc(p.id)}">
       ${im?`<img src="${esc(im)}" alt="${esc(title)}" loading="lazy"><span class="image-note">Imagem meramente ilustrativa</span>`:'<div class="no-image">🍽️</div>'}
-      ${blackFriday?'<span class="bf-black-ribbon" aria-label="Oferta Black Friday">BLACK FRIDAY</span>':''}
+      ${!ok?'<span class="product-unavailable-ribbon">INDISPONÍVEL</span>':''}
+      ${ok&&blackFriday?'<span class="bf-black-ribbon" aria-label="Oferta Black Friday">BLACK FRIDAY</span>':''}
       <div class="tags">${hasPromo&&!blackFriday?'<span class="tag" style="background:#15803d;color:#fff">PROMOÇÃO</span>':''}${vars.some(v=>isFlagOn(v.novidade))?'<span class="tag hot">NOVIDADE</span>':''}${vars.some(v=>isFlagOn(v.destaque))?'<span class="tag">DESTAQUE</span>':''}</div>
     </div>
     <div class="product-body">
@@ -1028,7 +1029,7 @@ function showProduct(id){
   }
 
   const bfModal=blackFridayDetails(p);
-  E('modalPrice').innerHTML=(bfModal?'<span class="bf-modal-badge">BLACK FRIDAY</span><span class="bf-modal-validity">🔴 Válido de '+esc(bfModal.from)+' até '+esc(bfModal.until)+'</span>':'')+productPriceHtml(p);
+  E('modalPrice').innerHTML=(!canBuy(p)?'<span class="modal-unavailable-ribbon">🚫 INDISPONÍVEL · Não disponível para compra</span>':bfModal?'<span class="bf-modal-badge">BLACK FRIDAY</span><span class="bf-modal-validity">🔴 Válido de '+esc(bfModal.from)+' até '+esc(bfModal.until)+'</span>':'')+productPriceHtml(p);
   E('modalAvailability').textContent=availabilityText(p);
   E('modalAvailability').className='availability '+(canBuy(p)?'':'no');
   E('modalQty').min=minQty(p);E('modalQty').step=stepQty(p);E('modalQty').value=minQty(p);
@@ -1700,6 +1701,13 @@ async function submitOrder(ev){
     return toast('Aguarde a conexão com a loja para confirmar preços e disponibilidade.');
   }
   if(!cart.length)return toast('Seu carrinho está vazio.');
+  if(cart.some(x=>{
+    const p=A(catalog.produtos).find(p=>S(p.id)===S(x.produtoId));
+    return p&&!canBuy(p);
+  })){
+    E('checkoutResult').textContent='Um ou mais produtos ficaram indisponíveis no ERP. Remova-os do carrinho antes de finalizar.';
+    return toast('Há produtos indisponíveis. Confira o carrinho e remova-os.');
+  }
   if(cart.some(x=>x.catalogMismatch||!A(catalog.produtos).some(p=>S(p.id)===S(x.produtoId)))){
     E('checkoutResult').textContent='Um produto do seu carrinho está desatualizado. Remova-o e selecione novamente no catálogo.';
     return toast('Confira o carrinho: há um produto sem correspondência segura no catálogo.');
