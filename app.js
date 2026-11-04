@@ -398,7 +398,10 @@ function configuredCategory(p){
          null;
 }
 function visibleCatalogProducts(){
-  return A(catalog.produtos).filter(p=>!!configuredCategory(p));
+  // A API já esconde itens inativos. Reforce a regra para snapshots antigos
+  // e restaurações do PWA: itens inativos não podem aparecer nem nas buscas.
+  return A(catalog.produtos).filter(p=>p?.ativo!==false&&p?.publicado!==false&&
+    !['INATIVO','DESATIVADO','ARQUIVADO','EXCLUIDO'].includes(norm(p?.status))&&!!configuredCategory(p));
 }
 function productsForCategory(cat){
   return visibleCatalogProducts().filter(p=>S(configuredCategory(p)?.id)===S(cat?.id));
@@ -543,6 +546,7 @@ function isFeaturedProduct(p){
 function cardHtml(entry){
   const p=entry.rep,vars=entry.variants,grouped=entry.grouped,c=productCategory(p);
   const im=images(p)[0],ok=vars.some(canBuy),gm=gradeMeta(p);
+  const blockedByErp=vars.every(v=>v?.disponivelVenda===false);
   const priceInfos=vars.map(v=>productPriceInfo(v));
   const priceInfo=priceInfos.slice().sort((a,b)=>a.current-b.current)[0]||{regular:N(p.preco),current:N(p.preco)};
   const prices=priceInfos.map(v=>v.current),min=prices.length?Math.min(...prices):N(p.preco),max=prices.length?Math.max(...prices):N(p.preco);
@@ -554,10 +558,10 @@ function cardHtml(entry){
   const availability=grouped
     ?(ok?`${gm.icon} Escolha ${gm.title.toLowerCase()} para ver disponibilidade`:'Indisponível no momento')
     :availabilityText(p);
-  return `<article class="product-card ${ok?'':'product-unavailable'}">
+  return `<article class="product-card ${blockedByErp?'product-unavailable':''}">
     <div class="product-pic" data-view="${esc(p.id)}">
       ${im?`<img src="${esc(im)}" alt="${esc(title)}" loading="lazy"><span class="image-note">Imagem meramente ilustrativa</span>`:'<div class="no-image">🍽️</div>'}
-      ${!ok?'<span class="product-unavailable-ribbon">INDISPONÍVEL</span>':''}
+      ${blockedByErp?'<span class="product-unavailable-ribbon">INDISPONÍVEL</span>':''}
       ${ok&&blackFriday?'<span class="bf-black-ribbon" aria-label="Oferta Black Friday">BLACK FRIDAY</span>':''}
       <div class="tags">${hasPromo&&!blackFriday?'<span class="tag" style="background:#15803d;color:#fff">PROMOÇÃO</span>':''}${vars.some(v=>isFlagOn(v.novidade))?'<span class="tag hot">NOVIDADE</span>':''}${vars.some(v=>isFlagOn(v.destaque))?'<span class="tag">DESTAQUE</span>':''}</div>
     </div>
