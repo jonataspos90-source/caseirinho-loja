@@ -916,3 +916,18 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}.wrap{width:min(
 .seasonal-checkout small{color:#744529;line-height:1.5}
 @media(max-width:660px){.seasonal-banner-inner{grid-template-columns:1fr}.seasonal-cta{width:100%}.seasonal-products{grid-template-columns:repeat(2,minmax(0,1fr))}.seasonal-item img{height:115px}}
 @media(max-width:390px){.seasonal-products{grid-template-columns:1fr}}
+
+
+/* V9.10.72 — catálogo sob autoridade do ERP: indisponível visível e sem compra */
+.product-card.product-unavailable{background:#f0f0f0;border-color:#bcc0bf;box-shadow:0 3px 8px rgba(0,0,0,.06)}
+.product-card.product-unavailable .product-pic img{filter:grayscale(100%);opacity:.48}
+.product-card.product-unavailable .product-body{opacity:.75}
+.product-card.product-unavailable .price{color:#6b7280}
+.product-card.product-unavailable .add-btn{opacity:.5;cursor:not-allowed;pointer-events:none}
+.product-card.product-unavailable .availability.no{color:#7f1d1d;font-weight:900}
+.product-unavailable-ribbon{position:absolute;z-index:11;top:16px;left:-5px;background:#202426;color:#fff;
+ font-size:12px;font-weight:950;letter-spacing:1px;padding:10px 13px 10px 18px;box-shadow:0 4px 10px #1b1b1b70;
+ border-left:5px solid #b91c1c;transform:rotate(-2deg);pointer-events:none;border-radius:0 7px 7px 0}
+.modal-unavailable-ribbon{display:block;background:#202426;color:#fff;font-weight:950;letter-spacing:.8px;
+ border-left:5px solid #dc2626;border-radius:5px;padding:9px 12px;margin:0 0 10px}
+@media(max-width:480px){.product-unavailable-ribbon{font-size:10px;padding:8px 9px 8px 13px}}
