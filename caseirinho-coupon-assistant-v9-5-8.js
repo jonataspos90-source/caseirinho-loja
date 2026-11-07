@@ -239,7 +239,22 @@ function watchPhone(){const p=document.getElementById('cPhone');if(!p)return;p.a
 function watchTotals(){const sub=document.getElementById('subtotal'),ship=document.getElementById('shipping');if(!sub||!ship)return;const observer=new MutationObserver(scheduleTotals);observer.observe(sub,{childList:true,characterData:true,subtree:true});observer.observe(ship,{childList:true,characterData:true,subtree:true});scheduleTotals()}
 
 window.fetch=async function(input,opt={}){
-  const response=await rawFetch(input,opt);
+  // O servidor deve notificar só depois que o cupom for registrado.
+  let requestOptions=opt;
+  try{
+    const method=S(opt?.method||(input instanceof Request?input.method:'GET')).toUpperCase();
+    const rawUrl=typeof input==='string'?input:input?.url;
+    const url=new URL(rawUrl,location.href);
+    const orderPath='/api/v1/public/store/'+encodeURIComponent(STORE)+'/orders';
+    const st=readState();
+    if(method==='POST'&&(url.pathname===orderPath||url.pathname===orderPath+'/')&&st?.code===FIRST_CODE&&stateValidForCheckout()){
+      const sent=JSON.parse(S(opt.body)||'{}');
+      if(sanitizePhone(sent?.cliente?.telefone)===st.phone){
+        requestOptions={...opt,body:JSON.stringify({...sent,couponIntent:FIRST_CODE})};
+      }
+    }
+  }catch(_){}
+  const response=await rawFetch(input,requestOptions);
   try{
     const method=S(opt?.method||(input instanceof Request?input.method:'GET')).toUpperCase();const rawUrl=typeof input==='string'?input:input?.url;const url=new URL(rawUrl,location.href);
     if(method==='POST'&&/\/commercial-apply$/i.test(url.pathname)&&response.ok){let sent={};try{sent=JSON.parse(S(opt.body)||'{}')}catch(_){}const st=readState();if(sent.couponCode&&st?.status==='GENERIC_OK'&&normalizeCode(sent.couponCode)===st.code)clearState('',false);return response}

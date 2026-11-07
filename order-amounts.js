@@ -71,7 +71,15 @@ function breakdown(input={}){
 function lines(o){
   const b=breakdown(o),out=[['Produtos',money(b.products)]];
   for(const p of b.promoLines)out.push(['Desconto - '+p.label,'- '+money(p.amount)]);
-  if(b.otherDiscounts>0)out.push([b.promoDiscount>0?'Outros descontos / cashback':'Descontos / cashback','- '+money(b.otherDiscounts)]);
+  if(b.otherDiscounts>0){
+    const raw=order(o);
+    const couponCode=String(raw.cupom?.codigo||raw.comercial?.coupon?.code||'').trim().toUpperCase();
+    const couponValue=pick(raw.descontoCupom,raw.cupom?.desconto,raw.comercial?.coupon?.discount,0);
+    // Exibe o código quando o desconto se reconcilia com o total do pedido.
+    const couponMatches=couponCode&&couponValue>0&&Math.abs(b.otherDiscounts-couponValue)<0.015;
+    const label=couponMatches?'Cupom '+couponCode:(b.promoDiscount>0?'Outros descontos / cashback':'Descontos / cashback');
+    out.push([label,'- '+money(b.otherDiscounts)]);
+  }
   out.push(['Frete',b.pending?'A calcular':money(b.freight)+(b.pickup?' (retirada)':'')]);
   if(b.adjustment>0)out.push(['Ajustes do pedido',money(b.adjustment)]);
   out.push([b.pending?'Total atual (frete a calcular)':'Total do pedido',money(b.total)]);
