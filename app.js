@@ -486,51 +486,47 @@ function productDescription(p){
   return '';
 }
 function cartProductNameKey(value){
-  const parts=S(value).split(/\s*[·•]\s*/);
-  return S(parts[parts.length-1]).replace(/\s*\(Unidade\)\s*$/i,'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
+  return S(value).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
+}
+function cartDisplayName(p){
+  const commercial=S(p?.nomeComercial||p?.nome).trim();
+  if(!p?.gradeId)return commercial;
+  const variation=S(p?.variacaoLabel).trim();
+  const gradeName=S(p?.gradeNome||commercial).trim();
+  if(!variation)return commercial||gradeName;
+  // Para sabores vendidos por peso/tamanho, preservar o sabor no nome comercial.
+  const isSize=/^(?:[PMG]|\d+(?:[.,]\d+)?\s*(?:KG|G|ML|L|UN(?:IDADES?)?))$/i.test(variation);
+  const base=isSize&&commercial?commercial:(gradeName||commercial);
+  if(norm(base).endsWith(norm(variation)))return base;
+  return base+' · '+variation;
 }
 function reconcileCartProducts(){
-  // A identificação do item salvo no celular não pode prevalecer sobre o catálogo publicado.
-  // Carrinhos antigos podem ter um ID de molho, por exemplo, associado ao nome de uma empada.
+  // ID e SKU publicados pelo ERP são a autoridade. Nunca remapear pelo sabor
+  // (ex.: "Frango"), pois vários produtos diferentes podem ter esse sabor.
   const products=A(catalog.produtos);
   if(!products.length)return false;
   const byId=new Map(products.map(p=>[S(p.id),p]));
-  const byName=new Map();
-  for(const p of products){
-    const names=[p.nomeComercial,p.nome,p.variacaoLabel,
-      p.gradeId?`${p.gradeNome||p.nome} · ${p.variacaoLabel||p.nome}`:''];
-    for(const name of names){
-      const key=cartProductNameKey(name);
-      if(!key)continue;
-      if(!byName.has(key))byName.set(key,new Map());
-      byName.get(key).set(S(p.id),p);
-    }
-  }
   let changed=false;
   for(const item of cart){
     if(!item)continue;
-    const key=cartProductNameKey(item.nome);
     const current=byId.get(S(item.produtoId));
-    const currentKeys=current?[current.nomeComercial,current.nome,current.variacaoLabel,
-      current.gradeId?`${current.gradeNome||current.nome} · ${current.variacaoLabel||current.nome}`:'']
-      .map(cartProductNameKey):[];
-    const currentMatches=!key||(current&&currentKeys.includes(key));
-    const candidates=[...(byName.get(key)?.values()||[])];
-    // Sem correspondência exclusiva, nunca trocar silenciosamente por um produto de outro tipo.
-    const target=currentMatches?current:(candidates.length===1?candidates[0]:null);
-    if(!target){
+    const storedCode=S(item.codigo).trim(),realCode=S(current?.codigo).trim();
+    const knownNames=current?[cartDisplayName(current),current.nomeComercial,current.nome,
+      current.gradeId?`${current.gradeNome||current.nome} · ${current.variacaoLabel||current.nome}`:'']:[]; 
+    const nameMatches=!item.nome||knownNames.some(name=>cartProductNameKey(name)===cartProductNameKey(item.nome));
+    // SKU conflitante ou item antigo sem SKU e com nome incompatível:
+    // impedir checkout em vez de substituir o produto silenciosamente.
+    if(!current||(storedCode&&realCode&&storedCode!==realCode)||
+       (!storedCode&&!nameMatches)){
       if(item.catalogMismatch!==true){item.catalogMismatch=true;changed=true}
       continue;
     }
-    const canonicalName=target.gradeId?
-      `${target.gradeNome||target.nome} · ${target.variacaoLabel||target.nome}`:
-      S(target.nomeComercial||target.nome);
-    const correctImage=images(target)[0]||'';
-    const correctPrice=roundMoney(productPriceInfo(target).current);
-    const correctCode=S(target.codigo||'');
+    const canonicalName=cartDisplayName(current);
+    const correctImage=images(current)[0]||'';
+    const correctPrice=roundMoney(productPriceInfo(current).current);
     const set=(key,value)=>{if(item[key]!==value){item[key]=value;changed=true}};
-    set('produtoId',S(target.id));
-    set('codigo',correctCode);
+    set('produtoId',S(current.id));
+    set('codigo',realCode);
     set('nome',canonicalName);
     set('precoUnitario',correctPrice);
     set('imagem',correctImage);
@@ -1066,7 +1062,7 @@ async function quickAdd(id,qty){
   else cart.push({
     produtoId:p.id,
     codigo:p.codigo,
-    nome:p.gradeId?`${p.gradeNome||p.nome} · ${p.variacaoLabel||p.nome}`:p.nome,
+    nome:cartDisplayName(p),
     quantidade:add,
     precoUnitario:N(p.preco),
     imagem:images(p)[0]||''
@@ -1108,7 +1104,7 @@ function renderCart(){
         `${money(pricing.unitPrice)} cada`;
     return `<div class="cart-item">
       ${valid&&x.imagem?`<img src="${esc(x.imagem)}" alt="">`:'<div class="no-image" style="font-size:25px">🍽️</div>'}
-      <div><h4>${esc(x.nome)}</h4>${valid&&productDescription(p)?`<small class="cart-item-description" style="display:block;color:#5f6368;line-height:1.4;margin:2px 0 5px">${esc(productDescription(p))}</small>`:''}<small>${valid?unitText:'<b style="color:#b91c1c">Produto desatualizado · remova e escolha novamente</b>'}${valid&&pricing.promotionLabel&&!pricing.promotionLabel.startsWith('Leve ')?` · <b style="color:#15803d">${esc(pricing.promotionLabel)}</b>`:''}</small>
+      <div><h4>${esc(valid?cartDisplayName(p):x.nome)}</h4>${valid&&productDescription(p)?`<small class="cart-item-description" style="display:block;color:#5f6368;line-height:1.4;margin:2px 0 5px">${esc(productDescription(p))}</small>`:''}<small>${valid?unitText:'<b style="color:#b91c1c">Produto desatualizado · remova e escolha novamente</b>'}${valid&&pricing.promotionLabel&&!pricing.promotionLabel.startsWith('Leve ')?` · <b style="color:#15803d">${esc(pricing.promotionLabel)}</b>`:''}</small>
         <div class="qty"><button data-minus="${i}" type="button">−</button><b>${x.quantidade}</b><button data-plus="${i}" type="button">+</button></div>
       </div>
       <div class="cart-item-price" style="text-align:right"><b>${valid?money(pricing.total):'A confirmar'}</b><br><button class="remove" data-remove="${i}" type="button">Remover</button></div>

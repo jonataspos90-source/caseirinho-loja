@@ -232,17 +232,16 @@ function enhanceModal(){
   }
 }
 function enhanceCart(){
-  if(!A(catalog().produtos).length)return;
-  let items=[];try{items=JSON.parse(localStorage.getItem(CART_KEY)||'[]')}catch(_){}
-  const rows=[...document.querySelectorAll('#cartItems>.cart-item')];
-  rows.forEach((row,i)=>{const p=productById(items[i]?.produtoId),h=row.querySelector('h4');if(p&&h)h.textContent=cartProductName(p)});
+  // O carrinho é renderizado pelo app.js pelo ID verdadeiro de cada produto.
+  // Nunca associar linhas ao índice do array: promoções agrupam itens no DOM.
+  return;
 }
 function boot(){
   const roots=[document.getElementById('products'),document.getElementById('featured')].filter(Boolean);
   cardObserver=new MutationObserver(m=>{if(m.some(x=>x.addedNodes.length||x.removedNodes.length)){schedule();if(!A(catalog().produtos).length)refreshCatalogSoon()}});
   roots.forEach(r=>cardObserver.observe(r,{childList:true}));
   const box=document.getElementById('variantBox');if(box){modalObserver=new MutationObserver(()=>setTimeout(enhanceModal,0));modalObserver.observe(box,{childList:true})}
-  const cart=document.getElementById('cartItems');if(cart){cartObserver=new MutationObserver(()=>setTimeout(enhanceCart,0));cartObserver.observe(cart,{childList:true})}
+  // Sem observer extra no carrinho: evita sobrescrever nomes após promoções.
   document.addEventListener('click',e=>{
     const variant=e.target.closest?.('#variantBox [data-variant]');
     if(variant){explicitModalVariant=S(variant.dataset.variant);setTimeout(enhanceModal,0);return}
