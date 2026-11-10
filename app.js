@@ -470,6 +470,11 @@ function blackFridayDetails(p){
 }
 
 function productDescription(p){
+  // Respeita a descrição comercial editada e publicada pela Central Caseirinho.
+  const manual=S(p?.descricao).trim();
+  if(manual)return manual;
+  const grade=S(p?.gradeDescricao).trim();
+  if(grade)return grade;
   const category=norm(p?.categoria||p?.categoriaNome||'');
   const rawName=S(p?.nomeComercial||p?.nome);
   if(category.includes('EMPADA')||/\\bEmpada\\b/i.test(rawName)){
@@ -481,8 +486,6 @@ function productDescription(p){
     }
     return 'Empada individual.';
   }
-  const saved=S(p?.gradeDescricao||p?.descricao).trim();
-  if(saved)return saved;
   return '';
 }
 function cartProductNameKey(value){
