@@ -18,8 +18,20 @@ test('Produtos antigos sem descrição comercial continuam usando a grade',()=>{
 });
 test('Novo PWA carrega app.js da versão que respeita a descrição comercial',()=>{
  const sw=fs.readFileSync('service-worker.js','utf8'),html=fs.readFileSync('index.html','utf8');
- assert.match(sw,/caseirinho-loja-v9\.10\.73-product-descriptions-20261110/);
- assert.match(html,/app\.js\?v=20261110-product-description-1/);
- assert.match(sw,/20261110-product-description-1/);
+ assert.match(sw,/caseirinho-loja-v9\.10\.74-live-descriptions-20261110/);
+ assert.match(html,/app\.js\?v=20261110-live-description-2/);
+ assert.match(sw,/20261110-live-description-2/);
  assert.doesNotThrow(()=>new vm.Script(sw));
+});
+
+test('Atualização do catálogo mantém modal aberto e renova a descrição do produto selecionado',()=>{
+ assert.match(js,/overlay\?\.classList\.contains\('open'\)/);
+ assert.match(js,/selectedProduct=live/);
+ assert.match(js,/desc\.textContent=productDescription\(live\)/);
+ assert.match(js,/return true;\s*}catch\(err\)/);
+});
+test('Versão só é marcada após carga efetiva e erros são tentados novamente',()=>{
+ assert.match(js,/if\(catalogBusy\)return;\s*const loaded=await loadCatalog\(true\)/);
+ assert.match(js,/if\(loaded===true\)lastCatalogMarker=marker/);
+ assert.doesNotMatch(js,/lastCatalogMarker=S\(catalog\?\.publicadoEm/);
 });
