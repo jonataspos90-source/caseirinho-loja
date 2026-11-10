@@ -32,6 +32,8 @@ const norm=v=>S(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUppe
 const money=v=>N(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 
 let catalog={loja:{},produtos:[]};
+// Leitura única e atualizada para os componentes de seleção de peso, descrição e galeria.
+window.CaseirinhoCurrentPublicCatalog=()=>catalog;
 let seasonalCampaigns=[],seasonalSelected='',seasonalCampaignId='';
 let cart=readJson(CART_KEY,[]);
 let activeCategory='';
