@@ -43,7 +43,7 @@ const DEDUPE942_TAG='<script src="./order-actions-dedupe-v9-4-2.js?v=9490"></'+'
 const MOBILECSS947_TAG='<link rel="stylesheet" href="./mobile-ux-v9-4-7.css?v=9490">';
 const MOBILEJS947_TAG='<script src="./mobile-ux-v9-4-7.js?v=9490" defer></'+'script>';
 const CARDSCSS948_TAG='<link rel="stylesheet" href="./product-cards-mobile-v9-4-8.css?v=9510">';
-const CARDSJS950_TAG='<script src="./product-cards-mobile-v9-5-0.js?v=9501" defer></'+'script>';
+const CARDSJS950_TAG='<script src="./product-cards-mobile-v9-5-0.js?v=20261110-live-source-1" defer></'+'script>';
 const GROUPJS951_TAG='<script src="./variant-grouping-v9-5-1.js?v=9510" defer></'+'script>';
 const SYNCJS952_TAG='<script src="./variant-selection-sync-v9-5-2.js?v=20261110-live-source-1" defer></'+'script>';
 const DELIVERYJS954_TAG='<script src="./delivery-moto-v9-5-4.js?v=91090" defer></'+'script>';
