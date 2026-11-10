@@ -21,7 +21,12 @@ let cartObserver=null;
 let refreshTimer=0;
 let explicitModalVariant='';
 
-function catalog(){return remoteCatalog}
+function catalog(){
+  // Compartilha a fonte atualizada do app principal: não sobrescreva descrições com o snapshot inicial.
+  const live=typeof window.CaseirinhoCurrentPublicCatalog==='function'
+    ?window.CaseirinhoCurrentPublicCatalog():null;
+  return A(live?.produtos).length?live:remoteCatalog;
+}
 async function loadRemoteCatalog(force=false){
   if(!API)return remoteCatalog;
   if(catalogLoad&&!force)return catalogLoad;
