@@ -20,6 +20,6 @@ test('Novo PWA carrega app.js da versão que respeita a descrição comercial',(
  const sw=fs.readFileSync('service-worker.js','utf8'),html=fs.readFileSync('index.html','utf8');
  assert.match(sw,/caseirinho-loja-v9\.10\.73-product-descriptions-20261110/);
  assert.match(html,/app\.js\?v=20261110-product-description-1/);
- assert.match(sw,/app\\.js\\?v=/);
+ assert.match(sw,/20261110-product-description-1/);
  assert.doesNotThrow(()=>new vm.Script(sw));
 });
