@@ -13,7 +13,14 @@ let catalog={produtos:[]};
 let loading=null;
 
 function images(p){const xs=A(p?.imagens).filter(Boolean);return xs.length?xs:(p?.imagem?[p.imagem]:[])}
-function productById(id){return A(catalog.produtos).find(p=>S(p?.id)===S(id))||null}
+function productById(id){
+  // A seleção de pesos deve usar o MESMO catálogo que a loja acabou de sincronizar.
+  // A cópia inicial deste módulo pode ficar antiga depois de uma edição no ERP.
+  const main=typeof window.CaseirinhoCurrentPublicCatalog==='function'
+    ?window.CaseirinhoCurrentPublicCatalog():null;
+  const live=A(main?.produtos).length?main:catalog;
+  return A(live.produtos).find(p=>S(p?.id)===S(id))||null;
+}
 function displayName(p){
   if(!p)return'';
   const name=clean(p.nome),base=clean(p.gradeNome),label=clean(p.variacaoLabel);
