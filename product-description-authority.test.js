@@ -18,9 +18,9 @@ test('Produtos antigos sem descrição comercial continuam usando a grade',()=>{
 });
 test('Novo PWA carrega app.js da versão que respeita a descrição comercial',()=>{
  const sw=fs.readFileSync('service-worker.js','utf8'),html=fs.readFileSync('index.html','utf8');
- assert.match(sw,/caseirinho-loja-v9\.10\.74-live-descriptions-20261110/);
- assert.match(html,/app\.js\?v=20261110-live-description-2/);
- assert.match(sw,/20261110-live-description-2/);
+ assert.match(sw,/caseirinho-loja-v9\.10\.75-catalog-single-source-20261110/);
+ assert.match(html,/app\.js\?v=20261110-live-description-3/);
+ assert.match(sw,/20261110-live-description-3/);
  assert.doesNotThrow(()=>new vm.Script(sw));
 });
 
