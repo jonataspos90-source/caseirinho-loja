@@ -993,6 +993,18 @@ async function loadCatalog(silent=false){
     catalogRecoveryCount=0;
     setCatalogConnectionStatus(true,`Loja conectada · ${A(catalog.produtos).length} produto(s) · atualizado ${catalog.publicadoEm?new Date(catalog.publicadoEm).toLocaleString('pt-BR'):'agora'}`);
     mount();
+    // Se o cliente já está vendo um SKU, atualize a descrição sem fechar a janela,
+    // trocar o peso selecionado ou alterar a quantidade digitada.
+    const overlay=E('productOverlay');
+    if(overlay?.classList.contains('open')&&selectedProduct){
+      const live=A(catalog.produtos).find(x=>S(x.id)===S(selectedProduct.id));
+      if(live){
+        selectedProduct=live;
+        const desc=E('modalDescription');
+        if(desc)desc.textContent=productDescription(live)||'Produto selecionado da loja.';
+      }
+    }
+    return true;
   }catch(err){
     const cached=A(catalog.produtos).length?catalog:await catalogBackup();
     if(cached&&A(cached.produtos).length){
@@ -1007,6 +1019,7 @@ async function loadCatalog(silent=false){
       console.warn('[Caseirinho] tentativa de carregar cardápio:',err);
     }
     scheduleCatalogRecovery();
+    return false;
   }finally{catalogBusy=false}
 }
 
@@ -2146,12 +2159,21 @@ async function checkCatalogVersion(){
     const v=await api('/api/v1/public/store/'+encodeURIComponent(STORE)+'/catalog/version');
     const marker=S(v.version)+'|'+S(v.publishedAt);
     if(!lastCatalogMarker){
-      lastCatalogMarker=marker;
-      return;
+      const known=Date.parse(S(catalog?.publicadoEm));
+      const server=Date.parse(S(v.publishedAt));
+      // Somente considere a versão sincronizada se o catálogo já carregado
+      // corresponder à data anunciada pela API de versão.
+      if(A(catalog.produtos).length&&Number.isFinite(known)&&known===server){
+        lastCatalogMarker=marker;
+        return;
+      }
     }
     if(marker!==lastCatalogMarker){
-      lastCatalogMarker=marker;
-      await loadCatalog(true);
+      // Não confirme versão nova enquanto outra busca ainda está em andamento.
+      // Assim o próximo ciclo tentará novamente se houver concorrência ou falha.
+      if(catalogBusy)return;
+      const loaded=await loadCatalog(true);
+      if(loaded===true)lastCatalogMarker=marker;
     }
   }catch(_){}
 }
@@ -2180,7 +2202,7 @@ function start(){
   watchPackPriceRows();
   renderCart();
   loadCatalog().then(()=>{
-    lastCatalogMarker=S(catalog?.publicadoEm||'');
+    // O marcador passa a incluir a versão retornada pela API; evite usar só a data.
     checkCatalogVersion();
     refreshBlackFridayBoundary();
     loadSeasonalCampaigns();
