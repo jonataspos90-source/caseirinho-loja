@@ -758,6 +758,28 @@ function renderSearchSuggestions(){
 function seasonalCampaign(id){return seasonalCampaigns.find(c=>S(c.id)===S(id))||null}
 function selectedSeasonalCampaign(){return seasonalCampaign(seasonalCampaignId)}
 const seasonalSplit=amount=>{const cents=Math.round(N(amount)*100),deposit=Math.ceil(cents/2);return{deposit:deposit/100,balance:(cents-deposit)/100}};
+let seasonalPhotoTimer=null,seasonalPhotoIndex=0,seasonalPhotoCampaign='';
+function renderSeasonalPhotos(c){
+ const host=E('seasonalPhotoCarousel'),photo=E('seasonalPhoto'),dots=E('seasonalPhotoDots');
+ if(seasonalPhotoTimer){clearInterval(seasonalPhotoTimer);seasonalPhotoTimer=null;}
+ const images=A(c.bannerImages).filter(src=>typeof src==='string'&&(/^(https:\/\/|data:image\/(jpeg|png|webp);base64,)/i.test(src))).slice(0,8);
+ host.hidden=!images.length;dots.innerHTML='';
+ if(!images.length){photo.removeAttribute('src');return;}
+ if(seasonalPhotoCampaign!==c.id){seasonalPhotoIndex=0;seasonalPhotoCampaign=c.id;}
+ seasonalPhotoIndex%=images.length;
+ const draw=()=>{
+  photo.src=images[seasonalPhotoIndex];
+  photo.alt='Foto '+(seasonalPhotoIndex+1)+' de '+images.length+' da campanha '+c.title;
+  dots.querySelectorAll('button').forEach((b,i)=>{b.classList.toggle('active',i===seasonalPhotoIndex);b.setAttribute('aria-pressed',String(i===seasonalPhotoIndex));});
+ };
+ dots.innerHTML=images.length>1?images.map((_,i)=>'<button type="button" data-season-photo="'+i+'" aria-label="Ver foto '+(i+1)+'"></button>').join(''):'';
+ dots.onclick=e=>{const b=e.target.closest('[data-season-photo]');if(!b)return;seasonalPhotoIndex=Number(b.dataset.seasonPhoto);draw();};
+ photo.onclick=()=>E('seasonalSection').scrollIntoView({behavior:'smooth',block:'start'});
+ draw();
+ if(images.length>1&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+  seasonalPhotoTimer=setInterval(()=>{if(document.hidden)return;seasonalPhotoIndex=(seasonalPhotoIndex+1)%images.length;draw();},5000);
+ }
+}
 function seasonalDateBR(x){if(!x)return'—';const [y,m,d]=S(x).split('-');return d+'/'+m+'/'+y}
 async function loadSeasonalCampaigns(){
  if(STORE!=='caseirinho')return;
@@ -777,6 +799,7 @@ function renderSeasonalCampaigns(){
  const chosen=seasonalCampaign(seasonalSelected)||seasonalCampaigns[0],orderable=chosen.status==='ABERTA';
  E('seasonalBannerTitle').textContent=chosen.title||'Encomendas especiais';
  E('seasonalBannerText').textContent=chosen.bannerText||chosen.description||'Reserve seus produtos para datas especiais.';
+ renderSeasonalPhotos(chosen);
  E('seasonalCampaignTabs').innerHTML=seasonalCampaigns.map(c=>'<button type="button" data-season-tab="'+esc(c.id)+'" class="'+(c.id===chosen.id?'active':'')+'">'+esc(c.title)+'</button>').join('');
  E('seasonalCampaignDetails').innerHTML='<div class="seasonal-campaign-details"><strong>'+esc(chosen.title)+'</strong> · '+esc(chosen.description||'')+
  '<br>📅 Encomendas: '+esc(seasonalDateBR(chosen.orderFrom))+' até '+esc(seasonalDateBR(chosen.orderUntil))+
