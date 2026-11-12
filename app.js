@@ -1797,6 +1797,34 @@ async function submitOrder(ev){
     });
     if(!proceed)return;
   }
+  // Confirmação explícita das condições antes de registrar encomendas especiais.
+  // Não presume renúncia ao direito legal de arrependimento.
+  if(seasonalCampaignId){
+    const c=selectedSeasonalCampaign();
+    const amount=cart.reduce((sum,x)=>sum+N(x.quantidade)*N(c?.products?.find(p=>S(p.id)===S(x.produtoId))?.price||0),0);
+    const freight=mode==='ENTREGA'?freightInfo():{pending:false,value:0};
+    const total=amount+(freight.pending?0:N(freight.value));
+    const split=seasonalSplit(total);
+    const itemLines=cart.map(x=>{
+      const p=c?.products?.find(p=>S(p.id)===S(x.produtoId));
+      return '<li>'+esc(N(x.quantidade)+' × '+S(p?.name||x.nome||'Produto'))+' — '+money(N(x.quantidade)*N(p?.price))+'</li>';
+    }).join('');
+    const accepted=await customerDialog({
+      title:'Revise e aceite sua encomenda',icon:'🎄',locked:true,
+      html:'<div class="cx-highlight"><b>'+esc(c?.title||'Encomenda especial')+'</b><br>'+
+        '📅 '+esc(seasonalDateBR(E('date').value))+' · '+esc(mode==='ENTREGA'?'Entrega':'Retirada')+
+        (mode==='ENTREGA'?' · horário a combinar':' · '+esc(E('time').value||'Horário a confirmar'))+
+        '</div><ul>'+itemLines+'</ul>'+
+        '<p><b>Total estimado: '+money(total)+'</b><br>💚 Sinal (50%): <b>'+money(split.deposit)+'</b><br>📦 Saldo (50%): <b>'+money(split.balance)+'</b></p>'+
+        (freight.pending?'<p><b>Frete ainda será cotado.</b> Não pague um valor adicional sem a confirmação do Caseirinho.</p>':'')+
+        '<div class="cx-note"><b>Condições importantes</b><p>O pedido fica reservado após a confirmação efetiva do sinal. Não é necessário pagar 100% agora. O saldo deve ser quitado na retirada ou antes do envio para entrega, conforme combinado.</p>'+
+        '<p>Por ser uma produção artesanal agendada, pedimos cancelamentos com antecedência. Antes de iniciar a produção, avaliamos o reembolso conforme a situação; após a compra de insumos ou início do preparo, custos comprovados poderão ser considerados nos limites da lei. O direito legal de arrependimento em compras a distância permanece preservado. Problemas causados pelo Caseirinho dão direito às soluções previstas na legislação.</p>'+
+        '<p>Confirme os itens, quantidades, data, modalidade e endereço antes de prosseguir. Alterações dependem de disponibilidade.</p></div>'+
+        '<p><b>Ao continuar, você confirma que leu e concorda com as condições informadas.</b></p>',
+      actions:[{label:'Voltar e revisar',value:false},{label:'Li e concordo · fazer encomenda',value:true,primary:true}]
+    });
+    if(!accepted)return;
+  }
   const now=new Date().toISOString();
   const body={
     cliente:{
