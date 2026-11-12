@@ -827,7 +827,7 @@ function renderSeasonalCampaigns(){
  ).join('')||'<p>Sem produtos disponíveis nesta campanha.</p>';
 }
 function renderSeasonalCheckout(){
- const c=selectedSeasonalCampaign(),visible=!!c&&cart.length>0;
+ const c=selectedSeasonalCampaign(),visible=!!c&&seasonalCartParts().seasonal.length>0;
  E('seasonalCheckout').hidden=!visible;
  if(!visible){if(!cart.length&&seasonalCampaignId){seasonalCampaignId='';removeLocal(SEASON_KEY);}return;}
  E('seasonalCheckoutTitle').textContent=c.title+' · 50% no pedido e o restante na '+(E('mode').value==='ENTREGA'?'entrega':'retirada');
@@ -1138,7 +1138,7 @@ async function quickAdd(id,qty){
   renderCart();toast('Produto adicionado ao carrinho.');
 }
 function renderCart(){
-  if(!cart.length&&seasonalCampaignId){seasonalCampaignId='';removeLocal(SEASON_KEY);}
+  if(seasonalCampaignId&&!seasonalCartParts().seasonal.length){seasonalCampaignId='';removeLocal(SEASON_KEY);}
   // Repare também carrinhos persistidos antes da atualização do catálogo.
   reconcileCartProducts();
   cart=cart.filter(x=>x&&x.produtoId);
@@ -1749,6 +1749,83 @@ async function pollCustomerOrders(){
   }
 }
 
+async function submitMixedOrder(ev){
+ const c=selectedSeasonalCampaign(),parts=seasonalCartParts(),mode=E('mode').value;
+ const date=E('seasonalFulfillmentDate')?.value,regularDate=E('mixedRegularDate')?.value,regularPayment=E('mixedRegularPayment')?.value;
+ if(!c||c.status!=='ABERTA'||!A(c.fulfillmentDates).includes(date))return toast('Selecione a data de entrega da encomenda.');
+ if(!regularDate||!serviceDays(mode).includes(dayOf(regularDate))||regularDate<new Date().toISOString().slice(0,10))return toast('Selecione uma data válida para o pedido comum.');
+ if(!paymentOptionsForRegular().includes(regularPayment))return toast('Selecione a forma de pagamento do pedido comum.');
+ if(!validPhone(E('cPhone').value))return toast('Informe seu WhatsApp válido.');
+ if(!E('consent').checked)return toast('Aceite a Política de Privacidade.');
+ if(mode==='ENTREGA'){const a=address();if(a.cep.length!==8||!cepResolved||!a.logradouro||!a.numero||!a.cidade)return toast('Confira CEP e número da entrega.');}
+ if(parts.seasonal.some(x=>{const rule=c.products.find(p=>S(p.id)===S(x.produtoId));return !rule||N(x.quantidade)<N(rule.minQuantity)||N(rule.maxQuantity)>0&&N(x.quantidade)>N(rule.maxQuantity)}))return toast('Revise as quantidades da campanha.');
+ if(parts.seasonal.reduce((sum,x)=>sum+N(x.quantidade),0)<N(c.minTotalQuantity))return toast('Quantidade mínima da campanha não atingida.');
+ const f=freightInfo();
+ if(mode==='ENTREGA'&&f.pending)return toast('O valor da entrega precisa ser confirmado antes de registrar uma encomenda com sinal.');
+ const sum=xs=>xs.reduce((acc,x)=>acc+N(x.quantidade)*N(x.precoUnitario),0);
+ const estimatedSeason=sum(parts.seasonal)+(mode==='ENTREGA'?N(f.value):0);
+ const estimatedRegular=sum(parts.regular)+(mode==='ENTREGA'?N(f.value):0);
+ const split=seasonalSplit(estimatedSeason);
+ const approved=await customerDialog({
+  title:'Confirmar dois pedidos separados',icon:'🛒',locked:true,
+  html:'<div class="cx-highlight"><b>Serão emitidos dois números de pedido para a mesma compra.</b></div>'+
+   '<p>🎄 <b>Encomenda '+esc(c.title)+'</b><br>Data: '+esc(seasonalDateBR(date))+
+   '<br>Produtos: '+parts.seasonal.map(x=>esc(x.quantidade+' × '+x.nome)).join(', ')+
+   '<br>Estimativa: '+money(estimatedSeason)+' · <b>Sinal de 50%: '+money(split.deposit)+'</b> · Saldo: '+money(split.balance)+'</p>'+
+   '<p>🛒 <b>Pedido comum</b><br>Data: '+esc(seasonalDateBR(regularDate))+
+   '<br>Produtos: '+parts.regular.map(x=>esc(x.quantidade+' × '+x.nome)).join(', ')+
+   '<br>Estimativa: '+money(estimatedRegular)+' · Pagamento: '+esc(paymentPublicLabel(regularPayment))+'</p>'+
+   '<div class="cx-note">Cada pedido será calculado pelo servidor com preços, frete e pagamento independentes. Para entrega, poderá haver cobrança de frete em ambos. A encomenda é reservada somente após confirmação do sinal; o pedido comum segue seu próprio fluxo. O direito legal de arrependimento é respeitado. Se um envio falhar, o pedido já recebido será preservado para evitar duplicidade.</div>',
+  actions:[{label:'Voltar e revisar',value:false},{label:'Confirmar os dois pedidos',value:true,primary:true}]
+ });
+ if(!approved)return;
+ const now=new Date().toISOString(),base={
+  cliente:{nome:S(E('cName').value).trim(),telefone:S(E('cPhone').value).trim(),email:S(E('cEmail').value).trim(),cpf:S(E('cCpf').value).trim()},
+  modalidade:mode,horario:mode==='ENTREGA'?'A combinar':S(E('time')?.value),entrega:mode==='ENTREGA'?address():{},
+  observacao:S(E('obs').value).trim().slice(0,1000),
+  lgpd:{consent:true,consentAt:now,policyVersion:S(catalog.loja?.lgpd?.versao||catalog.loja?.lgpd?.policyVersion||'1.0'),purpose:'CADASTRO_PEDIDO_ENTREGA_CONTATO'}
+ };
+ const seasonBody={...base,dataAtendimento:date,formaPagamento:'PIX_SINAL_50_MANUAL',encomendaSazonal:{campanhaId:c.id},itens:parts.seasonal.map(x=>({produtoId:S(x.produtoId),quantidade:N(x.quantidade)}))};
+ const regularBody={...base,dataAtendimento:regularDate,formaPagamento:regularPayment,itens:parts.regular.map(x=>({produtoId:S(x.produtoId),quantidade:N(x.quantidade)}))};
+ const signature=JSON.stringify({phone:base.cliente.telefone,season:seasonBody.itens,date,regular:regularBody.itens,regularDate,regularPayment,mode});
+ let pending=readJson(MIXED_PENDING_KEY,null);
+ if(!pending||pending.signature!==signature){
+  const id=crypto.randomUUID?crypto.randomUUID():'mixed-'+Date.now()+'-'+Math.random().toString(36).slice(2);
+  pending={signature,seasonRequestId:id+'-S',regularRequestId:id+'-R',seasonResult:null,regularResult:null};
+  writeJson(MIXED_PENDING_KEY,pending);
+ }
+ seasonBody.clientRequestId=pending.seasonRequestId;regularBody.clientRequestId=pending.regularRequestId;
+ const btn=ev.submitter||E('checkout').querySelector('[type=submit]'),label=btn.textContent;
+ btn.disabled=true;
+ try{
+  for(const [key,body] of [['seasonResult',seasonBody],['regularResult',regularBody]]){
+   if(pending[key])continue;
+   btn.textContent=key==='seasonResult'?'Enviando encomenda...':'Enviando pedido comum...';
+   const result=await api('/api/v1/public/store/'+encodeURIComponent(STORE)+'/orders',{method:'POST',body:JSON.stringify(body)});
+   pending[key]=result;writeJson(MIXED_PENDING_KEY,pending);
+   saveOrderUpdate({...body,...result,publicToken:result.publicToken,savedAt:new Date().toISOString()});
+   saveCustomerProfileFromBody(body);
+  }
+  removeLocal(MIXED_PENDING_KEY);removeLocal(PENDING_ORDER_KEY);removeLocal(SEASON_KEY);
+  seasonalCampaignId='';cart=[];renderCart();
+  const sr=pending.seasonResult,rr=pending.regularResult;
+  E('checkoutResult').innerHTML='<div class="result"><b>✅ Seus dois pedidos foram recebidos!</b><br>'+
+   '🎄 Encomenda nº <b>'+esc(sr.codigo)+'</b>: '+money(sr.total)+
+   '<br>💚 Sinal de 50%: <b>'+money(sr.encomendaSazonal?.depositDue)+'</b> · Saldo: '+money(sr.encomendaSazonal?.balanceDue)+
+   '<br>Chave Pix CNPJ: <b>69.195.483/0001-23</b> (pague apenas o sinal após conferir o valor).<br>'+
+   '🛒 Pedido comum nº <b>'+esc(rr.codigo)+'</b>: '+money(rr.total)+' · '+esc(paymentPublicLabel(regularPayment))+
+   '<br>Os pagamentos são independentes; acompanhe os dois pedidos em Meus Pedidos.<br>'+
+   '<button class="primary" type="button" id="mixedOrdersFollow">Acompanhar meus pedidos</button></div>';
+  E('mixedOrdersFollow').onclick=showOrders;
+  try{await bootstrapHistorySession({...seasonBody,...sr});await syncCustomerHistory()}catch(_){}
+ }catch(err){
+  E('checkoutResult').innerHTML='<div class="result err"><b>Não foi possível concluir os dois pedidos.</b><br>'+
+   (pending.seasonResult?'🎄 Encomenda recebida: '+esc(pending.seasonResult.codigo)+'<br>':'')+
+   (pending.regularResult?'🛒 Pedido comum recebido: '+esc(pending.regularResult.codigo)+'<br>':'')+
+   'O carrinho e os números já registrados foram preservados. Nenhum pedido existente será reenviado com um novo identificador.<br>'+
+   esc(err.message)+'<br><b>Toque em Confirmar novamente apenas para concluir a parte pendente.</b></div>';
+ }finally{btn.disabled=false;btn.textContent=label}
+}
 async function submitOrder(ev){
   ev.preventDefault();
   E('checkoutResult').innerHTML='';
