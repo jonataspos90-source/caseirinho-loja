@@ -1,0 +1,10 @@
+/* Fotos das campanhas sazonais - Caseirinho */
+.seasonal-banner .seasonal-banner-inner{display:flex;flex-wrap:wrap;align-items:center;gap:20px}
+.seasonal-photo-carousel{position:relative;width:min(100%,430px);flex:0 1 430px;order:2;border-radius:16px;overflow:hidden;box-shadow:0 12px 28px rgba(0,0,0,.22);background:#f3ead7}
+.seasonal-photo-carousel[hidden]{display:none!important}
+.seasonal-photo-carousel>img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;cursor:pointer}
+.seasonal-photo-dots{position:absolute;bottom:10px;left:0;right:0;display:flex;justify-content:center;gap:7px}
+.seasonal-photo-dots button{width:12px;height:12px;border-radius:50%;padding:0;border:2px solid #fff;background:#ffffff66;cursor:pointer;box-shadow:0 0 5px #0005}
+.seasonal-photo-dots button.active{background:#fff;transform:scale(1.12)}
+@media(max-width:850px){.seasonal-banner .seasonal-banner-inner{display:flex;flex-direction:column;align-items:stretch}.seasonal-photo-carousel{order:0;width:100%;flex:auto}.seasonal-banner-inner>div:not(.seasonal-photo-carousel){order:1}.seasonal-banner-inner>.seasonal-cta{order:2}}
+@media(prefers-reduced-motion:reduce){.seasonal-photo-dots button{transition:none}}
