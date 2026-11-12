@@ -1639,6 +1639,10 @@ function seenNotices(){return readJson(CUSTOMER_NOTICE_KEY,{})}
 function markNotice(key){const x=seenNotices();x[key]=new Date().toISOString();writeJson(CUSTOMER_NOTICE_KEY,x)}
 async function notifyOrderChange(before,after){
   if(!after?.id)return;
+  // Pedidos de homologação são históricos administrativos: não interrompem a compra.
+  // Sua rejeição significa apenas que não contam como venda comercial.
+  const testPhone=S(after?.cliente?.telefone||before?.cliente?.telefone).replace(/\D/g,'').slice(-11);
+  if(after.pedidoTeste===true||before?.pedidoTeste===true||testPhone==='11989310929'||/pedido de teste.*sem venda comercial/i.test(S(after?.mensagemCliente)))return;
   const seen=seenNotices(),st=norm(after.status),old=norm(before?.status);
   const quoteKey=`${after.id}:quote:${after.freteCotacaoVersao||after.freteCotadoEm||after.updatedAt||after.valorFrete}`;
   if(
