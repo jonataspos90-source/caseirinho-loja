@@ -19,6 +19,7 @@ const CATALOG_BACKUP_CACHE='john-storefront-catalog-backup-v1';
 const CART_KEY=STORE_SCOPE+'cart_v1';
 const ORDERS_KEY=STORE_SCOPE+'orders_v1';
 const SEASON_KEY=STORE_SCOPE+'seasonal_cart_v1';
+const MIXED_PENDING_KEY=STORE_SCOPE+'mixed_checkout_pending_v1';
 const PENDING_ORDER_KEY=STORE_SCOPE+'pending_order_v1';
 const CUSTOMER_NOTICE_KEY=STORE_SCOPE+'customer_notice_v1';
 const CUSTOMER_PROFILE_KEY=STORE_SCOPE+'customer_profile_v1';
@@ -758,6 +759,7 @@ function renderSearchSuggestions(){
 function seasonalCampaign(id){return seasonalCampaigns.find(c=>S(c.id)===S(id))||null}
 function selectedSeasonalCampaign(){return seasonalCampaign(seasonalCampaignId)}
 const seasonalSplit=amount=>{const cents=Math.round(N(amount)*100),deposit=Math.ceil(cents/2);return{deposit:deposit/100,balance:(cents-deposit)/100}};
+function seasonalCartParts(){const c=selectedSeasonalCampaign();const ids=new Set(A(c?.products).map(p=>S(p.id)));return{seasonal:cart.filter(i=>ids.has(S(i.produtoId))),regular:cart.filter(i=>!ids.has(S(i.produtoId)))}}
 let seasonalPhotoTimer=null,seasonalPhotoIndex=0,seasonalPhotoCampaign='';
 function renderSeasonalPhotos(c){
  const host=E('seasonalPhotoCarousel'),photo=E('seasonalPhoto'),dots=E('seasonalPhotoDots');
@@ -779,6 +781,15 @@ function renderSeasonalPhotos(c){
  if(images.length>1&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches){
   seasonalPhotoTimer=setInterval(()=>{if(document.hidden)return;seasonalPhotoIndex=(seasonalPhotoIndex+1)%images.length;draw();},5000);
  }
+}
+function paymentOptionsForRegular(){
+ const old=seasonalCampaignId;seasonalCampaignId='';
+ try{return paymentOptionsFor(E('mode')?.value).filter(x=>x!=='PIX_SINAL_50_MANUAL')}finally{seasonalCampaignId=old}
+}
+function nextRegularDateForMixed(start,mode){
+ let d=new Date(start+'T12:00:00Z');
+ for(let i=0;i<35;i++){const iso=d.toISOString().slice(0,10);if(serviceDays(mode).includes(dayOf(iso)))return iso;d.setUTCDate(d.getUTCDate()+1)}
+ return start;
 }
 function seasonalDateBR(x){if(!x)return'—';const [y,m,d]=S(x).split('-');return d+'/'+m+'/'+y}
 async function loadSeasonalCampaigns(){
@@ -825,15 +836,31 @@ function renderSeasonalCheckout(){
  const chosen=c.fulfillmentDates.includes(prev)?prev:c.fulfillmentDates.includes(E('date').value)?E('date').value:'';
  select.value=chosen;
  if(chosen)E('date').value=chosen;
- const price=promoApi()?.cartTotals(cart,catalog.produtos)?.subtotal??cart.reduce((sum,x)=>sum+N(x.precoUnitario)*N(x.quantidade),0);
+ const parts=seasonalCartParts();
+ const price=promoApi()?.cartTotals(parts.seasonal,catalog.produtos)?.subtotal??parts.seasonal.reduce((sum,x)=>sum+N(x.precoUnitario)*N(x.quantidade),0);
  const fees=E('mode').value==='ENTREGA'?N(E('shipping')?.textContent?.replace(/[^0-9,]/g,'').replace(',','.')):0;
  const split=seasonalSplit(price+fees);
  E('seasonalFinanceSummary').innerHTML='Total previsto: <b>'+money(price+fees)+'</b><br>💚 Sinal (50%): <b>'+money(split.deposit)+'</b><br>📦 Na entrega/retirada (50%): <b>'+money(split.balance)+'</b><br><small>Frete final e valores serão conferidos no servidor antes do pagamento.</small>';
+ let mixedOptions=E('seasonalMixedOptions');
+ if(!mixedOptions){mixedOptions=document.createElement('div');mixedOptions.id='seasonalMixedOptions';mixedOptions.className='cx-note';E('seasonalFinanceSummary').insertAdjacentElement('afterend',mixedOptions);}
+ mixedOptions.hidden=!parts.regular.length;
+ if(parts.regular.length){
+  const previousDate=E('mixedRegularDate')?.value||'';
+  const previousPayment=E('mixedRegularPayment')?.value||'';
+  const methods=paymentOptionsForRegular();
+  mixedOptions.innerHTML='<b>🛒 Sua compra será dividida automaticamente em 2 pedidos</b><p>🎄 Encomenda: '+parts.seasonal.length+' produto(s), com sinal de 50%.<br>📦 Pedido comum: '+parts.regular.length+' produto(s), com pagamento próprio.</p>'+
+  '<label>Data do pedido comum *<input type="date" id="mixedRegularDate" required></label>'+
+  '<label>Pagamento do pedido comum *<select id="mixedRegularPayment" required>'+methods.map(v=>'<option value="'+esc(v)+'">'+esc(paymentPublicLabel(v))+'</option>').join('')+'</select></label>'+
+  '<small>São dois números de pedido. Frete e valores finais serão confirmados para cada pedido. Não pague duas vezes o mesmo Pix.</small>';
+  const d=E('mixedRegularDate');d.min=new Date().toISOString().slice(0,10);d.value=previousDate||nextRegularDateForMixed(d.min,E('mode').value);
+  if(previousPayment&&methods.includes(previousPayment))E('mixedRegularPayment').value=previousPayment;
+ }
+
 }
 function seasonalAdd(id){
  const c=seasonalCampaign(seasonalSelected),line=c?.products.find(x=>x.id===id);
  if(!c||c.status!=='ABERTA'||!line)return toast('A campanha está fechada ou o produto não participa.');
- if(cart.length&&!seasonalCampaignId)return toast('Você já tem produtos no carrinho normal. Finalize esse pedido antes de começar a encomenda especial.');
+ // Os produtos comuns podem permanecer no carrinho; o checkout os separará em dois pedidos.
  if(cart.length&&seasonalCampaignId!==c.id)return toast('Finalize primeiro a encomenda da outra campanha.');
  seasonalCampaignId=c.id;writeJson(SEASON_KEY,{campaignId:c.id});
  quickAdd(id,Math.max(1,N(line.minQuantity)));
@@ -1088,7 +1115,7 @@ function renderGallery(imgs,index){
   E('thumbs').querySelectorAll('[data-thumb]').forEach(b=>b.onclick=()=>renderGallery(imgs,N(b.dataset.thumb)));
 }
 async function quickAdd(id,qty){
-  if(seasonalCampaignId&&cart.length&&!(selectedSeasonalCampaign()?.products||[]).some(x=>S(x.id)===S(id)))return toast('Carrinho de encomenda: inclua somente produtos da campanha.');
+  // O carrinho aceita produtos comuns e sazonais, separados no envio do pedido.
   const p=A(catalog.produtos).find(x=>S(x.id)===S(id));if(!p)return;
   if(!canBuy(p))return toast('Este produto está indisponível no momento.');
   const seasonRule=selectedSeasonalCampaign()?.products?.find(x=>S(x.id)===S(id));
@@ -1768,6 +1795,9 @@ async function submitOrder(ev){
     return toast('Aceite a Política de Privacidade / LGPD para continuar.');
   }
 
+  if(seasonalCampaignId&&seasonalCartParts().regular.length&&seasonalCartParts().seasonal.length){
+    return submitMixedOrder(ev);
+  }
   if(seasonalCampaignId&&paymentChoice!=='PIX_SINAL_50_MANUAL')return toast('Para encomendas, escolha Pix de 50% de sinal.');
   const mode=E('mode').value;
   if(!mode)return toast('Selecione Retirada ou Entrega.');
