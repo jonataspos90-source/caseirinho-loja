@@ -15,6 +15,7 @@ const CART_KEY=PREFIX+'cart_v1';
 const ORDERS_KEY=PREFIX+'orders_v1';
 const PROFILE_KEY=PREFIX+'customer_profile_v1';
 const SESSION_KEY=PREFIX+'commerce_session_v1';
+const SEASON_KEY=PREFIX+'seasonal_cart_v1';
 const SENT_KEY=PREFIX+'engagement_last_snapshot_v961';
 const RATED_PREFIX=PREFIX+'rating_done_v962_';
 const LEGACY_RATED_PREFIX=PREFIX+'rating_done_v961_';
@@ -42,9 +43,9 @@ function profile(){return read(PROFILE_KEY,{})||{}}
 function sessionId(){let x='';try{x=localStorage.getItem(SESSION_KEY)||''}catch(_){}if(!x){x=(crypto.randomUUID?.()||('s'+Date.now()+Math.random().toString(36).slice(2)));try{localStorage.setItem(SESSION_KEY,x)}catch(_){}}return x}
 function phoneDigits(v){let d=S(v).replace(/\D/g,'');if(d.startsWith('55')&&d.length>=12)d=d.slice(2);return d.slice(-11)}
 function identity(){const p=profile();return{name:S(E('cName')?.value||p.nome||'').trim(),phone:phoneDigits(E('cPhone')?.value||p.telefone||''),email:S(E('cEmail')?.value||p.email||'').trim(),cpf:S(E('cCpf')?.value||p.cpf||'').replace(/\D/g,'')}}
-function snapshot(){const c=cart(),who=identity();const itemDetails=c.map(x=>({productId:S(x.produtoId||x.productId||x.id),name:S(x.nome||x.name||x.descricao||'Produto'),quantity:N(x.quantidade||x.quantity),unitPrice:N(x.precoUnitario??x.preco??x.price)}));const total=itemDetails.reduce((s,x)=>s+x.quantity*x.unitPrice,0);return{...who,total,items:itemDetails.reduce((s,x)=>s+x.quantity,0),cartSize:itemDetails.length,itemNames:itemDetails.map(x=>`${x.quantity}x ${x.name}`).join(', '),itemDetails,page:location.pathname,updatedAt:new Date().toISOString()}}
+function snapshot(){const c=cart(),who=identity();const itemDetails=c.map(x=>({productId:S(x.produtoId||x.productId||x.id),name:S(x.nome||x.name||x.descricao||'Produto'),quantity:N(x.quantidade||x.quantity),unitPrice:N(x.precoUnitario??x.preco??x.price)}));const total=itemDetails.reduce((s,x)=>s+x.quantity*x.unitPrice,0);return{...who,total,items:itemDetails.reduce((s,x)=>s+x.quantity,0),cartSize:itemDetails.length,itemNames:itemDetails.map(x=>`${x.quantity}x ${x.name}`).join(', '),itemDetails,seasonalCampaignId:S(read(SEASON_KEY,{})?.campaignId),page:location.pathname,updatedAt:new Date().toISOString()}}
 async function postEvent(type,data={},keepalive=false){const body=JSON.stringify({type,sessionId:sessionId(),phone:S(data.phone||identity().phone),orderId:S(data.orderId||''),data});const r=await fetch(`${API}/api/v1/public/store/${encodeURIComponent(STORE)}/commerce-events?_t=${Date.now()}`,{method:'POST',cache:'no-store',keepalive:!!keepalive,headers:{'Content-Type':'application/json','Cache-Control':'no-cache'},body});if(!r.ok)throw new Error('HTTP '+r.status);return true}
-function signature(s){return JSON.stringify({ids:A(s.itemDetails).map(x=>[x.productId,x.quantity,x.unitPrice]),name:s.name,phone:s.phone,email:s.email,cpf:s.cpf,total:s.total})}
+function signature(s){return JSON.stringify({ids:A(s.itemDetails).map(x=>[x.productId,x.quantity,x.unitPrice]),name:s.name,phone:s.phone,email:s.email,cpf:s.cpf,total:s.total,seasonalCampaignId:s.seasonalCampaignId})}
 async function sendSnapshot(force=false,keepalive=false){
   if(sending)return false;
   const s=snapshot(),sig=signature(s),now=Date.now();
