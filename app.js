@@ -1795,6 +1795,9 @@ async function submitMixedOrder(ev){
   writeJson(MIXED_PENDING_KEY,pending);
  }
  seasonBody.clientRequestId=pending.seasonRequestId;regularBody.clientRequestId=pending.regularRequestId;
+ const mixedGroupId=S(pending.seasonRequestId).replace(/-S$/,'');
+ seasonBody.grupoCompraMista={id:mixedGroupId,tipo:'ENCOMENDA'};
+ regularBody.grupoCompraMista={id:mixedGroupId,tipo:'COMUM'};
  const btn=ev.submitter||E('checkout').querySelector('[type=submit]'),label=btn.textContent;
  btn.disabled=true;
  try{
