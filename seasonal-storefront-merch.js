@@ -2,7 +2,7 @@
 'use strict';
 const B=window.CaseirinhoSeasonalBridge;
 const {S,N,A,esc,money,roundMoney,cartCatalogProducts,promoApi,selectedSeasonalCampaign,seasonalCampaign,E,quickAdd,modeChanged,renderSeasonalCheckout,toast}=B;
-let seasonStoreCategory='',seasonStoreCampaign='',seasonStoreVariants=new Map();
+let seasonStoreCategory='',seasonStoreCampaign='',seasonStoreVariants=new Map(),seasonPackDrafts=new Map();
 const seasonCurrent=()=>seasonalCampaign(B.getSelectedCampaignId());
 function seasonalMerchFilterCategory(p,grades){
  return S(p.categoryId||grades.find(g=>g.id===p.gradeId)?.categoryId||'');
@@ -35,7 +35,7 @@ function seasonalPackMarkup(pack,campaign,open){
  '<small>Escolha '+N(pack.quantity)+' unidades. O desconto do kit é aplicado quando a composição estiver completa.</small>'+
  '<div class="seasonal-pack-builder">'+products.map(p=>
   '<div><label>'+esc(p.variantLabel||p.name)+'<small>Avulso: '+money(p.price)+'</small></label>'+
-  '<input type="number" min="0" max="'+N(pack.quantity)+'" step="1" value="0" data-season-pack-qty="'+esc(p.id)+'" '+
+  '<input type="number" min="0" max="'+N(pack.quantity)+'" step="1" value="'+N(seasonPackDrafts.get(pack.id)?.[p.id]||0)+'" data-season-pack-qty="'+esc(p.id)+'" '+
   (!open?'disabled':'')+' aria-label="Quantidade '+esc(p.name)+'"></div>').join('')+'</div>'+
  '<p class="seasonal-pack-progress" data-season-pack-progress>0 de '+pack.quantity+' unidades selecionadas</p>'+
  '<button type="button" class="seasonal-pack-action" data-season-pack-add="'+esc(pack.id)+'" disabled>🎁 Adicionar kit à encomenda</button></div></article>';
@@ -43,7 +43,7 @@ function seasonalPackMarkup(pack,campaign,open){
 function seasonStoreMerchRender(){
  const c=seasonCurrent(),root=E('seasonalProducts');
  if(!c||!root)return;
- if(seasonStoreCampaign!==c.id){seasonStoreCampaign=c.id;seasonStoreCategory='';seasonStoreVariants=new Map();}
+ if(seasonStoreCampaign!==c.id){seasonStoreCampaign=c.id;seasonStoreCategory='';seasonStoreVariants=new Map();seasonPackDrafts=new Map();}
  const categories=A(c.categories).filter(x=>x.active).slice().sort((a,b)=>N(a.sortOrder)-N(b.sortOrder));
  const grades=A(c.grades).filter(x=>x.active).slice().sort((a,b)=>N(a.sortOrder)-N(b.sortOrder));
  const products=A(c.products),opened=c.status==='ABERTA',activeGradeIds=new Set(grades.map(g=>g.id));
@@ -69,6 +69,7 @@ function seasonStoreMerchRender(){
  const packs=A(c.packs).filter(p=>p.active).slice().sort((a,b)=>N(a.sortOrder)-N(b.sortOrder));
  E('seasonalPacks').innerHTML=packs.length?'<h3 class="seasonal-pack-title">🎁 Kits e packs especiais</h3>'+
   '<div class="seasonal-pack-grid">'+packs.map(p=>seasonalPackMarkup(p,c,opened)).join('')+'</div>':'';
+ E('seasonalPacks').querySelectorAll('[data-season-pack]').forEach(seasonStorePackStatus);
 }
 window.CaseirinhoSeasonalMerch={render:seasonStoreMerchRender};
 B.renderCampaigns();
@@ -94,6 +95,7 @@ async function seasonStorePackAdd(card){
  }))return toast('Confira os limites de quantidade dos sabores selecionados.');
  B.setActiveCampaignId(c.id);
  for(const item of amounts)await quickAdd(item.id,item.qty);
+ seasonPackDrafts.delete(pack.id);seasonStoreMerchRender();
  modeChanged();renderSeasonalCheckout();
  toast('🎁 Kit '+pack.name+' incluído. Confira o valor com desconto no carrinho.');
 }
@@ -106,5 +108,10 @@ document.addEventListener('click',e=>{
  if(pack)seasonStorePackAdd(pack.closest('[data-season-pack]'));
 });
 document.addEventListener('input',e=>{
- if(e.target.closest?.('[data-season-pack-qty]'))seasonStorePackStatus(e.target.closest('[data-season-pack]'));
+ if(e.target.closest?.('[data-season-pack-qty]')){
+  const card=e.target.closest('[data-season-pack]'),draft={};
+  card.querySelectorAll('[data-season-pack-qty]').forEach(x=>{draft[x.dataset.seasonPackQty]=Math.max(0,Math.floor(N(x.value)))});
+  seasonPackDrafts.set(card.dataset.seasonPack,draft);
+  seasonStorePackStatus(card);
+ }
 });
