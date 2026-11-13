@@ -1,0 +1,12 @@
+{
+  "name": "caseirinho-loja-web",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Servidor estático seguro da Loja Caseirinho para Railway",
+  "scripts": {
+    "start": "node static-server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
