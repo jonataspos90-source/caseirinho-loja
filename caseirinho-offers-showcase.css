@@ -1,0 +1,46 @@
+/* Caseirinho · Vitrine de ofertas sem repetição nas categorias */
+#featured:empty{display:none}
+#offersSection{position:relative;scroll-margin-top:110px}
+#offersSection .section-head{align-items:end;margin-bottom:22px}
+#offersSection .section-head h2{font-size:clamp(27px,2.8vw,40px);color:#073f30;letter-spacing:-.035em}
+#offersSection .section-head p{font-size:clamp(13px,1.2vw,16px);line-height:1.5;color:#6a5058}
+#offersSection .section-head h2:before{content:"🔥";margin-right:9px}
+#offersSection .promo-pack-card{border:0;border-radius:24px;background:#fff;box-shadow:0 16px 43px #38112715;overflow:hidden;isolation:isolate}
+#offersSection .promo-pack-heading{position:relative;padding:28px 32px 26px;background:linear-gradient(116deg,#780036 0%,#b60756 67%,#d95132 125%);color:#fff}
+#offersSection .promo-pack-heading:after{content:"";position:absolute;right:-70px;top:-80px;width:260px;height:260px;border:38px solid #ffffff12;border-radius:50%;pointer-events:none}
+#offersSection .promo-pack-heading>span{color:#ffe59b;background:#ffffff25;border:1px solid #ffffff38;border-radius:99px;padding:7px 12px;font-size:11px;letter-spacing:.08em;margin-bottom:12px}
+#offersSection .promo-pack-heading h3{color:#fff;font-size:clamp(23px,2.5vw,34px);line-height:1.12;font-weight:900;letter-spacing:-.035em}
+#offersSection .promo-pack-heading p{color:#fff2f6;font-size:14px;line-height:1.55;max-width:750px;margin-top:10px}
+#offersSection .promo-pack-trust{display:inline-block;margin-top:14px;font-size:12px;font-weight:800;color:#ffe59b}
+#offersSection .promo-pack-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:14px;padding:20px;background:#fffaf7}
+#offersSection .promo-pack-item{display:flex;flex-direction:column;align-items:stretch;gap:0;padding:0;border:1px solid #f0e2dc;border-radius:17px;overflow:hidden;background:#fff;box-shadow:0 4px 16px #3c122210;transition:transform .2s,box-shadow .2s}
+#offersSection .promo-pack-item:hover{transform:translateY(-3px);box-shadow:0 12px 24px #3c12221c}
+#offersSection .promo-pack-image{width:100%;height:auto;aspect-ratio:16/9;border-radius:0;background:#fff0e5;font-size:48px}
+#offersSection .promo-pack-image img{width:100%;height:100%;object-fit:cover}
+#offersSection .promo-pack-copy{padding:15px 17px 17px;display:flex;flex-direction:column;flex:1;gap:8px}
+#offersSection .promo-pack-copy>b{font-size:15px;line-height:1.35;color:#29222b}
+#offersSection .promo-pack-copy>strong{font-size:24px;letter-spacing:-.02em;color:#9a064a}
+#offersSection .promo-pack-copy>strong small{font-size:11px;color:#695963}
+#offersSection .promo-pack-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:auto;padding-top:7px}
+#offersSection .promo-pack-actions button{font-size:13px;min-height:41px;font-weight:800;border-radius:10px}
+#offersSection .promo-pack-actions .primary{background:#08724e;color:#fff}
+#offersSection .promo-pack-card + .promo-pack-card{margin-top:6px}
+#offersSection .product-card{align-self:stretch}
+#offersSection .offers-footnote{font-size:12px;color:#71535f}
+.offers-quick-link{display:inline-flex;align-items:center;justify-content:center;margin-top:12px;padding:11px 18px;background:#7e063c;color:#fff;border-radius:12px;text-decoration:none;font-weight:850;transition:transform .2s}
+.offers-quick-link:hover{transform:translateY(-2px)}
+#catalogSection{scroll-margin-top:95px}
+@media(min-width:1024px){#offersSection .product-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}#offersSection .promo-pack-grid{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}}
+@media(max-width:650px){
+ #offersSection .promo-pack-heading{padding:22px 18px}
+ #offersSection .promo-pack-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;padding:11px}
+ #offersSection .promo-pack-image{aspect-ratio:1/1}
+ #offersSection .promo-pack-copy{padding:11px 10px;gap:6px}
+ #offersSection .promo-pack-copy>b{font-size:12px}
+ #offersSection .promo-pack-copy>strong{font-size:18px}
+ #offersSection .promo-pack-actions{grid-template-columns:1fr;gap:6px}
+ #offersSection .promo-pack-actions button{min-height:37px}
+ #offersSection .promo-pack-trust{font-size:11px}
+}
+@media(max-width:360px){#offersSection .promo-pack-grid{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){#offersSection .promo-pack-item,.offers-quick-link{transition:none}}
