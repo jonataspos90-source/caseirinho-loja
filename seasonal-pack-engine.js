@@ -23,7 +23,7 @@
    for(const id of ids){
     const line=lines.get(id),q=qty.get(id);
     // Sem acumular com promoções pré-existentes em produtos do catálogo.
-    if(!line||!Number.isInteger(q)||q<1||line.promotionGroupId)continue;
+    if(!line||!Number.isInteger(q)||q<1||n(line.savings)>0)continue;
     const oldTotal=cents(line.total),base=Math.floor(oldTotal/q),extra=oldTotal%q,occupied=n(used.get(id));
     for(let i=occupied;i<q;i++)units.push({id,price:base+(i<extra?1:0)});
    }
