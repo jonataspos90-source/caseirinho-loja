@@ -770,6 +770,22 @@ function seasonVirtualProducts(){
 }
 function cartCatalogProducts(){return [...A(catalog.produtos),...seasonVirtualProducts()]}
 function cartFindProduct(id){return cartCatalogProducts().find(p=>S(p.id)===S(id))}
+function seasonalPricing(rows){
+ const products=cartCatalogProducts();
+ let totals=promoApi()?.cartTotals(rows,products);
+ if(!totals){
+  const map=new Map(products.map(p=>[S(p.id),p])),lines=new Map();
+  for(const item of rows){
+   const id=S(item.produtoId),q=N(item.quantidade),price=N(map.get(id)?.preco||item.precoUnitario),total=roundMoney(price*q);
+   lines.set(id,{total,unitPrice:price,savings:0,promotionLabel:'',promotionGroupId:''});
+  }
+  totals={lines,subtotal:roundMoney([...lines.values()].reduce((sum,x)=>sum+x.total,0)),savings:0};
+ }
+ const campaign=selectedSeasonalCampaign();
+ return campaign&&window.CaseirinhoSeasonalPacks?.apply
+   ?window.CaseirinhoSeasonalPacks.apply(totals,rows,A(campaign.packs)):totals;
+}
+
 function seasonalCartParts(){const c=selectedSeasonalCampaign();const ids=new Set(A(c?.products).map(p=>S(p.id)));return{seasonal:cart.filter(i=>ids.has(S(i.produtoId))),regular:cart.filter(i=>!ids.has(S(i.produtoId)))}}
 let seasonalPhotoTimer=null,seasonalPhotoIndex=0,seasonalPhotoCampaign='';
 function renderSeasonalPhotos(c){
