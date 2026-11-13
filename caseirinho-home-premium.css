@@ -1,0 +1,64 @@
+/* Caseirinho — vitrine única adaptativa (desktop/tablet/mobile) */
+@media (min-width:901px){
+  .seasonal-banner{margin:18px auto 0;width:min(1480px,calc(100% - 56px));border-radius:27px;overflow:hidden;box-shadow:0 20px 48px #2e13251b}
+  .seasonal-banner .seasonal-banner-inner{width:100%!important;max-width:none;min-height:350px;padding:34px 48px;display:grid!important;grid-template-columns:minmax(0,1.1fr) minmax(310px,.9fr);grid-template-areas:"copy photo" "cta photo";gap:10px 36px;align-content:center;align-items:center}
+  .seasonal-banner-inner > div:not(.seasonal-photo-carousel){grid-area:copy;min-width:0}
+  .seasonal-banner-inner > .seasonal-cta{grid-area:cta;justify-self:start;margin-top:16px}
+  .seasonal-banner .seasonal-photo-carousel{grid-area:photo;order:initial!important;width:100%;max-width:none;min-width:0;flex:none!important;border-radius:20px}
+  .seasonal-banner #seasonalBannerTitle{font-size:clamp(32px,3.4vw,53px);line-height:1.08;letter-spacing:-.025em}
+  .seasonal-banner #seasonalBannerText{font-size:clamp(15px,1.35vw,19px);line-height:1.6}
+  .seasonal-banner .seasonal-cta{min-height:52px;padding:12px 22px}
+}
+.hero-party{position:relative}
+.hero-party .party-banner{overflow:hidden}
+.hero-party .party-visual img{transition:transform .7s ease}
+@media (hover:hover){.hero-party .party-banner:hover .party-visual img{transform:scale(1.035)}}
+body.caseirinho-seasonal-active .hero-party .party-banner{display:none!important}
+body.caseirinho-seasonal-active .hero-party{padding-top:0!important}
+body.caseirinho-seasonal-active .hero-party .status-line{padding-top:14px}
+.hero-party .party-banner.caseirinho-inactive-slide{display:none!important}
+.hero-party .party-banner.caseirinho-active-slide{display:grid}
+.caseirinho-slide-nav{display:flex;align-items:center;justify-content:center;gap:9px;padding:13px 0 6px}
+.caseirinho-slide-nav[hidden]{display:none!important}
+.caseirinho-slide-nav button{height:10px;width:10px;padding:0;background:#c9b8bf;border:0;border-radius:99px;cursor:pointer;transition:width .2s,background .2s}
+.caseirinho-slide-nav button[aria-current=true]{width:34px;background:#8d0043}
+.caseirinho-slide-nav button:focus-visible{outline:3px solid #e0ab45;outline-offset:3px}
+.caseirinho-new-slide{position:relative;min-height:350px;background:linear-gradient(120deg,#063d30,#0b6c4e 60%,#a26315);color:#fff}
+.caseirinho-new-slide.alt{background:linear-gradient(115deg,#6b0636 0%,#ae1559 65%,#eaa22b 145%)}
+.caseirinho-new-slide .party-copy{position:relative;z-index:2;display:flex;flex-direction:column;align-items:flex-start;justify-content:center}
+.caseirinho-new-slide h2{font-size:clamp(30px,3.25vw,48px);font-weight:900;line-height:1.12;letter-spacing:-.025em;margin:13px 0}
+.caseirinho-new-slide h2 span{color:#ffe48e}
+.caseirinho-new-slide p{font-size:clamp(15px,1.3vw,19px);line-height:1.55;max-width:550px}
+.caseirinho-new-slide .caseirinho-slide-cta{display:inline-flex;justify-content:center;align-items:center;min-height:51px;margin-top:23px;padding:12px 24px;border-radius:13px;background:#fff7d7;color:#6d0834;font-weight:900;text-decoration:none;box-shadow:0 7px 20px #0002}
+.caseirinho-new-slide .party-visual{background:radial-gradient(circle,#ffffff30,transparent 65%);display:flex;align-items:center;justify-content:center}
+.caseirinho-new-slide .party-visual img{width:100%;height:100%;object-fit:cover}
+.caseirinho-new-slide .caseirinho-visual-fallback{font-size:clamp(80px,11vw,150px);filter:drop-shadow(0 12px 20px #0004)}
+@media(min-width:901px){
+ .hero-party{padding-top:18px!important}
+ .hero-party .party-banner{min-height:350px;border-radius:27px!important}
+ .hero-party .party-copy{padding:34px 38px}
+ .hero-party .party-banner:not(.caseirinho-new-slide) .party-copy{padding:0}
+ .hero-party .party-banner:not(.caseirinho-new-slide) .party-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ .hero-party .party-banner:not(.caseirinho-new-slide) .party-app-btn{grid-column:1/-1}
+ .hero-party .party-banner:not(.caseirinho-new-slide) .party-offer{padding:13px 16px}
+ .hero-party .party-banner:not(.caseirinho-new-slide) .party-copy h1{font-size:clamp(30px,3vw,46px)}
+ .hero-party .party-banner:not(.caseirinho-new-slide) .party-copy p{font-size:clamp(14px,1.2vw,18px)}
+ .seasonal-section .seasonal-products{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:18px}
+ .seasonal-section .seasonal-grade .seasonal-grade-photo{height:205px}
+ .seasonal-section .seasonal-item{min-width:0}
+}
+@media(max-width:900px){
+ .seasonal-banner .seasonal-banner-inner{padding:18px 18px 22px}
+ .seasonal-banner .seasonal-photo-carousel{max-width:100%;width:100%}
+ .caseirinho-new-slide{min-height:310px}
+ .caseirinho-new-slide .party-copy{padding:24px 22px}
+ .caseirinho-new-slide h2{font-size:clamp(27px,6vw,38px)}
+}
+@media(max-width:600px){
+ .seasonal-banner .seasonal-photo-carousel img{aspect-ratio:16/10}
+ .caseirinho-new-slide .party-visual{min-height:160px}
+ .caseirinho-new-slide .party-copy{padding:22px 20px}
+ .caseirinho-new-slide .caseirinho-slide-cta{width:100%}
+ .caseirinho-slide-nav{padding:9px 0}
+}
+@media(prefers-reduced-motion:reduce){.hero-party .party-visual img,.caseirinho-slide-nav button{transition:none!important}}
