@@ -583,7 +583,8 @@ function cardHtml(entry){
     </div>
   </article>`;
 }
-function renderCatalogEntries(entries){
+function renderCatalogEntries(entries,{showPacks=false}={}){
+  if(!showPacks)return entries.map(cardHtml).join('');
   const packGroups=new Map(),entryPack=new Map();
   for(const [index,entry] of entries.entries()){
     for(const p of entry.variants){
@@ -622,8 +623,8 @@ function promoPackHtml(entries,group){
       <div class="promo-pack-actions"><button class="soft" data-view="${esc(p.id)}" type="button">Ver</button><button class="primary" data-add="${esc(p.id)}" type="button" ${available&&catalog.loja?.ativo!==false?'':'disabled'}>Adicionar</button></div></div>
     </article>`;
   }).join('');
-  return `<section class="promo-pack-card">
-    <header class="promo-pack-heading"><span>OFERTA EM PACK</span><h3>${esc(title)}</h3><p>Misture os sabores abaixo e adicione os itens ao carrinho. Os valores mostrados são os preços normais; a promoção individual e o desconto do pack são calculados separadamente no carrinho, prevalecendo o melhor preço.</p></header>
+  return `<section class="promo-pack-card" aria-label="Oferta especial ${esc(title)}">
+    <header class="promo-pack-heading"><span>🔥 OFERTA ESPECIAL · MONTE SEU PACK</span><h3>${esc(title)}</h3><p>Escolha seus sabores favoritos e complete ${group.x} unidades para liberar a oferta. Cada produto mantém seu preço individual; o desconto aparece automaticamente no carrinho quando as condições são atendidas.</p><div class="promo-pack-trust">✨ Mix de sabores &nbsp; · &nbsp; 💚 Desconto automático no carrinho</div></header>
     <div class="promo-pack-grid">${items}</div>
   </section>`;
 }
@@ -939,7 +940,7 @@ function renderFeatured(){
   const entries=visualEntries(visibleCatalogProducts()).filter(e=>e.variants.some(p=>!!promoApi()?.isFeatured(p,catalog.produtos)));
   const section=root.closest('.section');
   if(section)section.hidden=!entries.length;
-  root.innerHTML=renderCatalogEntries(entries);
+  root.innerHTML=renderCatalogEntries(entries,{showPacks:true});
   if(entries.length)wireProductCards(root);
 }
 function applyStoreManifest(){
