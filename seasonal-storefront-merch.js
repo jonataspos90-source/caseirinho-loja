@@ -10,11 +10,11 @@ function seasonalMerchFilterCategory(p,grades){
 function seasonalGradeMarkup(grade,variants,open){
  const current=variants.find(p=>p.id===seasonStoreVariants.get(grade.id))||variants[0];
  seasonStoreVariants.set(grade.id,current.id);
- const photo=current.image||grade.image||variants.find(x=>x.image)?.image||'';
+ const photo=current.image||grade.image||variants.find(x=>x.id===grade.coverId)?.image||variants.find(x=>x.image)?.image||'';
  return '<article class="seasonal-item seasonal-grade" data-season-grade="'+esc(grade.id)+'">'+
  (photo?'<img class="seasonal-grade-photo" src="'+esc(photo)+'" alt="'+esc(grade.name)+'" loading="lazy">':'')+
  '<div class="seasonal-item-content"><h3>'+esc(grade.name)+'</h3>'+
- '<p class="seasonal-muted">'+esc(grade.description||'Escolha o sabor ou o tamanho desejado')+'</p>'+
+ '<p class="seasonal-muted"><b>'+esc(grade.choiceTitle||'Escolha o sabor ou tamanho')+'</b>'+(grade.description?' · '+esc(grade.description):'')+'</p>'+
  '<div class="seasonal-variant-options">'+variants.map(p=>
  '<button type="button" class="'+(current.id===p.id?'active':'')+'" data-season-variant="'+esc(p.id)+'" data-grade="'+esc(grade.id)+'">'+
  esc(p.variantLabel||p.name)+'<small>'+money(p.price)+'</small></button>').join('')+'</div>'+
