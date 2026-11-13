@@ -836,6 +836,7 @@ function renderSeasonalCampaigns(){
  '<small>Pedido mínimo: '+N(p.minQuantity)+(N(p.maxQuantity)>0?' · máximo: '+N(p.maxQuantity):'')+'</small>'+
  '<button type="button" data-season-add="'+esc(p.id)+'" '+(!orderable?'disabled':'')+'>🎁 Adicionar à encomenda</button></div></article>'
  ).join('')||'<p>Sem produtos disponíveis nesta campanha.</p>';
+ window.CaseirinhoSeasonalMerch?.render?.(chosen);
 }
 function renderSeasonalCheckout(){
  const c=selectedSeasonalCampaign(),visible=!!c&&seasonalCartParts().seasonal.length>0;
@@ -2400,6 +2401,13 @@ function start(){
   window.addEventListener('online',()=>{if(!catalogConnected)loadCatalog(true);checkCatalogVersion();pollCustomerOrders()});
   document.addEventListener('visibilitychange',()=>{if(!document.hidden){if(!catalogConnected)loadCatalog(true);checkCatalogVersion();pollCustomerOrders()}});
 }
+window.CaseirinhoSeasonalBridge={
+ S,N,A,esc,money,roundMoney,cartCatalogProducts,promoApi,selectedSeasonalCampaign,seasonalCampaign,
+ E,quickAdd,modeChanged,renderSeasonalCheckout,toast,
+ getCart:()=>cart,getSelectedCampaignId:()=>seasonalSelected,getActiveCampaignId:()=>seasonalCampaignId,
+ setActiveCampaignId:id=>{seasonalCampaignId=id;writeJson(SEASON_KEY,{campaignId:id});},
+ renderCampaigns:()=>renderSeasonalCampaigns()
+};
 window.CaseirinhoCustomerHistory={recover:recoverOrdersForm,sync:async()=>{await ensureHistorySession();return syncCustomerHistory()}};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 
