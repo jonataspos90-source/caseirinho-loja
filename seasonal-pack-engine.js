@@ -12,7 +12,7 @@
   const lines=new Map([...pricing.lines].map(([k,v])=>[String(k),{...v}]));
   const qty=new Map();
   for(const row of cart||[])qty.set(String(row.produtoId),n(qty.get(String(row.produtoId)))+n(row.quantidade));
-  const used=new Map(),deduct=new Map(),appliedPacks=[];
+  const used=new Map(),deduct=new Map(),packForLine=new Map(),appliedPacks=[];
   const ordered=(packs||[]).filter(p=>p.active===true||p.active===undefined)
    .slice().sort((a,b)=>n(a.sortOrder)-n(b.sortOrder)||String(a.id).localeCompare(String(b.id)));
   for(const pack of ordered){
@@ -36,6 +36,7 @@
     for(const unit of [...batch].reverse()){
      const portion=Math.min(left,unit.price);
      deduct.set(unit.id,n(deduct.get(unit.id))+portion);
+     packForLine.set(unit.id,String(pack.id));
      left-=portion;
     }
     for(const unit of batch)used.set(unit.id,n(used.get(unit.id))+1);
@@ -50,7 +51,9 @@
    const label=appliedPacks.filter(p=>(packs||[]).some(x=>String(x.id)===p.id&&(x.productIds||[]).map(String).includes(id))).map(p=>p.name).join(', ');
    lines.set(id,{...old,total,unitPrice:q?amount(Math.round(cents(total)/q)):0,
     savings:amount(cents(old.savings)+discount),promotionLabel:'Pack sazonal: '+label,
-    promotionGroupId:'season-pack:'+id});
+    promotionGroupId:'season-pack:'+String(packForLine.get(id)||id),
+    promotionGroupLabel:'🎁 '+label,
+    promotionGroupHint:'Kit sazonal aplicado: o desconto foi calculado sobre a composição selecionada.'});
   }
   return{...pricing,lines,
    subtotal:amount([...lines.values()].reduce((sum,line)=>sum+cents(line.total),0)),
