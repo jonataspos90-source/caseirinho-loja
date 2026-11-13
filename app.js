@@ -848,10 +848,10 @@ function renderSeasonalCheckout(){
  select.value=chosen;
  if(chosen)E('date').value=chosen;
  const parts=seasonalCartParts();
- const price=promoApi()?.cartTotals(parts.seasonal,cartCatalogProducts())?.subtotal??parts.seasonal.reduce((sum,x)=>sum+N(x.precoUnitario)*N(x.quantidade),0);
+ const price=seasonalPricing(parts.seasonal)?.subtotal??parts.seasonal.reduce((sum,x)=>sum+N(x.precoUnitario)*N(x.quantidade),0);
  const fees=E('mode').value==='ENTREGA'?N(E('shipping')?.textContent?.replace(/[^0-9,]/g,'').replace(',','.')):0;
  const split=seasonalSplit(price+fees);
- E('seasonalFinanceSummary').innerHTML='Total previsto: <b>'+money(price+fees)+'</b><br>💚 Sinal (50%): <b>'+money(split.deposit)+'</b><br>📦 Na entrega/retirada (50%): <b>'+money(split.balance)+'</b><br><small>Frete final e valores serão conferidos no servidor antes do pagamento.</small>';
+ E('seasonalFinanceSummary').innerHTML='Total previsto: <b>'+money(price+fees)+'</b><br>💚 Sinal (50%): <b>'+money(split.deposit)+'</b><br>📦 Na entrega/retirada (50%): <b>'+money(split.balance)+'</b><br><small>Os descontos dos packs completos já estão incluídos. Valores e frete serão conferidos no servidor.</small>';
  let mixedOptions=E('seasonalMixedOptions');
  if(!mixedOptions){mixedOptions=document.createElement('div');mixedOptions.id='seasonalMixedOptions';mixedOptions.className='cx-note';E('seasonalFinanceSummary').insertAdjacentElement('afterend',mixedOptions);}
  mixedOptions.hidden=!parts.regular.length;
@@ -1158,7 +1158,7 @@ function renderCart(){
   if(E('seasonalCheckout')&&!E('seasonalCheckout').hidden||seasonalCampaignId)setTimeout(renderSeasonalCheckout,0);
   E('cartCount').textContent=count;E('navCartCount').textContent=count;
 
-  const promoTotals=promoApi()?.cartTotals(cart,cartCatalogProducts())||{lines:new Map(),subtotal:cart.reduce((s,x)=>s+N(x.quantidade)*N(x.precoUnitario),0),savings:0};
+  const promoTotals=seasonalPricing(cart)||{lines:new Map(),subtotal:cart.reduce((s,x)=>s+N(x.quantidade)*N(x.precoUnitario),0),savings:0};
   const hasCatalogMismatch=cart.some(x=>x.catalogMismatch);
   const entries=cart.map((x,i)=>{
     const p=cartFindProduct(x.produtoId);
@@ -1230,7 +1230,7 @@ function renderCart(){
 }
 function roundMoney(value){return Math.round((N(value)+Number.EPSILON)*100)/100}
 function syncPackPriceRows(pricing){
-  const p=pricing||promoApi()?.cartTotals(cart,cartCatalogProducts());
+  const p=pricing||seasonalPricing(cart);
   if(!p||!Number.isFinite(Number(p.subtotal)))return;
   const net=roundMoney(p.subtotal);
   const saved=roundMoney(Math.max(0,N(p.savings)));
@@ -1778,7 +1778,7 @@ async function submitMixedOrder(ev){
  const f=freightInfo();
  if(mode==='ENTREGA'&&f.pending)return toast('O valor da entrega precisa ser confirmado antes de registrar uma encomenda com sinal.');
  const sum=xs=>xs.reduce((acc,x)=>acc+N(x.quantidade)*N(x.precoUnitario),0);
- const estimatedSeason=sum(parts.seasonal)+(mode==='ENTREGA'?N(f.value):0);
+ const estimatedSeason=seasonalPricing(parts.seasonal).subtotal+(mode==='ENTREGA'?N(f.value):0);
  const estimatedRegular=sum(parts.regular)+(mode==='ENTREGA'?N(f.value):0);
  const split=seasonalSplit(estimatedSeason);
  const approved=await customerDialog({
@@ -1926,7 +1926,7 @@ async function submitOrder(ev){
   // Não presume renúncia ao direito legal de arrependimento.
   if(seasonalCampaignId){
     const c=selectedSeasonalCampaign();
-    const amount=cart.reduce((sum,x)=>sum+N(x.quantidade)*N(c?.products?.find(p=>S(p.id)===S(x.produtoId))?.price||0),0);
+    const amount=seasonalPricing(cart).subtotal;
     const freight=mode==='ENTREGA'?freightInfo():{pending:false,value:0};
     const total=amount+(freight.pending?0:N(freight.value));
     const split=seasonalSplit(total);
@@ -1988,7 +1988,7 @@ async function submitOrder(ev){
       {method:'POST',body:JSON.stringify(body)}
     );
 
-    const appliedPromotions=promoApi()?.cartTotals(cart,cartCatalogProducts());
+    const appliedPromotions=seasonalPricing(cart);
     const promoSavings=roundMoney(appliedPromotions?.savings||0);
     const saved={
       ...body,
