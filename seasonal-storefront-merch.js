@@ -4,19 +4,6 @@ const B=window.CaseirinhoSeasonalBridge;
 const {S,N,A,esc,money,roundMoney,cartCatalogProducts,promoApi,selectedSeasonalCampaign,seasonalCampaign,E,quickAdd,modeChanged,renderSeasonalCheckout,toast}=B;
 let seasonStoreCategory='',seasonStoreCampaign='',seasonStoreVariants=new Map();
 const seasonCurrent=()=>seasonalCampaign(B.getSelectedCampaignId());
-function seasonalPricing(items){
- const products=cartCatalogProducts();
- let base=promoApi()?.cartTotals(items,products);
- if(!base){
-  const found=new Map(products.map(p=>[String(p.id),p])),lines=new Map();
-  for(const i of items){const q=N(i.quantidade),price=N(found.get(S(i.produtoId))?.preco||i.precoUnitario),total=roundMoney(price*q);
-   lines.set(S(i.produtoId),{total,unitPrice:price,savings:0,promotionLabel:'',promotionGroupId:''});}
-  base={lines,subtotal:roundMoney([...lines.values()].reduce((a,x)=>a+x.total,0)),savings:0};
- }
- const campaign=selectedSeasonalCampaign();
- return campaign&&window.CaseirinhoSeasonalPacks?.apply
-  ?window.CaseirinhoSeasonalPacks.apply(base,items,A(campaign.packs)):base;
-}
 function seasonalMerchFilterCategory(p,grades){
  return S(p.categoryId||grades.find(g=>g.id===p.gradeId)?.categoryId||'');
 }
@@ -84,6 +71,7 @@ function seasonStoreMerchRender(){
   '<div class="seasonal-pack-grid">'+packs.map(p=>seasonalPackMarkup(p,c,opened)).join('')+'</div>':'';
 }
 window.CaseirinhoSeasonalMerch={render:seasonStoreMerchRender};
+B.renderCampaigns();
 function seasonStorePackStatus(card){
  const pack=A(seasonCurrent()?.packs).find(p=>p.id===card.dataset.seasonPack);
  if(!pack)return;
