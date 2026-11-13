@@ -1,7 +1,9 @@
 /* Vitrine de encomendas: categorias, grades e kits com escolha dos sabores. */
 'use strict';
+const B=window.CaseirinhoSeasonalBridge;
+const {S,N,A,esc,money,roundMoney,cartCatalogProducts,promoApi,selectedSeasonalCampaign,seasonalCampaign,E,quickAdd,modeChanged,renderSeasonalCheckout,toast}=B;
 let seasonStoreCategory='',seasonStoreCampaign='',seasonStoreVariants=new Map();
-const seasonalOriginalRender=renderSeasonalCampaigns;
+const seasonCurrent=()=>seasonalCampaign(B.getSelectedCampaignId());
 function seasonalPricing(items){
  const products=cartCatalogProducts();
  let base=promoApi()?.cartTotals(items,products);
@@ -52,7 +54,7 @@ function seasonalPackMarkup(pack,campaign,open){
  '<button type="button" class="seasonal-pack-action" data-season-pack-add="'+esc(pack.id)+'" disabled>🎁 Adicionar kit à encomenda</button></div></article>';
 }
 function seasonStoreMerchRender(){
- const c=seasonalCampaign(seasonalSelected),root=E('seasonalProducts');
+ const c=seasonCurrent(),root=E('seasonalProducts');
  if(!c||!root)return;
  if(seasonStoreCampaign!==c.id){seasonStoreCampaign=c.id;seasonStoreCategory='';seasonStoreVariants=new Map();}
  const categories=A(c.categories).filter(x=>x.active).slice().sort((a,b)=>N(a.sortOrder)-N(b.sortOrder));
@@ -81,12 +83,9 @@ function seasonStoreMerchRender(){
  E('seasonalPacks').innerHTML=packs.length?'<h3 class="seasonal-pack-title">🎁 Kits e packs especiais</h3>'+
   '<div class="seasonal-pack-grid">'+packs.map(p=>seasonalPackMarkup(p,c,opened)).join('')+'</div>':'';
 }
-renderSeasonalCampaigns=function(){
- seasonalOriginalRender();
- seasonStoreMerchRender();
-};
+window.CaseirinhoSeasonalMerch={render:seasonStoreMerchRender};
 function seasonStorePackStatus(card){
- const pack=A(seasonalCampaign(seasonalSelected)?.packs).find(p=>p.id===card.dataset.seasonPack);
+ const pack=A(seasonCurrent()?.packs).find(p=>p.id===card.dataset.seasonPack);
  if(!pack)return;
  const qty=[...card.querySelectorAll('[data-season-pack-qty]')].reduce((sum,x)=>sum+Math.max(0,Math.floor(N(x.value))),0);
  const progress=card.querySelector('[data-season-pack-progress]');
@@ -95,17 +94,17 @@ function seasonStorePackStatus(card){
  card.querySelector('[data-season-pack-add]').disabled=qty!==N(pack.quantity);
 }
 async function seasonStorePackAdd(card){
- const c=seasonalCampaign(seasonalSelected),pack=A(c?.packs).find(p=>p.id===card.dataset.seasonPack);
+ const c=seasonCurrent(),pack=A(c?.packs).find(p=>p.id===card.dataset.seasonPack);
  if(!pack||c.status!=='ABERTA')return toast('Pack indisponível nesta campanha.');
- if(seasonalCampaignId&&seasonalCampaignId!==c.id)return toast('Finalize primeiro a encomenda de outra campanha.');
+ if(B.getActiveCampaignId()&&B.getActiveCampaignId()!==c.id)return toast('Finalize primeiro a encomenda de outra campanha.');
  const amounts=[...card.querySelectorAll('[data-season-pack-qty]')].map(x=>({id:x.dataset.seasonPackQty,qty:N(x.value)})).filter(x=>x.qty>0);
  if(amounts.some(x=>!Number.isInteger(x.qty))||amounts.reduce((sum,x)=>sum+x.qty,0)!==N(pack.quantity))
   return toast('Selecione exatamente '+pack.quantity+' unidades inteiras.');
  if(amounts.some(x=>{
-  const p=c.products.find(p=>p.id===x.id),existing=cart.find(r=>S(r.produtoId)===x.id);
+  const p=c.products.find(p=>p.id===x.id),existing=B.getCart().find(r=>S(r.produtoId)===x.id);
   return !p||x.qty<N(p.minQuantity)||N(p.maxQuantity)>0&&N(existing?.quantidade)+x.qty>N(p.maxQuantity);
  }))return toast('Confira os limites de quantidade dos sabores selecionados.');
- seasonalCampaignId=c.id;writeJson(SEASON_KEY,{campaignId:c.id});
+ B.setActiveCampaignId(c.id);
  for(const item of amounts)await quickAdd(item.id,item.qty);
  modeChanged();renderSeasonalCheckout();
  toast('🎁 Kit '+pack.name+' incluído. Confira o valor com desconto no carrinho.');
