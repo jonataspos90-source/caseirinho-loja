@@ -1968,14 +1968,25 @@ async function submitMixedOrder(ev){
     })===true;
   }catch(receiptError){console.warn('[Caseirinho] pedidos registrados; aviso nao abriu:',receiptError)}
   if(!receiptOpened){
-    // Erro só de apresentação: os dois pedidos já existem. Nunca mostrar "pedido não enviado".
-    const fallback='<div class="result"><b>✅ Dois pedidos recebidos</b><br>'+
-      'Encomenda nº '+esc(sr.codigo)+' · Sinal PIX: '+money(sr.encomendaSazonal?.depositDue)+
-      ' · Restante na retirada: '+money(sr.encomendaSazonal?.balanceDue)+'<br>'+
-      'Pedido comum nº '+esc(rr.codigo)+' · '+money(rr.total)+' · '+esc(paymentPublicLabel(regularPayment))+
-      '<br>PIX CNPJ: 69.195.483/0001-23. Não pague o total dos dois pedidos junto.</div>';
+    // Recibo completo mesmo quando alguma versão antiga não carregou o componente visual.
+    const deposit=N(sr.encomendaSazonal?.depositDue),balance=N(sr.encomendaSazonal?.balanceDue),regularTotal=N(rr.total);
+    const fallback='<div class="result" style="font-size:14px;line-height:1.6">'+
+      '<b>✅ Seus dois pedidos foram registrados!</b><hr>'+
+      '<b>🎄 Encomenda nº '+esc(sr.codigo)+'</b><br>💚 PIX do sinal de 50%: <strong>'+money(deposit)+'</strong><br>'+
+      '📦 Restante na entrega/retirada: <b>'+money(balance)+'</b><hr>'+
+      '<b>🛒 Pedido comum nº '+esc(rr.codigo)+'</b><br>Forma: '+esc(paymentPublicLabel(regularPayment))+
+      '<br>Valor: <strong>'+money(regularTotal)+'</strong><hr>'+
+      '<div style="padding:12px;background:#e6f9ec;border-radius:10px;font-weight:900">'+
+      '💰 SOMA DOS PAGAMENTOS INICIAIS: '+money(roundMoney(deposit+regularTotal))+'</div>'+
+      '<p>PIX de sinal e pedido comum devem ser pagos separadamente, cada um na forma escolhida e quando liberado.</p>'+
+      '<p>💠 Chave PIX CNPJ: <b>69.195.483/0001-23</b> — pague apenas o sinal da encomenda.</p>'+
+      '<button type="button" class="primary" id="mixedFallbackWhats">📲 Enviar comprovante do sinal no WhatsApp</button> '+
+      '<button type="button" class="soft" id="mixedFallbackOrders">📦 Acompanhar meus pedidos</button></div>';
     closeOverlay(E('cartDrawer'));
     openSimple('Pedidos recebidos',fallback);
+    E('mixedFallbackWhats').onclick=()=>whatsapp('Olá, Caseirinho! Fiz a encomenda nº '+S(sr.codigo)+
+      ' e vou anexar o comprovante do sinal de '+money(deposit)+' nesta conversa. Favor confirmar para iniciar a produção.');
+    E('mixedFallbackOrders').onclick=showOrders;
   }
   try{await bootstrapHistorySession({...seasonBody,...sr});await syncCustomerHistory()}catch(_){}
  }catch(err){
