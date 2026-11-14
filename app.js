@@ -883,6 +883,28 @@ function renderSeasonalCheckout(){
   '<small>São dois números de pedido. Frete e valores finais serão confirmados para cada pedido. Não pague duas vezes o mesmo Pix.</small>';
   const d=E('mixedRegularDate');d.min=new Date().toISOString().slice(0,10);d.value=previousDate||nextRegularDateForMixed(d.min,E('mode').value);
   if(previousPayment&&methods.includes(previousPayment))E('mixedRegularPayment').value=previousPayment;
+  // Separe a reserva da encomenda do pagamento do pedido comum; não são um único PIX.
+  const otherTotal=parts.regular.reduce((sum,x)=>sum+N(x.quantidade)*N(x.precoUnitario),0)+(E('mode').value==='ENTREGA'?N(fees):0);
+  const chosenPayment=E('mixedRegularPayment').value;
+  const message=(method)=>/CARTÃO|CARTAO|CREDITO|DÉBITO|DEBITO/i.test(S(method).normalize('NFD').replace(/[\u0300-\u036f]/g,''))?'Pagamento no ambiente seguro quando liberado. Não transfira via PIX.':/PIX/i.test(S(method))?'PIX separado para o pedido comum; não some ao sinal.':'Conforme modalidade escolhida.';
+  const priceSummary=document.createElement('div');
+  priceSummary.className='caseirinho-mixed-due-preview';
+  priceSummary.innerHTML='<h4>💰 QUANTO PAGAR E QUANDO?</h4>'+
+    '<div><span>💚 PIX da encomenda — sinal de 50%</span><b>'+money(split.deposit)+'</b></div>'+
+    '<small>Depois de registrar a encomenda, pagar somente o sinal. Chave PIX: 69.195.483/0001-23.</small>'+
+    '<div><span>🛒 Pedido comum — '+esc(paymentPublicLabel(chosenPayment))+'</span><b>'+money(otherTotal)+'</b></div>'+
+    '<small data-mixed-method-note>'+esc(message(chosenPayment))+'</small>'+
+    '<div><span>📦 Saldo da encomenda na entrega/retirada</span><b>'+money(split.balance)+'</b></div>'+
+    '<p><b>Ambos os pedidos: '+money(price+fees+otherTotal)+'</b> — este total não deve ser pago em um único PIX. Valores finais confirmados pelo servidor.</p>';
+  mixedOptions.appendChild(priceSummary);
+  E('mixedRegularPayment').addEventListener('change',()=>{
+    const payment=S(E('mixedRegularPayment').value);
+    const title=priceSummary.querySelector('[data-mixed-method-title]');
+    if(title)title.textContent='🛒 Pedido comum — '+paymentPublicLabel(payment);
+    priceSummary.querySelector('[data-mixed-method-note]').textContent=message(payment);
+  });
+  const name=priceSummary.querySelector('div:nth-of-type(2) span');
+  if(name)name.dataset.mixedMethodTitle='1';
  }
 
 }
@@ -1799,6 +1821,11 @@ async function submitMixedOrder(ev){
  const estimatedSeason=seasonalPricing(parts.seasonal).subtotal+(mode==='ENTREGA'?N(f.value):0);
  const estimatedRegular=sum(parts.regular)+(mode==='ENTREGA'?N(f.value):0);
  const split=seasonalSplit(estimatedSeason);
+ const comboTotal=roundMoney(estimatedSeason+estimatedRegular);
+ const cardPayment=/CARTAO|CREDITO|DEBITO/.test(norm(regularPayment));
+ const regularInstruction=cardPayment?'Cartão em etapa própria, após liberação. NÃO faça PIX deste valor.':
+  /PIX/.test(norm(regularPayment))?'PIX separado do pedido comum. Não some ao sinal da encomenda.':
+  'Pagamento separado, seguindo a modalidade escolhida.';
  const approved=await customerDialog({
   title:'Confirmar dois pedidos separados',icon:'🛒',locked:true,
   html:'<div class="cx-highlight"><b>Serão emitidos dois números de pedido para a mesma compra.</b></div>'+
@@ -1808,6 +1835,11 @@ async function submitMixedOrder(ev){
    '<p>🛒 <b>Pedido comum</b><br>Data: '+esc(seasonalDateBR(regularDate))+
    '<br>Produtos: '+parts.regular.map(x=>esc(x.quantidade+' × '+x.nome)).join(', ')+
    '<br>Estimativa: '+money(estimatedRegular)+' · Pagamento: '+esc(paymentPublicLabel(regularPayment))+'</p>'+
+   '<div class="cx-note" style="background:#effaf2;border:1px solid #a9d1b9;color:#19513a;font-size:13px;line-height:1.65"><b>💰 RESUMO — QUANTO PAGAR E QUANDO</b><br>'+
+   '<b>💚 Sinal da encomenda via PIX: '+money(split.deposit)+'</b><br>Chave: 69.195.483/0001-23. Pague somente o sinal após registrar os pedidos.<br>'+
+   '<b>🛒 Pedido comum ('+esc(paymentPublicLabel(regularPayment))+'): '+money(estimatedRegular)+'</b><br>'+esc(regularInstruction)+'<br>'+
+   '<b>📦 Saldo da encomenda na entrega/retirada: '+money(split.balance)+'</b><br>'+
+   '<b>Valor total dos dois pedidos: '+money(comboTotal)+'</b> — não pague esse total em um PIX.</div>'+
    '<div class="cx-note">Cada pedido será calculado pelo servidor com preços, frete e pagamento independentes. Para entrega, poderá haver cobrança de frete em ambos. A encomenda é reservada somente após confirmação do sinal; o pedido comum segue seu próprio fluxo. O direito legal de arrependimento é respeitado. Se um envio falhar, o pedido já recebido será preservado para evitar duplicidade.</div>',
   actions:[{label:'Voltar e revisar',value:false},{label:'Confirmar os dois pedidos',value:true,primary:true}]
  });
@@ -1845,14 +1877,20 @@ async function submitMixedOrder(ev){
   removeLocal(MIXED_PENDING_KEY);removeLocal(PENDING_ORDER_KEY);removeLocal(SEASON_KEY);
   seasonalCampaignId='';cart=[];renderCart();
   const sr=pending.seasonResult,rr=pending.regularResult;
-  E('checkoutResult').innerHTML='<div class="result"><b>✅ Seus dois pedidos foram recebidos!</b><br>'+
-   '🎄 Encomenda nº <b>'+esc(sr.codigo)+'</b>: '+money(sr.total)+
-   '<br>💚 Sinal de 50%: <b>'+money(sr.encomendaSazonal?.depositDue)+'</b> · Saldo: '+money(sr.encomendaSazonal?.balanceDue)+
-   '<br>Chave Pix CNPJ: <b>69.195.483/0001-23</b> (pague apenas o sinal após conferir o valor).<br>'+
-   '🛒 Pedido comum nº <b>'+esc(rr.codigo)+'</b>: '+money(rr.total)+' · '+esc(paymentPublicLabel(regularPayment))+
-   '<br>Os pagamentos são independentes; acompanhe os dois pedidos em Meus Pedidos.<br>'+
-   '<button class="primary" type="button" id="mixedOrdersFollow">Acompanhar meus pedidos</button></div>';
-  E('mixedOrdersFollow').onclick=showOrders;
+  // Resultados e pagamentos vieram do servidor. Não deixe o carrinho vazio atrás do aviso.
+  E('checkoutResult').innerHTML='';
+  const receipt=window.CaseirinhoReceiptModal91084;
+  if(!receipt?.showMixed?.({season:sr,regular:rr,regularPaymentLabel:paymentPublicLabel(rr.formaPagamento||regularPayment),onOrders:showOrders})){
+    // Fallback de segurança em cache antigo: mantém valores separados, sem repetir o pedido.
+    E('checkoutResult').innerHTML='<div class="result"><b>✅ Dois pedidos recebidos</b><br>'+
+      'Encomenda nº '+esc(sr.codigo)+' · Sinal PIX: '+money(sr.encomendaSazonal?.depositDue)+
+      ' · Restante na retirada: '+money(sr.encomendaSazonal?.balanceDue)+'<br>'+
+      'Pedido comum nº '+esc(rr.codigo)+' · '+money(rr.total)+' · '+esc(paymentPublicLabel(regularPayment))+
+      '<br>PIX CNPJ: 69.195.483/0001-23. Não pague o total dos dois pedidos junto.</div>';
+    closeOverlay(E('cartDrawer'));
+    openSimple('Pedidos recebidos',E('checkoutResult').innerHTML);
+    E('checkoutResult').innerHTML='';
+  }
   try{await bootstrapHistorySession({...seasonBody,...sr});await syncCustomerHistory()}catch(_){}
  }catch(err){
   E('checkoutResult').innerHTML='<div class="result err"><b>Não foi possível concluir os dois pedidos.</b><br>'+
@@ -2061,6 +2099,19 @@ async function submitOrder(ev){
     }
     cart=[];
     renderCart();
+    // O recibo deve aparecer como popup separado; não permaneça no formulário do carrinho vazio.
+    try{
+      const receiptNode=E('checkoutResult')?.querySelector('.result:not(.err)');
+      const opened=window.CaseirinhoReceiptModal91084?.showSingle?.({
+        order:saved,receiptNode,onOrders:showOrders,publicPaymentLabel:paymentPublicLabel(saved.formaPagamento)
+      });
+      if(opened)E('checkoutResult').innerHTML='';
+    }catch(receiptError){
+      console.warn('[Caseirinho] pedido salvo; falha apenas na janela de recibo:',receiptError);
+      closeOverlay(E('cartDrawer'));
+      openSimple('Pedido recebido',E('checkoutResult').innerHTML);
+      E('checkoutResult').innerHTML='';
+    }
   }catch(err){
     E('checkoutResult').innerHTML=
       `<div class="result err">
