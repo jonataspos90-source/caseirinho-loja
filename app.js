@@ -1836,6 +1836,40 @@ async function pollCustomerOrders(){
   }
 }
 
+function duplicateOrderSignature(body){
+ const list=A(body?.itens).map(x=>[S(x.produtoId),N(x.quantidade)]).sort((a,b)=>a[0].localeCompare(b[0]));
+ const seasonal=body?.encomendaSazonal||{};
+ return JSON.stringify({
+  phone:normalizePhone(body?.cliente?.telefone),
+  date:S(body?.dataAtendimento),mode:S(body?.modalidade),
+  payment:S(body?.formaPagamento),
+  campaign:S(seasonal.campanhaId||seasonal.campaignId),
+  allSeasonal:seasonal.incluirProdutosComuns===true,
+  items:list
+ });
+}
+function recentOrderFor(body){
+ const wanted=duplicateOrderSignature(body),now=Date.now();
+ return A(readJson(ORDERS_KEY,[])).slice().reverse().find(order=>{
+  const when=Date.parse(S(order.criadoEm||order.createdAt||order.savedAt));
+  const status=norm(order.status);
+  return Number.isFinite(when)&&now>=when&&now-when<30*60*1000&&
+   !['CANCELADO','REJEITADO','FRETE_RECUSADO_CLIENTE'].includes(status)&&
+   duplicateOrderSignature(order)===wanted;
+ })||null;
+}
+async function previousOrderNotice(code){
+ const reference=S(code).trim();
+ const response=await customerDialog({
+  title:'Este pedido já foi realizado',icon:'🛒',
+  html:'<div class="cx-highlight warn"><b>⚠️ Pedido já registrado'+(reference?': nº '+esc(reference):'')+'.</b></div>'+
+       '<p>Identificamos uma compra igual feita recentemente. Para evitar cobrança e produção em duplicidade, nenhum novo pedido foi enviado.</p>'+
+       '<p>Consulte a aba <b>Pedidos</b> para acompanhar ou confirmar o pagamento do pedido anterior.</p>',
+  actions:[{label:'Voltar ao carrinho',value:'CART'},{label:'📦 Ver meus pedidos',value:'ORDERS',primary:true}]
+ });
+ if(response==='ORDERS')await showOrders();
+}
+
 async function submitMixedOrder(ev){
  const c=selectedSeasonalCampaign(),parts=seasonalCartParts(),mode=E('mode').value;
  const date=E('seasonalFulfillmentDate')?.value,regularDate=E('mixedRegularDate')?.value,regularPayment=E('mixedRegularPayment')?.value;
@@ -1885,6 +1919,12 @@ async function submitMixedOrder(ev){
  };
  const seasonBody={...base,dataAtendimento:date,formaPagamento:'PIX_SINAL_50_MANUAL',encomendaSazonal:{campanhaId:c.id},itens:parts.seasonal.map(x=>({produtoId:S(x.produtoId),quantidade:N(x.quantidade)}))};
  const regularBody={...base,dataAtendimento:regularDate,formaPagamento:regularPayment,itens:parts.regular.map(x=>({produtoId:S(x.produtoId),quantidade:N(x.quantidade)}))};
+ // Impede confirmação repetida da mesma compra no mesmo aparelho.
+ const already=recentOrderFor(seasonBody)||recentOrderFor(regularBody);
+ if(already){
+  await previousOrderNotice(already.codigo||already.code);
+  return;
+ }
  const signature=JSON.stringify({phone:base.cliente.telefone,season:seasonBody.itens,date,regular:regularBody.itens,regularDate,regularPayment,mode});
  let pending=readJson(MIXED_PENDING_KEY,null);
  if(!pending||pending.signature!==signature){
@@ -1930,6 +1970,10 @@ async function submitMixedOrder(ev){
   }
   try{await bootstrapHistorySession({...seasonBody,...sr});await syncCustomerHistory()}catch(_){}
  }catch(err){
+  if(/j[aá] realizou este pedido|RECENT_DUPLICATE|compra igual|pedido duplicado/i.test(S(err.message))){
+   await previousOrderNotice(S(err.message).match(/n[º°o]?\s*(\d+)/i)?.[1]||'');
+   return;
+  }
   E('checkoutResult').innerHTML='<div class="result err"><b>Não foi possível concluir os dois pedidos.</b><br>'+
    (pending.seasonResult?'🎄 Encomenda recebida: '+esc(pending.seasonResult.codigo)+'<br>':'')+
    (pending.regularResult?'🛒 Pedido comum recebido: '+esc(pending.regularResult.codigo)+'<br>':'')+
@@ -2069,6 +2113,11 @@ async function submitOrder(ev){
     }
   };
 
+  const previousPurchase=recentOrderFor(body);
+  if(previousPurchase){
+    await previousOrderNotice(previousPurchase.codigo||previousPurchase.code);
+    return;
+  }
   // O mesmo pedido/retry mantém o mesmo ID até receber confirmação do servidor.
   body.clientRequestId=clientRequestIdFor(body);
 
@@ -2154,6 +2203,10 @@ async function submitOrder(ev){
       E('checkoutResult').innerHTML='';
     }
   }catch(err){
+    if(/j[aá] realizou este pedido|RECENT_DUPLICATE|compra igual|pedido duplicado/i.test(S(err.message))){
+      await previousOrderNotice(S(err.message).match(/n[º°o]?\s*(\d+)/i)?.[1]||'');
+      return;
+    }
     E('checkoutResult').innerHTML=
       `<div class="result err">
         <b>Pedido não enviado.</b><br>
