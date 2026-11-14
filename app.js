@@ -36,6 +36,8 @@ let catalog={loja:{},produtos:[]};
 // Leitura única e atualizada para os componentes de seleção de peso, descrição e galeria.
 window.CaseirinhoCurrentPublicCatalog=()=>catalog;
 let seasonalCampaigns=[],seasonalSelected='',seasonalCampaignId='';
+let mixedOrderMode='SEPARADOS',mixedRegularDatePref='',mixedRegularMethodPref='';
+let lastCatalogLoadedAt=0,lastOrderPollAt=0,orderPollRequested=false;
 let cart=readJson(CART_KEY,[]);
 let activeCategory='';
 let selectedProduct=null;
@@ -301,7 +303,8 @@ function orderFingerprint(body){
     entrega:body?.modalidade==='ENTREGA'?body?.entrega:{},
     itens:A(body?.itens).map(x=>({produtoId:S(x.produtoId),quantidade:N(x.quantidade)})),
     observacao:S(body?.observacao),
-    campanhaSazonal:S(body?.encomendaSazonal?.campanhaId)
+    campanhaSazonal:S(body?.encomendaSazonal?.campanhaId||body?.encomendaSazonal?.campaignId),
+    incluirComuns:body?.encomendaSazonal?.incluirProdutosComuns===true
   });
 }
 function clientRequestIdFor(body){
@@ -866,45 +869,71 @@ function renderSeasonalCheckout(){
  select.value=chosen;
  if(chosen)E('date').value=chosen;
  const parts=seasonalCartParts();
- const price=seasonalPricing(parts.seasonal)?.subtotal??parts.seasonal.reduce((sum,x)=>sum+N(x.precoUnitario)*N(x.quantidade),0);
+ const mixed=parts.regular.length>0;
+ const joined=mixed&&mixedOrderMode==='ENCOMENDA_UNICA';
+ const seasonalPrice=roundMoney(seasonalPricing(parts.seasonal)?.subtotal??parts.seasonal.reduce((sum,x)=>sum+N(x.precoUnitario)*N(x.quantidade),0));
+ const regularPrice=roundMoney(seasonalPricing(parts.regular)?.subtotal??parts.regular.reduce((sum,x)=>sum+N(x.precoUnitario)*N(x.quantidade),0));
+ const jointPrice=roundMoney(seasonalPricing(cart)?.subtotal??seasonalPrice+regularPrice);
  const fees=E('mode').value==='ENTREGA'?N(E('shipping')?.textContent?.replace(/[^0-9,]/g,'').replace(',','.')):0;
- const split=seasonalSplit(price+fees);
- E('seasonalFinanceSummary').innerHTML='Total previsto: <b>'+money(price+fees)+'</b><br>💚 Sinal (50%): <b>'+money(split.deposit)+'</b><br>📦 Na entrega/retirada (50%): <b>'+money(split.balance)+'</b><br><small>Os descontos dos packs completos já estão incluídos. Valores e frete serão conferidos no servidor.</small>';
+ const seasonTotal=roundMoney((joined?jointPrice:seasonalPrice)+fees);
+ const separateNormalTotal=roundMoney(regularPrice+fees);
+ const split=seasonalSplit(seasonTotal);
+ E('seasonalFinanceSummary').innerHTML=(joined?
+  '🎄 <b>Encomenda única com todos os itens</b><br>Valor previsto: <b>'+money(seasonTotal)+'</b><br>'+
+  '💚 Pagar 50% de sinal via PIX: <b>'+money(split.deposit)+'</b><br>'+
+  '📦 Saldo na entrega/retirada: <b>'+money(split.balance)+'</b><br>'+
+  '<small>Uma encomenda, uma numeração e um único frete (quando houver). O total será confirmado pelo servidor.</small>':
+  'Total previsto da encomenda: <b>'+money(seasonTotal)+'</b><br>'+
+  '💚 Sinal (50%): <b>'+money(split.deposit)+'</b><br>'+
+  '📦 Na entrega/retirada: <b>'+money(split.balance)+'</b><br>'+
+  '<small>Os descontos dos packs completos já estão incluídos. Valores e frete serão conferidos no servidor.</small>');
  let mixedOptions=E('seasonalMixedOptions');
- if(!mixedOptions){mixedOptions=document.createElement('div');mixedOptions.id='seasonalMixedOptions';mixedOptions.className='cx-note';E('seasonalFinanceSummary').insertAdjacentElement('afterend',mixedOptions);}
- mixedOptions.hidden=!parts.regular.length;
- if(parts.regular.length){
-  const previousDate=E('mixedRegularDate')?.value||'';
-  const previousPayment=E('mixedRegularPayment')?.value||'';
+ if(!mixedOptions){
+  mixedOptions=document.createElement('div');
+  mixedOptions.id='seasonalMixedOptions';mixedOptions.className='cx-note';
+  E('seasonalFinanceSummary').insertAdjacentElement('afterend',mixedOptions);
+ }
+ mixedOptions.hidden=!mixed;
+ if(mixed){
+  const prevDate=E('mixedRegularDate')?.value||mixedRegularDatePref;
+  const prevPay=E('mixedRegularPayment')?.value||mixedRegularMethodPref;
   const methods=paymentOptionsForRegular();
-  mixedOptions.innerHTML='<b>🛒 Sua compra será dividida automaticamente em 2 pedidos</b><p>🎄 Encomenda: '+parts.seasonal.length+' produto(s), com sinal de 50%.<br>📦 Pedido comum: '+parts.regular.length+' produto(s), com pagamento próprio.</p>'+
-  '<label>Data do pedido comum *<input type="date" id="mixedRegularDate" required></label>'+
-  '<label>Pagamento do pedido comum *<select id="mixedRegularPayment" required>'+methods.map(v=>'<option value="'+esc(v)+'">'+esc(paymentPublicLabel(v))+'</option>').join('')+'</select></label>'+
-  '<small>São dois números de pedido. Frete e valores finais serão confirmados para cada pedido. Não pague duas vezes o mesmo Pix.</small>';
-  const d=E('mixedRegularDate');d.min=new Date().toISOString().slice(0,10);d.value=previousDate||nextRegularDateForMixed(d.min,E('mode').value);
-  if(previousPayment&&methods.includes(previousPayment))E('mixedRegularPayment').value=previousPayment;
-  // Separe a reserva da encomenda do pagamento do pedido comum; não são um único PIX.
-  const otherTotal=parts.regular.reduce((sum,x)=>sum+N(x.quantidade)*N(x.precoUnitario),0)+(E('mode').value==='ENTREGA'?N(fees):0);
-  const chosenPayment=E('mixedRegularPayment').value;
-  const message=(method)=>/CARTÃO|CARTAO|CREDITO|DÉBITO|DEBITO/i.test(S(method).normalize('NFD').replace(/[\u0300-\u036f]/g,''))?'Pagamento no ambiente seguro quando liberado. Não transfira via PIX.':/PIX/i.test(S(method))?'PIX separado para o pedido comum; não some ao sinal.':'Conforme modalidade escolhida.';
-  const priceSummary=document.createElement('div');
-  priceSummary.className='caseirinho-mixed-due-preview';
-  priceSummary.innerHTML='<h4>💰 QUANTO PAGAR E QUANDO?</h4>'+
-    '<div><span>💚 PIX da encomenda — sinal de 50%</span><b>'+money(split.deposit)+'</b></div>'+
-    '<small>Depois de registrar a encomenda, pagar somente o sinal. Chave PIX: 69.195.483/0001-23.</small>'+
-    '<div><span>🛒 Pedido comum — '+esc(paymentPublicLabel(chosenPayment))+'</span><b>'+money(otherTotal)+'</b></div>'+
-    '<small data-mixed-method-note>'+esc(message(chosenPayment))+'</small>'+
-    '<div><span>📦 Saldo da encomenda na entrega/retirada</span><b>'+money(split.balance)+'</b></div>'+
-    '<p><b>Ambos os pedidos: '+money(price+fees+otherTotal)+'</b> — este total não deve ser pago em um único PIX. Valores finais confirmados pelo servidor.</p>';
-  mixedOptions.appendChild(priceSummary);
-  E('mixedRegularPayment').addEventListener('change',()=>{
-    const payment=S(E('mixedRegularPayment').value);
-    const title=priceSummary.querySelector('[data-mixed-method-title]');
-    if(title)title.textContent='🛒 Pedido comum — '+paymentPublicLabel(payment);
-    priceSummary.querySelector('[data-mixed-method-note]').textContent=message(payment);
-  });
-  const name=priceSummary.querySelector('div:nth-of-type(2) span');
-  if(name)name.dataset.mixedMethodTitle='1';
+  mixedOptions.innerHTML=
+   '<div class="caseirinho-mixed-choice"><b>🛒 Como deseja finalizar os dois tipos de produto?</b>'+
+   '<label><input type="radio" name="mixedOrderChoice" value="ENCOMENDA_UNICA"'+(joined?' checked':'')+'> <span><strong>🎄 Tudo como UMA encomenda</strong><small>Todos os produtos para a data especial, 1 pedido e 50% de sinal sobre o total.</small></span></label>'+
+   '<label><input type="radio" name="mixedOrderChoice" value="SEPARADOS"'+(!joined?' checked':'')+'> <span><strong>🛍️ Separar em 2 pedidos</strong><small>Encomenda com 50% de sinal + compra comum com pagamento próprio.</small></span></label></div>'+
+   (joined?
+    '<div class="caseirinho-mixed-all"><b>✅ Todos os itens serão entregues/retirados na data da encomenda: '+esc(seasonalDateBR(chosen))+'</b><p>Inclui '+parts.seasonal.length+' item(ns) de encomenda e '+parts.regular.length+' item(ns) comuns. O pedido será único.</p></div>':
+    '<div class="caseirinho-mixed-separated"><b>📦 Serão gerados dois pedidos separados</b>'+
+    '<label>Data do pedido comum *<input type="date" id="mixedRegularDate" required></label>'+
+    '<label>Pagamento do pedido comum *<select id="mixedRegularPayment" required>'+methods.map(v=>'<option value="'+esc(v)+'">'+esc(paymentPublicLabel(v))+'</option>').join('')+'</select></label></div>')+
+   '<section class="caseirinho-mixed-due-preview" aria-live="polite"><h4>💰 QUANTO PAGAR E QUANDO?</h4>'+
+   '<div><span>💚 PIX de sinal de 50% '+(joined?'(todos os produtos)':'(encomenda)')+'</span><b>'+money(split.deposit)+'</b></div>'+
+   '<small>Chave PIX: 69.195.483/0001-23 · Pague somente o sinal depois de registrar o pedido.</small>'+
+   (joined?'':('<div><span>🛒 Compra comum ('+esc(paymentPublicLabel(prevPay&&methods.includes(prevPay)?prevPay:methods[0]||'A definir'))+')</span><b>'+money(separateNormalTotal)+'</b></div>'+
+   '<small>Pagamento separado, pela modalidade escolhida. Cartão não deve ser pago por PIX.</small>'))+
+   '<div><span>📦 Saldo da encomenda na entrega/retirada</span><b>'+money(split.balance)+'</b></div>'+
+   '<div class="caseirinho-mixed-due-highlight"><span>💰 TOTAL DOS PAGAMENTOS INICIAIS'+(joined?'':' (EM MODALIDADES SEPARADAS)')+'</span><b>'+money(roundMoney(split.deposit+(joined?0:separateNormalTotal)))+'</b></div>'+
+   '<small>'+(joined?'Este total inicial é apenas o sinal da encomenda única.':'Este total inicial inclui o sinal PIX e o pagamento do pedido comum, em operações independentes e quando liberados.')+'</small>'+
+   '<p><b>Total da compra: '+money(roundMoney(seasonTotal+(joined?0:separateNormalTotal)))+'</b> · Esse valor total NÃO é um PIX a pagar agora. Valores finais podem mudar se houver ajuste de frete.</p></section>';
+  const date=E('mixedRegularDate');
+  if(date){
+   date.min=new Date().toISOString().slice(0,10);
+   date.value=prevDate||nextRegularDateForMixed(date.min,E('mode').value);
+   mixedRegularDatePref=date.value;
+   date.addEventListener('change',()=>mixedRegularDatePref=date.value);
+  }
+  const pay=E('mixedRegularPayment');
+  if(pay){
+   if(prevPay&&methods.includes(prevPay))pay.value=prevPay;
+   mixedRegularMethodPref=pay.value;
+   pay.addEventListener('change',()=>{mixedRegularMethodPref=pay.value;renderSeasonalCheckout()});
+  }
+  mixedOptions.querySelectorAll('input[name="mixedOrderChoice"]').forEach(input=>input.addEventListener('change',()=>{
+   if(!input.checked)return;
+   mixedOrderMode=input.value;
+   renderSeasonalCheckout();
+  }));
  }
 
 }
@@ -1090,6 +1119,7 @@ async function loadCatalog(silent=false){
       return old&&images(old).length?{...p,imagem:images(old)[0],imagens:images(old)}:p;
     });
     catalog=cloud;
+    lastCatalogLoadedAt=Date.now();
     reconcileCartProducts();
     saveCatalogBackup(catalog).catch(console.warn);
     if(catalogRecoveryTimer){clearTimeout(catalogRecoveryTimer);catalogRecoveryTimer=null}
@@ -1773,16 +1803,18 @@ async function notifyOrderChange(before,after){
   }
 }
 async function pollCustomerOrders(){
-  if(document.hidden||pollBusy)return;
+  if(document.hidden||pollBusy||Date.now()-lastOrderPollAt<20000)return;
+  lastOrderPollAt=Date.now();
   pollBusy=true;
   try{
     const beforeOrders=ownOrders(readJson(ORDERS_KEY,[]));
+    if(!beforeOrders.length)return;
     const beforeMap=new Map(beforeOrders.map(x=>[S(x.id),x]));
     const hasHistory=await ensureHistorySession();
 
     if(hasHistory){
       const afterOrders=await syncCustomerHistory();
-      if(E('ordersCardsArea')){E('ordersCardsArea').innerHTML=ordersCardsHtml(afterOrders);wireOrdersView()}
+      if(E('ordersCardsArea')&&JSON.stringify(afterOrders)!==JSON.stringify(beforeOrders)){E('ordersCardsArea').innerHTML=ordersCardsHtml(afterOrders);wireOrdersView()}
       for(const after of afterOrders.slice(-20)){
         const before=beforeMap.get(S(after.id))||{};
         if(JSON.stringify(after)!==JSON.stringify(before)){
@@ -1839,6 +1871,7 @@ async function submitMixedOrder(ev){
    '<b>💚 Sinal da encomenda via PIX: '+money(split.deposit)+'</b><br>Chave: 69.195.483/0001-23. Pague somente o sinal após registrar os pedidos.<br>'+
    '<b>🛒 Pedido comum ('+esc(paymentPublicLabel(regularPayment))+'): '+money(estimatedRegular)+'</b><br>'+esc(regularInstruction)+'<br>'+
    '<b>📦 Saldo da encomenda na entrega/retirada: '+money(split.balance)+'</b><br>'+
+   '<b>💰 SOMA DOS PAGAMENTOS INICIAIS: '+money(roundMoney(split.deposit+estimatedRegular))+'</b><br>São pagamentos separados. O pedido comum deve ser pago no método escolhido, quando liberado.<br>'+
    '<b>Valor total dos dois pedidos: '+money(comboTotal)+'</b> — não pague esse total em um PIX.</div>'+
    '<div class="cx-note">Cada pedido será calculado pelo servidor com preços, frete e pagamento independentes. Para entrega, poderá haver cobrança de frete em ambos. A encomenda é reservada somente após confirmação do sinal; o pedido comum segue seu próprio fluxo. O direito legal de arrependimento é respeitado. Se um envio falhar, o pedido já recebido será preservado para evitar duplicidade.</div>',
   actions:[{label:'Voltar e revisar',value:false},{label:'Confirmar os dois pedidos',value:true,primary:true}]
@@ -1918,7 +1951,7 @@ async function submitOrder(ev){
       '<small>Os itens do carrinho permanecem salvos neste navegador.</small></div>';
     return toast('Prévia de interface: nenhum pedido ou pagamento é enviado neste modo.');
   }
-  await loadCatalog(true);
+  if(!catalogConnected||Date.now()-lastCatalogLoadedAt>45000)await loadCatalog(true);
   if(!catalogConnected){
     E('checkoutResult').textContent='Sem conexão com a loja. Aguarde o cardápio atualizar antes de finalizar o pedido.';
     return toast('Aguarde a conexão com a loja para confirmar preços e disponibilidade.');
@@ -1950,7 +1983,7 @@ async function submitOrder(ev){
     return toast('Aceite a Política de Privacidade / LGPD para continuar.');
   }
 
-  if(seasonalCampaignId&&seasonalCartParts().regular.length&&seasonalCartParts().seasonal.length){
+  if(seasonalCampaignId&&seasonalCartParts().regular.length&&seasonalCartParts().seasonal.length&&mixedOrderMode==='SEPARADOS'){
     return submitMixedOrder(ev);
   }
   if(seasonalCampaignId&&paymentChoice!=='PIX_SINAL_50_MANUAL')return toast('Para encomendas, escolha Pix de 50% de sinal.');
@@ -1961,9 +1994,11 @@ async function submitOrder(ev){
     const date=E('seasonalFulfillmentDate').value;
     if(!c||c.status!=='ABERTA'||!c.fulfillmentDates.includes(date))return toast('Escolha uma data válida da encomenda sazonal.');
     E('date').value=date;
-    if(cart.some(x=>!c.products.some(p=>p.id===x.produtoId)))return toast('O carrinho de encomenda contém produtos fora da campanha.');
-    if(cart.some(x=>{const rule=c.products.find(p=>p.id===x.produtoId);return N(x.quantidade)<N(rule.minQuantity)||N(rule.maxQuantity)>0&&N(x.quantidade)>N(rule.maxQuantity)}))return toast('Revise as quantidades mínimas/máximas da campanha.');
-    if(cart.reduce((sum,x)=>sum+N(x.quantidade),0)<N(c.minTotalQuantity))return toast('Quantidade mínima total da encomenda: '+c.minTotalQuantity);
+    const campaignIds=new Set(c.products.map(p=>S(p.id)));
+    const isAll=mixedOrderMode==='ENCOMENDA_UNICA'&&seasonalCartParts().regular.length>0;
+    if(!isAll&&cart.some(x=>!campaignIds.has(S(x.produtoId))))return toast('O carrinho de encomenda contém produtos fora da campanha.');
+    if(cart.some(x=>{const rule=c.products.find(p=>S(p.id)===S(x.produtoId));return !!rule&&(N(x.quantidade)<N(rule.minQuantity)||N(rule.maxQuantity)>0&&N(x.quantidade)>N(rule.maxQuantity))}))return toast('Revise as quantidades mínimas/máximas da campanha.');
+    if(cart.filter(x=>campaignIds.has(S(x.produtoId))).reduce((sum,x)=>sum+N(x.quantidade),0)<N(c.minTotalQuantity))return toast('Quantidade mínima total da encomenda: '+c.minTotalQuantity);
   }else if(!allowedDate(E('date').value,mode))return toast('A data escolhida não está disponível.');
 
   if(mode==='ENTREGA'){
@@ -1991,8 +2026,8 @@ async function submitOrder(ev){
     const total=amount+(freight.pending?0:N(freight.value));
     const split=seasonalSplit(total);
     const itemLines=cart.map(x=>{
-      const p=c?.products?.find(p=>S(p.id)===S(x.produtoId));
-      return '<li>'+esc(N(x.quantidade)+' × '+S(p?.name||x.nome||'Produto'))+' — '+money(N(x.quantidade)*N(p?.price))+'</li>';
+      const p=c?.products?.find(p=>S(p.id)===S(x.produtoId))||cartFindProduct(x.produtoId);
+      return '<li>'+esc(N(x.quantidade)+' × '+S(p?.name||p?.nome||x.nome||'Produto'))+' — '+money(N(x.quantidade)*N(p?.price))+'</li>';
     }).join('');
     const accepted=await customerDialog({
       title:'Revise e aceite sua encomenda',icon:'🎄',locked:true,
@@ -2019,7 +2054,7 @@ async function submitOrder(ev){
       cpf:S(E('cCpf').value).trim()
     },
     modalidade:mode,
-    ...(seasonalCampaignId?{encomendaSazonal:{campanhaId:seasonalCampaignId}}:{}),
+    ...(seasonalCampaignId?{encomendaSazonal:{campanhaId:seasonalCampaignId,incluirProdutosComuns:mixedOrderMode==='ENCOMENDA_UNICA'&&seasonalCartParts().regular.length>0}}:{}),
     dataAtendimento:E('date').value,
     horario:mode==='ENTREGA'?'A combinar':E('time').value,
     formaPagamento:E('payment').value,
@@ -2466,7 +2501,7 @@ function start(){
   // Heartbeats leves: catálogo por versão e pedidos do próprio aparelho por token público.
   setInterval(()=>{if(!document.hidden)checkCatalogVersion()},30000);
   setInterval(()=>{if(!document.hidden)refreshBlackFridayBoundary()},15000);
-  setInterval(()=>{if(!document.hidden)pollCustomerOrders()},4000);
+  setInterval(()=>{if(!document.hidden)pollCustomerOrders()},30000);
   setTimeout(()=>pollCustomerOrders(),1200);
   if(new URLSearchParams(location.search).get('mp')==='retorno'){
     setTimeout(()=>showOrders().catch(console.warn),1800);
