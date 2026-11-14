@@ -1852,7 +1852,6 @@ function duplicateOrderSignature(body){
  return JSON.stringify({
   phone:normalizePhone(body?.cliente?.telefone),
   date:S(body?.dataAtendimento),mode:S(body?.modalidade),
-  payment:S(body?.formaPagamento),
   campaign:S(seasonal.campanhaId||seasonal.campaignId),
   allSeasonal:seasonal.incluirProdutosComuns===true,
   items:list
