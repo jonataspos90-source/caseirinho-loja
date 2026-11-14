@@ -56,3 +56,14 @@
  .caseirinho-receipt-footer{padding:10px;gap:7px}
  .caseirinho-receipt-footer button{font-size:11px}
 }
+
+/* A separação financeira já deve ser clara antes da confirmação do pedido misto. */
+.caseirinho-mixed-due-preview{border:2px solid #9ecfb0;background:linear-gradient(135deg,#f0fbf1,#fff9ee);padding:15px;border-radius:16px;margin:13px 0 5px;display:grid;gap:8px;font-size:13px}
+.caseirinho-mixed-due-preview h4{color:#7b1837;font-weight:950;font-size:17px;line-height:1.3;margin:0 0 4px}
+.caseirinho-mixed-due-preview>div{display:flex;justify-content:space-between;align-items:start;gap:9px;border-top:1px solid #dce9dc;padding-top:8px}
+.caseirinho-mixed-due-preview>div span{color:#164d37;font-weight:850;font-size:12px;line-height:1.4}
+.caseirinho-mixed-due-preview>div b{color:#7d1837;font-weight:950;font-size:18px;white-space:nowrap}
+.caseirinho-mixed-due-preview>div:first-of-type b{color:#087446;font-size:21px}
+.caseirinho-mixed-due-preview>small{font-size:11px;color:#566759;line-height:1.5;display:block}
+.caseirinho-mixed-due-preview>p{font-size:12px;line-height:1.5;margin:5px 0 0;padding:10px;border-radius:10px;background:#fff4d9;color:#765022}
+@media(max-width:550px){.caseirinho-mixed-due-preview{padding:11px}.caseirinho-mixed-due-preview>div b{font-size:16px}.caseirinho-mixed-due-preview h4{font-size:16px}}
