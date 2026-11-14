@@ -4,7 +4,7 @@
 if(window.__CASEIRINHO_MIXED_RECEIPT_91084__)return;
 window.__CASEIRINHO_MIXED_RECEIPT_91084__=true;
 const $=id=>document.getElementById(id);
-const S=v=>String(v??''),N=v=>Number(v),F=v=>Number.isFinite(N(v)),brl=v=>F(v)?N(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}):'A confirmar';
+const S=v=>String(v??''),N=v=>Number(v),F=v=>v!==null&&v!==undefined&&v!==''&&Number.isFinite(N(v)),brl=v=>F(v)?N(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}):'A confirmar';
 const esc=v=>S(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
 const METHOD=value=>S(value).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
 const isPix=v=>METHOD(v).includes('PIX'),isCard=v=>/CARTAO|CREDITO|DEBITO/.test(METHOD(v));
