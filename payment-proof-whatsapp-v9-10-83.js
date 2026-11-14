@@ -13,7 +13,7 @@ function storePhone(){
   if(!value)value=S(window.CASEIRINHO_CONFIG?.whatsapp||'');
   let digits=value.replace(/\D/g,'');
   if(!digits)return'';
-  if(!digits.startsWith('55'))digits='55'+digits;
+  if(digits.length===10||digits.length===11)digits='55'+digits;
   return /^55\d{10,11}$/.test(digits)?digits:'';
 }
 function codeFromText(value){
