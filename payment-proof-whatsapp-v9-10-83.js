@@ -23,8 +23,8 @@ function codeFromText(value){
 function messageFor(codes,seasonal){
   const ref=(codes||[]).filter(Boolean).join(' e ');
   return 'Olá, Caseirinho! 😊 Realizei '+(seasonal?'minha encomenda':'meu pedido')+
-    (ref?' nº '+ref:'')+'. Já efetuei o pagamento'+(seasonal?' do sinal de 50%':'')+
-    ' e vou anexar o comprovante nesta conversa. Por favor, confirmem o recebimento para liberar o início da produção. Obrigado!';
+    (ref?' nº '+ref:'')+'. Vou enviar o comprovante'+(seasonal?' do sinal de 50%':' do pagamento')+
+    ' nesta conversa. Por favor, confiram o recebimento antes de liberar o início da produção. Obrigado!';
 }
 function whatsUrl(codes,seasonal){
  const phone=storePhone();
@@ -172,6 +172,7 @@ function boot(){
  if(!payment||!result)return;
  checkoutPix();successResult();orderCards();pixDialog();
  payment.addEventListener('change',checkoutPix);
+ new MutationObserver(()=>checkoutPix()).observe(payment,{childList:true});
  document.addEventListener('change',e=>{if(e.target?.id==='mixedRegularPayment')checkoutPix()});
  const ro=new MutationObserver(()=>successResult());ro.observe(result,{childList:true});
  if(simple)new MutationObserver(()=>orderCards()).observe(simple,{childList:true});
