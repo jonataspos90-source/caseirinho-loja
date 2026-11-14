@@ -39,7 +39,7 @@ test('app desacelera polling e evita reprocessamentos excessivos',()=>{
 });
 test('PWA carrega recibo antes de app principal e apresenta escolha no celular',()=>{
  assert.ok(html.indexOf('payment-receipt-modal-v9-10-84.js')<html.indexOf('app.js?v='));
- assert.match(sw,/caseirinho-loja-v9\.10\.85-unified-choice/);
+ assert.match(sw,/caseirinho-loja-v9\.10\.86-mixed-fallback/);
  assert.match(css,/caseirinho-mixed-choice/);
  assert.match(css,/caseirinho-mixed-due-highlight/);
 });
