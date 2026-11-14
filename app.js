@@ -1879,17 +1879,21 @@ async function submitMixedOrder(ev){
   const sr=pending.seasonResult,rr=pending.regularResult;
   // Resultados e pagamentos vieram do servidor. Não deixe o carrinho vazio atrás do aviso.
   E('checkoutResult').innerHTML='';
-  const receipt=window.CaseirinhoReceiptModal91084;
-  if(!receipt?.showMixed?.({season:sr,regular:rr,regularPaymentLabel:paymentPublicLabel(rr.formaPagamento||regularPayment),onOrders:showOrders})){
-    // Fallback de segurança em cache antigo: mantém valores separados, sem repetir o pedido.
-    E('checkoutResult').innerHTML='<div class="result"><b>✅ Dois pedidos recebidos</b><br>'+
+  let receiptOpened=false;
+  try{
+    receiptOpened=window.CaseirinhoReceiptModal91084?.showMixed?.({
+      season:sr,regular:rr,regularPaymentLabel:paymentPublicLabel(rr.formaPagamento||regularPayment),onOrders:showOrders
+    })===true;
+  }catch(receiptError){console.warn('[Caseirinho] pedidos registrados; aviso nao abriu:',receiptError)}
+  if(!receiptOpened){
+    // Erro só de apresentação: os dois pedidos já existem. Nunca mostrar "pedido não enviado".
+    const fallback='<div class="result"><b>✅ Dois pedidos recebidos</b><br>'+
       'Encomenda nº '+esc(sr.codigo)+' · Sinal PIX: '+money(sr.encomendaSazonal?.depositDue)+
       ' · Restante na retirada: '+money(sr.encomendaSazonal?.balanceDue)+'<br>'+
       'Pedido comum nº '+esc(rr.codigo)+' · '+money(rr.total)+' · '+esc(paymentPublicLabel(regularPayment))+
       '<br>PIX CNPJ: 69.195.483/0001-23. Não pague o total dos dois pedidos junto.</div>';
     closeOverlay(E('cartDrawer'));
-    openSimple('Pedidos recebidos',E('checkoutResult').innerHTML);
-    E('checkoutResult').innerHTML='';
+    openSimple('Pedidos recebidos',fallback);
   }
   try{await bootstrapHistorySession({...seasonBody,...sr});await syncCustomerHistory()}catch(_){}
  }catch(err){
@@ -2062,8 +2066,10 @@ async function submitOrder(ev){
     else orders.push(saved);
     writeJson(ORDERS_KEY,orders.slice(-100));
     saveCustomerProfileFromBody(body);
-    await bootstrapHistorySession(saved);
-    await syncCustomerHistory();
+    try{
+      await bootstrapHistorySession(saved);
+      await syncCustomerHistory();
+    }catch(historyError){console.warn('[Caseirinho] pedido registrado; sincronização do histórico pendente:',historyError)}
 
     // Somente depois de uma resposta válida podemos liberar o requestId.
     removeLocal(PENDING_ORDER_KEY);
