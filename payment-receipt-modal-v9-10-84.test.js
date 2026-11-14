@@ -95,7 +95,8 @@ function findButton(node,label){
 }
 test('app usa modal após os pedidos efetivos e não deixa recibo no carrinho vazio',()=>{
  assert.match(app,/CaseirinhoReceiptModal91084\?\.showSingle/);
- assert.match(app,/CaseirinhoReceiptModal91084\?\.showMixed/);
+ assert.match(app,/const receipt=window\.CaseirinhoReceiptModal91084/);
+ assert.match(app,/receipt\?\.showMixed/);
  assert.match(app,/E\('checkoutResult'\)\.innerHTML='';\s*let receiptOpened/);
  assert.match(html,/payment-receipt-modal-v9-10-84\.js/);
  assert.match(html,/payment-receipt-modal-v9-10-84\.css/);
