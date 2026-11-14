@@ -791,11 +791,15 @@ function seasonalPricing(rows){
 }
 
 function seasonalCartParts(){const c=selectedSeasonalCampaign();const ids=new Set(A(c?.products).map(p=>S(p.id)));return{seasonal:cart.filter(i=>ids.has(S(i.produtoId))),regular:cart.filter(i=>!ids.has(S(i.produtoId)))}}
-let seasonalPhotoTimer=null,seasonalPhotoIndex=0,seasonalPhotoCampaign='';
+let seasonalPhotoTimer=null,seasonalPhotoIndex=0,seasonalPhotoCampaign='',seasonalPhotoImagesKey='';
+let seasonalCheckoutFrame=0;
 function renderSeasonalPhotos(c){
  const host=E('seasonalPhotoCarousel'),photo=E('seasonalPhoto'),dots=E('seasonalPhotoDots');
- if(seasonalPhotoTimer){clearInterval(seasonalPhotoTimer);seasonalPhotoTimer=null;}
  const images=A(c.bannerImages).filter(src=>typeof src==='string'&&(/^(https:\/\/|data:image\/(jpeg|png|webp);base64,)/i.test(src))).slice(0,8);
+ const imgKey=JSON.stringify(images);
+ if(seasonalPhotoCampaign===c.id&&seasonalPhotoImagesKey===imgKey)return;
+ if(seasonalPhotoTimer){clearInterval(seasonalPhotoTimer);seasonalPhotoTimer=null;}
+ seasonalPhotoImagesKey=imgKey;
  host.hidden=!images.length;dots.innerHTML='';
  if(!images.length){photo.removeAttribute('src');return;}
  if(seasonalPhotoCampaign!==c.id){seasonalPhotoIndex=0;seasonalPhotoCampaign=c.id;}
@@ -1111,7 +1115,7 @@ async function loadCatalog(silent=false){
   catalogBusy=true;
   try{
     const cloud=await fetchCatalogWithRetry();
-    const cached=await catalogBackup()||{produtos:[]};
+    const cached=A(cloud.produtos).some(p=>!images(p).length)?await catalogBackup()||{produtos:[]}:{produtos:[]};
     const oldMap=new Map(A(cached.produtos).map(p=>[S(p.id),p]));
     cloud.produtos=A(cloud.produtos).map(p=>{
       if(images(p).length)return p;
@@ -1225,7 +1229,11 @@ function renderCart(){
   cart=cart.filter(x=>x&&x.produtoId);
   writeJson(CART_KEY,cart);
   const count=cart.reduce((s,x)=>s+N(x.quantidade),0);
-  if(E('seasonalCheckout')&&!E('seasonalCheckout').hidden||seasonalCampaignId)setTimeout(renderSeasonalCheckout,0);
+  if(E('seasonalCheckout')&&!E('seasonalCheckout').hidden||seasonalCampaignId){
+    if(!seasonalCheckoutFrame)seasonalCheckoutFrame=requestAnimationFrame(()=>{
+      seasonalCheckoutFrame=0;renderSeasonalCheckout();
+    });
+  }
   E('cartCount').textContent=count;E('navCartCount').textContent=count;
 
   const promoTotals=seasonalPricing(cart)||{lines:new Map(),subtotal:cart.reduce((s,x)=>s+N(x.quantidade)*N(x.precoUnitario),0),savings:0};
@@ -1599,6 +1607,8 @@ function customerDialog({title,html,icon='✨',actions=[{label:'OK',value:true,p
       b.type='button';b.className=a.primary?'primary':'soft';b.textContent=a.label;
       b.onclick=()=>{closeCustomerModal();resolve(a.value)};box.appendChild(b);
     }
+    const sheet=ov.querySelector('.customer-experience-card');
+    if(sheet)sheet.scrollTop=0;
     ov.classList.add('open');ov.setAttribute('aria-hidden','false');
   });
 }
@@ -1907,7 +1917,7 @@ async function submitMixedOrder(ev){
    '<b>📦 Saldo da encomenda na entrega/retirada: '+money(split.balance)+'</b><br>'+
    '<b>💰 SOMA DOS PAGAMENTOS INICIAIS: '+money(roundMoney(split.deposit+estimatedRegular))+'</b><br>São pagamentos separados. O pedido comum deve ser pago no método escolhido, quando liberado.<br>'+
    '<b>Valor total dos dois pedidos: '+money(comboTotal)+'</b> — não pague esse total em um PIX.</div>'+
-   '<div class="cx-note">Cada pedido será calculado pelo servidor com preços, frete e pagamento independentes. Para entrega, poderá haver cobrança de frete em ambos. A encomenda é reservada somente após confirmação do sinal; o pedido comum segue seu próprio fluxo. O direito legal de arrependimento é respeitado. Se um envio falhar, o pedido já recebido será preservado para evitar duplicidade.</div>',
+   '<details class="cx-note" style="font-size:12px"><summary style="font-weight:850;cursor:pointer">Ver condições de entrega e cancelamento</summary><p>Cada pedido será calculado pelo servidor com preços, frete e pagamento independentes. Na entrega pode haver frete em ambos. A encomenda é reservada após confirmação do sinal; o pedido comum segue seu próprio fluxo. O direito legal de arrependimento é respeitado. Em falha parcial, pedidos já registrados serão preservados para evitar duplicidade.</p></details>',
   actions:[{label:'Voltar e revisar',value:false},{label:'Confirmar os dois pedidos',value:true,primary:true}]
  });
  if(!approved)return;
