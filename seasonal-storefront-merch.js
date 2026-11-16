@@ -29,16 +29,16 @@ function seasonalPackMarkup(pack,campaign,open){
  const photo=pack.image||products.find(x=>x.image)?.image||'';
  return '<article class="seasonal-pack-card" data-season-pack="'+esc(pack.id)+'">'+
  (photo?'<img class="seasonal-pack-photo" src="'+esc(photo)+'" alt="'+esc(pack.name)+'" loading="lazy">':'')+
- '<div class="seasonal-pack-body"><span class="seasonal-pack-flag">🎁 PACK ESPECIAL</span><h3>'+esc(pack.name)+'</h3>'+
- '<p class="seasonal-pack-desc">'+esc(pack.description||'Monte o kit combinando seus sabores favoritos')+'</p>'+
+ '<div class="seasonal-pack-body"><span class="seasonal-pack-flag">🎁 PACK VIRTUAL DE ENCOMENDAS</span><h3>'+esc(pack.name)+'</h3>'+
+ '<p class="seasonal-pack-desc">'+esc(pack.description||'Escolha entre os produtos participantes e monte sua combinação com preço único.')+'</p>'+
  '<div class="seasonal-pack-price">'+money(pack.price)+'</div>'+
- '<small>Escolha '+N(pack.quantity)+' unidades. O desconto do kit é aplicado quando a composição estiver completa.</small>'+
+ '<small>✅ Preço fechado para '+N(pack.quantity)+' unidades, com os sabores participantes à sua escolha. Selecione a quantidade de cada sabor.</small>'+
  '<div class="seasonal-pack-builder">'+products.map(p=>
   '<div><label>'+esc(p.variantLabel||p.name)+'<small>Avulso: '+money(p.price)+'</small></label>'+
   '<input type="number" min="0" max="'+N(pack.quantity)+'" step="1" value="'+N(seasonPackDrafts.get(pack.id)?.[p.id]||0)+'" data-season-pack-qty="'+esc(p.id)+'" '+
   (!open?'disabled':'')+' aria-label="Quantidade '+esc(p.name)+'"></div>').join('')+'</div>'+
  '<p class="seasonal-pack-progress" data-season-pack-progress>0 de '+pack.quantity+' unidades selecionadas</p>'+
- '<button type="button" class="seasonal-pack-action" data-season-pack-add="'+esc(pack.id)+'" disabled>🎁 Adicionar kit à encomenda</button></div></article>';
+ '<button type="button" class="seasonal-pack-action" data-season-pack-add="'+esc(pack.id)+'" disabled>🎁 Adicionar Pack Virtual à encomenda</button></div></article>';
 }
 function seasonStoreMerchRender(){
  const c=seasonCurrent(),root=E('seasonalProducts');
@@ -67,7 +67,7 @@ function seasonStoreMerchRender(){
  }
  root.innerHTML=cards.join('')||'<p>Nenhum produto nesta categoria.</p>';
  const packs=A(c.packs).filter(p=>p.active).slice().sort((a,b)=>N(a.sortOrder)-N(b.sortOrder));
- E('seasonalPacks').innerHTML=packs.length?'<h3 class="seasonal-pack-title">🎁 Kits e packs especiais</h3>'+
+ E('seasonalPacks').innerHTML=packs.length?'<h3 class="seasonal-pack-title">🎁 Packs Virtuais de Encomendas — Monte o seu!</h3>'+
   '<div class="seasonal-pack-grid">'+packs.map(p=>seasonalPackMarkup(p,c,opened)).join('')+'</div>':'';
  E('seasonalPacks').querySelectorAll('[data-season-pack]').forEach(seasonStorePackStatus);
 }
