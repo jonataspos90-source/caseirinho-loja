@@ -2448,7 +2448,9 @@ function showReviews(){
 }
 function showStore(){
   const l=catalog.loja||{},addr=[l.logradouro||l.endereco,l.numero,l.complemento,l.bairro,l.cidade,l.uf].filter(Boolean).join(', ');
-  openSimple('Sobre a loja',`<h3>${esc(l.nome||STORE||'Loja')}</h3><p>${esc(l.apresentacao||l.subtitulo||'Conheça nossos produtos e faça seu pedido online.')}</p>${addr?`<p><b>📍 Endereço</b><br>${esc(addr)}</p>`:''}${l.horarioFuncionamento?`<p><b>🕐 Funcionamento</b><br>${esc(l.horarioFuncionamento)}</p>`:''}${l.whatsapp?`<p><b>📱 WhatsApp</b><br>${esc(l.whatsapp)}</p>`:''}`);
+  const weekly=window.CaseirinhoHoursBanner?.weeklyText?.(l);
+  const hoursInfo=weekly?'<p><b>🕐 Dias e horários de atendimento</b></p><div class="caseirinho-hours-about">'+weekly+'</div>':l.horarioFuncionamento?'<p><b>🕐 Funcionamento</b><br>'+esc(l.horarioFuncionamento)+'</p>':'';
+  openSimple('Sobre a loja',`<h3>${esc(l.nome||STORE||'Loja')}</h3><p>${esc(l.apresentacao||l.subtitulo||'Conheça nossos produtos e faça seu pedido online.')}</p>${addr?`<p><b>📍 Endereço</b><br>${esc(addr)}</p>`:''}${hoursInfo}${l.whatsapp?`<p><b>📱 WhatsApp</b><br>${esc(l.whatsapp)}</p>`:''}`);
 }
 function showPrivacy(){
   const l=catalog.loja?.lgpd||{};
