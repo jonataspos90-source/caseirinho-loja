@@ -35,6 +35,6 @@ test('vitrine mostra os packs antes dos produtos e permite selecionar sabores',(
  assert.match(markup,/PACK VIRTUAL DE ENCOMENDAS/);
  assert.match(markup,/data-season-pack-qty/);
  assert.match(ui,/btn\.disabled=!ready/);
- assert.match(sw,/caseirinho-loja-v9\.10\.89-virtual-packs/);
+ assert.match(sw,/caseirinho-loja-v9\.10\.90-virtual-packs/);
  assert.match(html,/seasonal-storefront-merch\.js\?v=20261116-virtual1/);
 });
