@@ -22,8 +22,10 @@
    const units=[];
    for(const id of ids){
     const line=lines.get(id),q=qty.get(id);
-    // Sem acumular com promoções pré-existentes em produtos do catálogo.
-    if(!line||!Number.isInteger(q)||q<1||n(line.savings)>0)continue;
+    // Packs antigos não se acumulam com promoções individuais.
+    // No Pack Virtual FIXED_TOTAL, prevalece o menor total ao consumidor:
+    // a oferta fechada ou a promoção avulsa que já tenha produzido valor menor.
+    if(!line||!Number.isInteger(q)||q<1||(n(line.savings)>0&&pack.pricingMode!=='FIXED_TOTAL'))continue;
     const oldTotal=cents(line.total),base=Math.floor(oldTotal/q),extra=oldTotal%q,occupied=n(used.get(id));
     for(let i=occupied;i<q;i++)units.push({id,price:base+(i<extra?1:0)});
    }
