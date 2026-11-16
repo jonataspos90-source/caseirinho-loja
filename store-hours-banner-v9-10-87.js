@@ -83,13 +83,19 @@ function refresh(store=currentStore){
  if(store)currentStore=store;
  if(!currentStore)return;
  const el=ensure();if(!el)return;
- const state=getStatus(currentStore);
- el.hidden=!state?.closed;
- if(!state?.closed)return;
- document.getElementById('storeHoursHeadline').textContent='🌙 Atendimento fechado no momento — pedidos continuam abertos!';
- document.getElementById('storeHoursSubtext').textContent='Pode escolher seus produtos e finalizar normalmente. Próximo atendimento: '+state.nextOpening+'. A equipe confirmará o pedido e o horário de retirada/entrega quando reabrir.';
+ const state=getStatus(currentStore),paused=currentStore.ativo===false;
+ el.hidden=!state?.closed&&!paused;
+ if(el.hidden)return;
+ document.getElementById('storeHoursHeadline').textContent=paused?
+  '⏸️ Loja temporariamente pausada para novos pedidos':
+  '🌙 Atendimento fechado no momento — pedidos continuam abertos!';
+ document.getElementById('storeHoursSubtext').textContent=paused?
+  'Os pedidos estão temporariamente indisponíveis. Consulte nossos horários e acompanhe a reabertura.':
+  'Pode escolher seus produtos e finalizar normalmente. Próximo atendimento: '+state.nextOpening+'. A equipe confirmará o pedido e o horário de retirada/entrega quando reabrir.';
+ const shop=el.querySelector('.caseirinho-hours-shop');
+ if(shop)shop.hidden=paused;
  const extra=document.getElementById('storeHoursExtra');
- extra.hidden=!state.message;extra.textContent=state.message;
+ extra.hidden=paused||!state?.message;extra.textContent=paused?'':state.message||'';
  document.getElementById('storeHoursWeek').innerHTML=weeklyText(currentStore);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>refresh(),{once:true});
