@@ -24,3 +24,5 @@
  .caseirinho-hours-detail summary{width:100%;text-align:center}
  .caseirinho-hours-week{right:0}
 }
+.caseirinho-hours-shop[hidden]{display:none!important}
+.caseirinho-hours-about .caseirinho-hours-day{padding:8px 0;border-bottom:1px solid #e1e9e3}
