@@ -1057,6 +1057,7 @@ function mount(){
   applyStoreManifest();
   mountHeroFood();
   renderCategories();renderFeatured();renderProducts();renderSearchSuggestions();renderCart();renderCheckoutConfig();applyCustomerProfile();
+  window.CaseirinhoHoursBanner?.refresh?.(catalog.loja);
 }
 
 async function catalogBackup(){
@@ -1394,6 +1395,8 @@ function updateDateMin(){
 
 // Política informativa de pedidos após o expediente (fuso da loja: São Paulo).
 function storeHoursStatus(){
+  const weekly=window.CaseirinhoHoursBanner?.getStatus?.(catalog.loja);
+  if(weekly)return weekly;
   const raw=S(catalog.loja?.horarioFuncionamento||'');
   const hours=[...raw.matchAll(/([01]?\d|2[0-3]):([0-5]\d)/g)].map(m=>Number(m[1])*60+Number(m[2]));
   if(hours.length<2||hours[0]>=hours[1])return null;
