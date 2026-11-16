@@ -94,5 +94,5 @@ function refresh(store=currentStore){
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>refresh(),{once:true});
 setInterval(()=>{if(!document.hidden)refresh()},60000);
-window.CaseirinhoHoursBanner={version:'9.10.87',getStatus,refresh,structuredStatus,legacyStatus};
+window.CaseirinhoHoursBanner={version:'9.10.87',getStatus,refresh,structuredStatus,legacyStatus,weeklyText};
 })();
