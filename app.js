@@ -845,6 +845,12 @@ function renderSeasonalCampaigns(){
  const chosen=seasonalCampaign(seasonalSelected)||seasonalCampaigns[0],orderable=chosen.status==='ABERTA';
  E('seasonalBannerTitle').textContent=chosen.title||'Encomendas especiais';
  E('seasonalBannerText').textContent=chosen.bannerText||chosen.description||'Reserve seus produtos para datas especiais.';
+ const bannerNotice=E('seasonalBannerNotice');
+ if(bannerNotice)bannerNotice.textContent=orderable
+  ?'💚 50% de sinal na encomenda · 50% na entrega ou retirada'
+  :chosen.status==='FECHADA'?'🔒 Encomendas fechadas no momento. Cardápio publicado para consulta.'
+  :chosen.status==='AGENDADA'?'📅 Em breve: encomendas ainda não abertas.'
+  :'📦 Prazo de encomendas encerrado. Confira nosso cardápio.';
  renderSeasonalPhotos(chosen);
  E('seasonalCampaignTabs').innerHTML=seasonalCampaigns.map(c=>'<button type="button" data-season-tab="'+esc(c.id)+'" class="'+(c.id===chosen.id?'active':'')+'">'+esc(c.title)+'</button>').join('');
  E('seasonalCampaignDetails').innerHTML='<div class="seasonal-campaign-details"><strong>'+esc(chosen.title)+'</strong> · '+esc(chosen.description||'')+
@@ -853,7 +859,7 @@ function renderSeasonalCampaigns(){
  '<br>📦 Quantidade mínima total: '+N(chosen.minTotalQuantity)+
  (N(chosen.minimumOrderValue)>0?' · Pedido mínimo '+money(chosen.minimumOrderValue):'')+
  (N(chosen.maximumOrderValue)>0?' · Valor máximo '+money(chosen.maximumOrderValue):'')+
- '<br><strong>'+ (orderable?'✅ Encomendas abertas · 50% de sinal':'🗓️ Em breve — aguarde a abertura')+'</strong></div>';
+ '<br><strong>'+ (orderable?'✅ Encomendas abertas · 50% de sinal':chosen.status==='FECHADA'?'🔒 Encomendas fechadas no momento — produtos disponíveis apenas para consulta':chosen.status==='AGENDADA'?'🗓️ Em breve — aguarde a abertura':'📦 Prazo de encomendas encerrado')+'</strong></div>';
  E('seasonalProducts').innerHTML=chosen.products.map(p=>
  '<article class="seasonal-item">'+(p.image?'<img alt="'+esc(p.name)+'" src="'+esc(p.image)+'" loading="lazy">':'')+
  '<div class="seasonal-item-content"><h3>'+esc(p.name)+'</h3><span class="seasonal-price">'+money(p.price)+'</span>'+
@@ -867,6 +873,10 @@ function renderSeasonalCheckout(){
  E('seasonalCheckout').hidden=!visible;
  if(!visible){if(!cart.length&&seasonalCampaignId){seasonalCampaignId='';removeLocal(SEASON_KEY);}return;}
  E('seasonalCheckoutTitle').textContent=c.title+' · 50% no pedido e o restante na '+(E('mode').value==='ENTREGA'?'entrega':'retirada');
+ const checkoutNotice=E('seasonalCheckoutNotice');
+ if(checkoutNotice)checkoutNotice.textContent=c.status==='ABERTA'
+  ?'A produção é confirmada após o recebimento do sinal. Não pague o valor total antecipadamente.'
+  :'🔒 Esta campanha não está aceitando novas encomendas. Os itens já existentes no carrinho não podem ser finalizados até a reabertura. Não realize o pagamento.';
  const select=E('seasonalFulfillmentDate'),prev=select.value;
  select.innerHTML='<option value="">Selecione a data da encomenda</option>'+c.fulfillmentDates.map(date=>'<option value="'+esc(date)+'">'+esc(seasonalDateBR(date))+'</option>').join('');
  const chosen=c.fulfillmentDates.includes(prev)?prev:c.fulfillmentDates.includes(E('date').value)?E('date').value:'';
