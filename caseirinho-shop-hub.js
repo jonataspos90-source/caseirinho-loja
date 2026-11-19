@@ -82,7 +82,7 @@ function shell(){
 }
 async function loadHomeImages(){
  const settings=window.CASEIRINHO_CONFIG||{};
- const api=String(settings.apiUrl||'').replace(/\\/+$/,'');
+ const api=String(settings.apiUrl||'').replace(/\/+$/,'');
  const slug=String(new URLSearchParams(location.search).get('empresa')||new URLSearchParams(location.search).get('loja')||settings.storeSlug||'caseirinho').trim();
  if(!api)return;
  try{
