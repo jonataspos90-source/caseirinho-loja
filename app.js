@@ -841,20 +841,25 @@ function seasonalDateBR(x){if(!x)return'—';const [y,m,d]=S(x).split('-');retur
 // Uma falha/resultado vazio temporário da API nunca deve apagar a vitrine já conhecida.
 // O backup é apenas para consulta: campanhas de fallback não permitem checkout.
 const SEASONAL_LAST_GOOD_KEY='caseirinho-seasonal-last-good-v1';
-let seasonalLoadFailures=0,seasonalRetryTimer=null,seasonalFallback=false;
+let seasonalLoadFailures=0,seasonalRetryTimer=null,seasonalFallback=false,seasonalLoadBusy=false;
 function safeSeasonalSnapshot(){
  const backup=readJson(SEASONAL_LAST_GOOD_KEY,null);
  return backup&&Array.isArray(backup.campaigns)?backup.campaigns.filter(c=>c&&c.id):[];
 }
 function scheduleSeasonalRetry(){
- if(seasonalRetryTimer||seasonalLoadFailures>5)return;
+ // Não abandona a recuperação após cinco tentativas. Retorna gradualmente
+ // até 60s e retoma assim que o cliente volta ao app ou a rede reconecta.
+ if(seasonalRetryTimer||document.hidden)return;
+ const delay=Math.min(60000,5000*Math.max(1,seasonalLoadFailures));
  seasonalRetryTimer=setTimeout(()=>{
   seasonalRetryTimer=null;
-  loadSeasonalCampaigns();
- },Math.min(30000,5000*seasonalLoadFailures));
+  if(!document.hidden)loadSeasonalCampaigns();
+ },delay);
 }
 async function loadSeasonalCampaigns(){
- if(STORE!=='caseirinho')return;
+ if(STORE!=='caseirinho'||seasonalLoadBusy)return;
+ seasonalLoadBusy=true;
+ try{
  try{
   const r=await api('/api/v1/public/store/'+encodeURIComponent(STORE)+'/seasonal-campaigns');
   if(r?.ok!==true||!Array.isArray(r.campaigns))throw Error('Resposta inválida do catálogo de encomendas');
@@ -880,6 +885,7 @@ async function loadSeasonalCampaigns(){
   const notice=E('seasonalBannerNotice');
   if(notice)notice.textContent='⚠️ Cardápio temporariamente em consulta. Reconectando para liberar pedidos com valores atualizados.';
  }
+ }finally{seasonalLoadBusy=false}
 }
 function renderSeasonalCampaigns(){
  const enabled=seasonalCampaigns.length>0;
@@ -2641,9 +2647,16 @@ function start(){
   if(new URLSearchParams(location.search).get('mp')==='retorno'){
     setTimeout(()=>showOrders().catch(console.warn),1800);
   }
-  window.addEventListener('focus',()=>{if(!catalogConnected)loadCatalog(true);checkCatalogVersion();pollCustomerOrders()});
-  window.addEventListener('online',()=>{if(!catalogConnected)loadCatalog(true);checkCatalogVersion();pollCustomerOrders()});
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden){if(!catalogConnected)loadCatalog(true);checkCatalogVersion();pollCustomerOrders()}});
+  const recoverSeasonal=()=>{
+    if(STORE!=='caseirinho'||seasonalLoadBusy)return;
+    if(seasonalFallback||!seasonalCampaigns.length){
+      if(seasonalRetryTimer){clearTimeout(seasonalRetryTimer);seasonalRetryTimer=null}
+      loadSeasonalCampaigns();
+    }
+  };
+  window.addEventListener('focus',()=>{if(!catalogConnected)loadCatalog(true);checkCatalogVersion();recoverSeasonal();pollCustomerOrders()});
+  window.addEventListener('online',()=>{if(!catalogConnected)loadCatalog(true);checkCatalogVersion();recoverSeasonal();pollCustomerOrders()});
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden){if(!catalogConnected)loadCatalog(true);checkCatalogVersion();recoverSeasonal();pollCustomerOrders()}});
 }
 window.CaseirinhoSeasonalBridge={
  S,N,A,esc,money,roundMoney,cartCatalogProducts,promoApi,selectedSeasonalCampaign,seasonalCampaign,
