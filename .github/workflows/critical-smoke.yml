@@ -19,4 +19,4 @@ jobs:
           node --check caseirinho-customer-favorites.js
           node --check service-worker.js
       - name: Testar navegação, catálogo e PWA
-        run: node --test caseirinho-critical-journey-20261119.test.js
+        run: node --test caseirinho-critical-journey-20261119.test.js caseirinho-stability-20261119.test.js
