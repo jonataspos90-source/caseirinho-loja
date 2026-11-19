@@ -1,4 +1,4 @@
-const CACHE='caseirinho-loja-v9.10.97-pwa-version-protection-20261119';
+const CACHE='caseirinho-loja-v9.10.98-recovery-20261119';
 const PROMOTIONJS='./ecommerce-promotions-v910.js';
 const PROMOTIONJS_TAG='<script src="./ecommerce-promotions-v910.js?v=910180" defer></'+'script>';
 const HOTFIX931='./store-hotfix-v9-3-1.js';
