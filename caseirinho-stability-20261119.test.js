@@ -12,8 +12,12 @@ function section(start,end,content){
  return content.slice(from,to);
 }
 test('PWA preserva versão publicada do script principal e de campanhas',async()=>{
- const source=section('function injectHotfix(response){','function canonicalUrl(req){',sw);
- const ctx={Headers,Response};vm.createContext(ctx);vm.runInContext(source,ctx);
+ const source=section('function injectOne(html,needle,tag){','function canonicalUrl(req){',sw);
+ const ctx={Headers,Response};
+ // Reaproveita os próprios helpers do SW; os tags opcionais não afetam a verificação
+ // de preservação das versões de scripts já presentes no HTML.
+ for(const name of new Set(source.match(/[A-Z][A-Z0-9_]*_TAG/g)||[]))ctx[name]='';
+ vm.createContext(ctx);vm.runInContext(source,ctx);
  const before='<html><head></head><body><script src="./app.js?v=20261119-stable-checkout"></script><script src="./commerce-engagement-v9-6-1.js?v=20261119-seasonal-new"></script></body></html>';
  const response=new Response(before,{headers:{'content-type':'text/html'}});
  const after=await (await ctx.injectHotfix(response)).text();
@@ -45,7 +49,7 @@ test('consultas GET nunca aguardam indefinidamente e não abortam POST financeir
 test('catálogo temporariamente vazio preserva os produtos conhecidos e falha em modo seguro',async()=>{
  const source=section('async function fetchCatalogWithRetry(){','async function loadCatalog(silent=false){',app);
  const ctx={
-  A:x=>Array.isArray(x)?x:[],catalog:{produtos:[{id:'p1'}]},
+  A:x=>Array.isArray(x)?x:[],catalog:{produtos:[{id:'p1'}]},CATALOG_PATH:'/catalog',
   api:async()=>({loja:{},produtos:[]}),catalogBackup:async()=>null,
   setTimeout:fn=>{fn();return 1},Promise
  };
