@@ -109,7 +109,7 @@ self.addEventListener('fetch',event=>{
   })());
   return;
  }
- const staticAsset=/\\.(?:js|css|png|jpe?g|svg|webp|ico|woff2?|webmanifest)$/i.test(url.pathname);
+ const staticAsset=/\.(?:js|css|png|jpe?g|svg|webp|ico|woff2?|webmanifest)$/i.test(url.pathname);
  if(staticAsset){
   event.respondWith((async()=>{
    const cache=await caches.open(CACHE);
