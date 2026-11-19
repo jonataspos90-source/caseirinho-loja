@@ -45,13 +45,14 @@ function shell(){
  home.innerHTML='<div class="hub-container"><div class="hub-hero"><span class="hub-eyebrow">💚 CASEIRINHO MASSAS ARTESANAIS</span><h1>Qual delícia vamos preparar para você?</h1><p>Encontre seus favoritos, descubra ofertas e faça encomendas especiais sem complicação.</p><button class="hub-start-shopping" type="button" data-hub-target="cardapio">Explorar cardápio <span aria-hidden="true">→</span></button></div>'+
  '<div class="hub-section-title"><div><h2>Escolha onde deseja comprar</h2><p>Cada opção tem seus próprios produtos e condições.</p></div></div>'+
  '<div class="hub-cards" id="hubCards"></div>'+
- '<div class="hub-trust"><span>🍝 Produção artesanal</span><span>💚 Feito com carinho</span><span>🛒 Compra segura</span></div></div>';
+ '<div class="hub-trust"><span>🍝 Produção artesanal</span><span>💚 Feito com carinho</span><span>🛒 Compra segura</span></div><button type="button" class="hub-reviews-link" id="hubReviewsLink">⭐ Veja as avaliações de nossos clientes</button></div>';
  main.insertBefore(home,main.firstChild);
  const nav=document.createElement('nav');nav.id='caseirinhoHubTabs';nav.className='hub-tabs';
  nav.setAttribute('aria-label','Navegação por setores da loja');
  nav.innerHTML=tabs.map(key=>'<button type="button" data-hub-target="'+key+'" aria-pressed="false">'+(key==='inicio'?'⌂ ':key==='cardapio'?'🍝 ':key==='ofertas'?'🔥 ':key==='blackfriday'?'🖤 ':'🎄 ')+names[key]+'</button>').join('');
  document.querySelector('.top')?.insertAdjacentElement('afterend',nav);
  document.body.classList.add('caseirinho-hub-enabled');
+ $('hubReviewsLink')?.addEventListener('click',()=>$('navReviews')?.click());
  document.addEventListener('click',e=>{
   const button=e.target.closest?.('[data-hub-target]');
   if(!button)return;
