@@ -320,17 +320,28 @@ function toast(msg){
 }
 async function api(path,opt={}){
   const method=S(opt.method||'GET').toUpperCase();
-  // GET com cabeçalhos simples evita o preflight OPTIONS para o cardápio público.
-  // cache:no-store e a URL única já impedem leituras antigas, sem Cache-Control customizado.
+  // GET com cabeçalhos simples evita preflight. Nunca aborte POST de pagamento ou pedido:
+  // um timeout no cliente não significa que o pedido não foi gravado no servidor.
   const headers={...(method==='GET'||method==='HEAD'?{}:{'Content-Type':'application/json'}),...(opt.headers||{})};
-  const r=await fetch(API+path+(path.includes('?')?'&':'?')+'_t='+Date.now(),{
-    cache:'no-store',
-    ...opt,
-    headers
-  });
-  let data={};try{data=await r.json()}catch(_){}
-  if(!r.ok)throw new Error(data.error||('Erro HTTP '+r.status));
-  return data;
+  const controller=(method==='GET'||method==='HEAD')&&!opt.signal&&typeof AbortController!=='undefined'
+    ?new AbortController():null;
+  const timeout=controller?setTimeout(()=>controller.abort(),12000):null;
+  try{
+    const r=await fetch(API+path+(path.includes('?')?'&':'?')+'_t='+Date.now(),{
+      cache:'no-store',
+      ...opt,
+      ...(controller?{signal:controller.signal}:{}),
+      headers
+    });
+    let data={};try{data=await r.json()}catch(_){}
+    if(!r.ok)throw new Error(data.error||('Erro HTTP '+r.status));
+    return data;
+  }catch(error){
+    if(controller?.signal.aborted)throw new Error('A consulta demorou mais de 12 segundos. Verifique a conexão e tente novamente.');
+    throw error;
+  }finally{
+    if(timeout!==null)clearTimeout(timeout);
+  }
 }
 function canonicalAvailability(p){
   if(p?.disponibilidadeEfetiva)return norm(p.disponibilidadeEfetiva);
@@ -1145,6 +1156,10 @@ async function fetchCatalogWithRetry(){
     try{
       const result=await api(CATALOG_PATH);
       if(!result||!Array.isArray(result.produtos))throw new Error('Resposta inválida do catálogo.');
+      // Um catálogo que volta subitamente vazio não pode apagar a última vitrine
+      // confirmada. Preserva apenas a consulta, com compras desativadas até reconexão.
+      if(!result.produtos.length&&(A(catalog.produtos).length||(await catalogBackup())?.produtos?.length))
+        throw new Error('Catálogo público inesperadamente vazio; mantendo vitrine anterior somente para consulta.');
       return result;
     }catch(error){
       lastError=error;
