@@ -1,0 +1,28 @@
+name: Navegador Real - Caseirinho Loja
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar navegador de testes
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.58.2
+          npx playwright install --with-deps chromium
+      - name: Inicializar loja de testes
+        run: |
+          PORT=8080 node static-server.js > /tmp/caseirinho-browser-smoke.log 2>&1 &
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            if curl --fail --silent http://127.0.0.1:8080/health; then break; fi
+            sleep 1
+          done
+      - name: Testar fluxo visual de compra sem pedidos reais
+        run: node caseirinho-browser-smoke-20261119.cjs
