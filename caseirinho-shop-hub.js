@@ -4,7 +4,7 @@
 const $=id=>document.getElementById(id);
 const tabs=['inicio','cardapio','ofertas','blackfriday','encomendas'];
 const names={inicio:'Início',cardapio:'Cardápio',ofertas:'Ofertas',blackfriday:'Black Friday',encomendas:'Encomendas'};
-let current='inicio',lastBF=false;
+let current='inicio',lastBF=false,customImages={};
 const catalog=()=>window.CaseirinhoCurrentPublicCatalog?.()||{};
 const products=()=>Array.isArray(catalog().produtos)?catalog().produtos:[];
 const promo=p=>p?.promocao||p?.ecommerce?.promocao||{};
@@ -29,6 +29,7 @@ const cards=[
  {key:'encomendas',eyebrow:'OCASIÕES ESPECIAIS',title:'Encomendas',subtitle:'Escolha sua data e reserve com carinho',color:'berry',emoji:'🎄',words:/empadão|lasanha|nhoque/i}
 ];
 function cardImage(card){
+ const customized=safePhoto(customImages[card.key]);if(customized)return customized;
  if(card.key==='encomendas'){
   const photo=$('seasonalPhoto');if(photo&&photo.getAttribute('src'))return safePhoto(photo.getAttribute('src'));
  }
@@ -69,11 +70,28 @@ function shell(){
   if(a){e.preventDefault();open('cardapio')}
  },true);
  const featured=$('featured'),seasonal=$('seasonalBanner');
- if(featured)new MutationObserver(()=>{decorateOffers();syncTabs()}).observe(featured,{childList:true});
+ if(featured)new MutationObserver(()=>{decorateOffers();syncTabs();updateCards()}).observe(featured,{childList:true});
+ const renderedCatalog=$('products');if(renderedCatalog)new MutationObserver(updateCards).observe(renderedCatalog,{childList:true});
  if(seasonal)new MutationObserver(()=>{syncTabs();updateCards()}).observe(seasonal,{attributes:true,attributeFilter:['hidden']});
  if($('seasonalPhoto'))new MutationObserver(updateCards).observe($('seasonalPhoto'),{attributes:true,attributeFilter:['src']});
  renderCards();decorateOffers();syncTabs();open('inicio',false);
+ const header=document.querySelector('.top');const syncHeader=()=>document.documentElement.style.setProperty('--hub-top-height',Math.ceil(header?.getBoundingClientRect().height||60)+'px');
+ syncHeader();if(header&&window.ResizeObserver)new ResizeObserver(syncHeader).observe(header);
+ loadHomeImages();
  setInterval(syncTabs,60000);
+}
+async function loadHomeImages(){
+ const settings=window.CASEIRINHO_CONFIG||{};
+ const api=String(settings.apiUrl||'').replace(/\\/+$/,'');
+ const slug=String(new URLSearchParams(location.search).get('empresa')||new URLSearchParams(location.search).get('loja')||settings.storeSlug||'caseirinho').trim();
+ if(!api)return;
+ try{
+  const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),7500);
+  let result;
+  try{const response=await fetch(api+'/api/v1/public/store/'+encodeURIComponent(slug)+'/home-cards',{cache:'no-store',signal:controller.signal});if(!response.ok)throw Error('Imagens personalizadas indisponíveis');result=await response.json()}
+  finally{clearTimeout(timeout)}
+  if(result?.ok&&result.images&&typeof result.images==='object'){customImages=result.images;updateCards()}
+ }catch(err){console.warn('[Caseirinho] Fotos personalizadas: usando imagens do catálogo',err.message)}
 }
 function renderCards(){
  const el=$('hubCards');if(!el)return;
