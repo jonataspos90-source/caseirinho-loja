@@ -122,6 +122,7 @@ function decorateOffers(){
  });
 }
 function syncTabs(){
+ const emptySeason=$('hubSeasonalEmpty');if(emptySeason)emptySeason.hidden=current!=='encomendas'||!$('seasonalSection')?.hidden;
  const bf=activeBF();
  const featured=$('featured');
  if(bf!==lastBF){lastBF=bf;decorateOffers();updateCards();if(!bf&&current==='blackfriday')open('ofertas',false)}
