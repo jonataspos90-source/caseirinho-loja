@@ -36,15 +36,17 @@ const catalogue={
   });
   await page.goto(root,{waitUntil:'domcontentloaded',timeout:30000});
   await page.waitForFunction(()=>window.CaseirinhoCurrentPublicCatalog?.()?.produtos?.length>0,{timeout:15000});
-  await page.waitForSelector('#caseirinhoShopHub',{state:'visible',timeout:10000});
-  assert.equal(await page.locator('#hubCards [data-hub-card="cardapio"]').count(),1,'Atalho principal do cardápio ausente');
-  assert.equal(await page.locator('#catalogStatusLine').isVisible(),true,'Status de conexão oculto');
+  // A identificação deve bloquear a loja até o servidor aceitar o cadastro.
   assert.equal(await page.locator('#customerIdentityGate').isVisible(),true,'Tela de identificação não apareceu');
+  assert.equal(await page.locator('#caseirinhoShopHub').isVisible(),false,'Loja aberta antes da identificação');
   await page.fill('#identityName','Cliente de Teste');
   await page.fill('#identityPhone','11991234567');
   await page.check('#identityConsent');
   await page.click('#identityContinue');
   await page.waitForFunction(()=>document.querySelector('#customerIdentityGate')?.hidden===true,{timeout:15000});
+  await page.waitForSelector('#caseirinhoShopHub',{state:'visible',timeout:10000});
+  assert.equal(await page.locator('#hubCards [data-hub-card="cardapio"]').count(),1,'Atalho principal do cardápio ausente');
+  assert.equal(await page.locator('#catalogStatusLine').isVisible(),true,'Status de conexão oculto');
   await page.locator('#caseirinhoHubTabs [data-hub-target="cardapio"]').click();
   assert.equal(await page.locator('#catalogSection').isVisible(),true,'Cardápio não abriu');
   await page.waitForSelector('#products [data-view="sku-teste-1"]',{state:'visible',timeout:15000});
