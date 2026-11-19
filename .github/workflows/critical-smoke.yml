@@ -1,0 +1,22 @@
+name: Fluxos críticos Caseirinho Loja
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Checar sintaxe da loja
+        run: |
+          node --check app.js
+          node --check caseirinho-shop-hub.js
+          node --check caseirinho-customer-favorites.js
+          node --check service-worker.js
+      - name: Testar navegação, catálogo e PWA
+        run: node --test caseirinho-critical-journey-20261119.test.js
