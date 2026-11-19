@@ -44,7 +44,7 @@ body.caseirinho-hub-enabled .top{position:sticky;top:0;z-index:90;box-shadow:0 3
 body.caseirinho-hub-enabled #caseirinhoShopHub,body.caseirinho-hub-enabled .hero-party,body.caseirinho-hub-enabled #offersSection,body.caseirinho-hub-enabled #catalogSection,body.caseirinho-hub-enabled #seasonalBanner,body.caseirinho-hub-enabled #seasonalSection{display:none!important}
 body.caseirinho-hub-enabled[data-hub-view=inicio] #caseirinhoShopHub{display:block!important}
 body.caseirinho-hub-enabled[data-hub-view=cardapio] #catalogSection{display:block!important;padding-top:24px}
-body.caseirinho-hub-enabled[data-hub-view=ofertas] #offersSection:not([hidden]),body.caseirinho-hub-enabled[data-hub-view=blackfriday] #offersSection:not([hidden]){display:block!important;min-height:55vh;padding-top:24px}
+body.caseirinho-hub-enabled[data-hub-view=ofertas] #offersSection,body.caseirinho-hub-enabled[data-hub-view=blackfriday] #offersSection{display:block!important;min-height:55vh;padding-top:24px}
 body.caseirinho-hub-enabled[data-hub-view=encomendas] #seasonalBanner:not([hidden]){display:block!important}
 body.caseirinho-hub-enabled[data-hub-view=encomendas] #seasonalSection:not([hidden]){display:block!important;padding-top:18px;min-height:45vh}
 body.caseirinho-hub-enabled[data-hub-view=ofertas] #featured>[data-hub-blackfriday=yes],body.caseirinho-hub-enabled[data-hub-view=blackfriday] #featured>[data-hub-blackfriday=no]{display:none!important}
@@ -54,3 +54,9 @@ body.caseirinho-hub-enabled .catalog-category-break{scroll-margin-top:185px}
 @media(max-width:900px){.hub-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.hub-card{min-height:250px}.hub-tabs{top:var(--hub-top-height,60px)}}
 @media(max-width:600px){.caseirinho-shop-hub{padding:16px 12px 30px}.hub-hero{padding:24px 20px;border-radius:19px}.hub-hero:after{right:-15%;opacity:.11}.hub-cards{gap:10px}.hub-card{min-height:228px;padding:13px;border-radius:16px}.hub-card-copy strong{font-size:19px}.hub-card-copy small{font-size:11px}.hub-card-action{font-size:11px;padding:7px}.hub-kicker{font-size:9px}.hub-emoji{font-size:26px}.hub-trust{gap:6px;font-size:11px}.hub-trust span{padding:8px 9px}.hub-tabs{padding:8px 12px;gap:6px;top:var(--hub-top-height,55px)}.hub-tabs button{padding:8px 11px;font-size:12px;min-height:39px}body.caseirinho-hub-enabled #catalogSection .category-row{top:calc(var(--hub-top-height,55px) + 54px)}}
 @media(prefers-reduced-motion:reduce){.hub-card,.hub-photo,.hub-tabs button{transition:none!important}}
+
+/* Navegação de entrega sem excesso: avaliações na home e Instagram no rodapé. */
+body.caseirinho-hub-enabled .bottom-nav.instagram-enabled,body.caseirinho-hub-enabled .bottom-nav.instagram-enabled.cashback-wallet-enabled{grid-template-columns:repeat(5,minmax(0,1fr))}
+body.caseirinho-hub-enabled .bottom-nav.instagram-enabled.cashback-wallet-enabled{grid-template-columns:repeat(6,minmax(0,1fr))}
+body.caseirinho-hub-enabled .bottom-nav #navReviews,body.caseirinho-hub-enabled .bottom-nav #navInstagram{display:none!important}
+.hub-reviews-link{border:0;background:transparent;display:block;margin:15px auto 0;color:#255f45;text-decoration:underline;font-weight:800;font-size:13px;cursor:pointer;padding:9px 16px}
