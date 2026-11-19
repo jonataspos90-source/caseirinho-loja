@@ -45,6 +45,7 @@ function shell(){
  home.innerHTML='<div class="hub-container"><div class="hub-hero"><span class="hub-eyebrow">💚 CASEIRINHO MASSAS ARTESANAIS</span><h1>Qual delícia vamos preparar para você?</h1><p>Encontre seus favoritos, descubra ofertas e faça encomendas especiais sem complicação.</p><button class="hub-start-shopping" type="button" data-hub-target="cardapio">Explorar cardápio <span aria-hidden="true">→</span></button></div>'+
  '<div class="hub-section-title"><div><h2>Escolha onde deseja comprar</h2><p>Cada opção tem seus próprios produtos e condições.</p></div></div>'+
  '<div class="hub-cards" id="hubCards"></div>'+
+ '<section class="hub-taste" id="hubTaste" hidden><div class="hub-section-title"><div><h2>Descubra nossos sabores</h2><p>Algumas delícias do cardápio para você conhecer.</p></div><button class="hub-more" type="button" data-hub-target="cardapio">Ver cardápio completo →</button></div><div class="hub-taste-grid" id="hubTasteGrid"></div></section>'+ 
  '<div class="hub-trust"><span>🍝 Produção artesanal</span><span>💚 Feito com carinho</span><span>🛒 Compra segura</span></div><button type="button" class="hub-reviews-link" id="hubReviewsLink">⭐ Veja as avaliações de nossos clientes</button></div>';
  main.insertBefore(home,main.firstChild);
  const nav=document.createElement('nav');nav.id='caseirinhoHubTabs';nav.className='hub-tabs';
@@ -57,6 +58,13 @@ function shell(){
   const button=e.target.closest?.('[data-hub-target]');
   if(!button)return;
   e.preventDefault();open(button.dataset.hubTarget);
+ });
+ document.addEventListener('click',e=>{
+  const button=e.target.closest?.('[data-hub-product]');if(!button)return;
+  e.preventDefault();open('cardapio');
+  const id=button.dataset.hubProduct;
+  const detail=[...document.querySelectorAll('#products [data-view]')].find(el=>String(el.dataset.view)===id);
+  if(detail)detail.click();else $('catalogSection')?.scrollIntoView({behavior:'smooth'});
  });
  // Os controles de navegação antigos passam a abrir o setor correspondente.
  for(const key of ['homeBtn','navMenu','navStore','shopBtn']){
@@ -72,10 +80,10 @@ function shell(){
  },true);
  const featured=$('featured'),seasonal=$('seasonalBanner');
  if(featured)new MutationObserver(()=>{decorateOffers();syncTabs();updateCards()}).observe(featured,{childList:true});
- const renderedCatalog=$('products');if(renderedCatalog)new MutationObserver(updateCards).observe(renderedCatalog,{childList:true});
+ const renderedCatalog=$('products');if(renderedCatalog)new MutationObserver(()=>{updateCards();renderTaste()}).observe(renderedCatalog,{childList:true});
  if(seasonal)new MutationObserver(()=>{syncTabs();updateCards()}).observe(seasonal,{attributes:true,attributeFilter:['hidden']});
  if($('seasonalPhoto'))new MutationObserver(updateCards).observe($('seasonalPhoto'),{attributes:true,attributeFilter:['src']});
- renderCards();decorateOffers();syncTabs();open('inicio',false);
+ renderCards();renderTaste();decorateOffers();syncTabs();open('inicio',false);
  const header=document.querySelector('.top');const syncHeader=()=>document.documentElement.style.setProperty('--hub-top-height',Math.ceil(header?.getBoundingClientRect().height||60)+'px');
  syncHeader();if(header&&window.ResizeObserver)new ResizeObserver(syncHeader).observe(header);
  loadHomeImages();
@@ -93,6 +101,25 @@ async function loadHomeImages(){
   finally{clearTimeout(timeout)}
   if(result?.ok&&result.images&&typeof result.images==='object'){customImages=result.images;updateCards()}
  }catch(err){console.warn('[Caseirinho] Fotos personalizadas: usando imagens do catálogo',err.message)}
+}
+function renderTaste(){
+ const grid=$('hubTasteGrid'),holder=$('hubTaste');if(!grid||!holder)return;
+ const candidates=products().filter(p=>p&&p.ativo!==false&&p.disponivelVenda!==false&&p.publicado!==false&&photos(p).length&&Number(p.precoEcommerce||p.preco)>0).slice(0,4);
+ const key=candidates.map(p=>String(p.id)).join('|');
+ if(grid.dataset.key===key)return;grid.dataset.key=key;
+ holder.hidden=!candidates.length;
+ grid.replaceChildren();
+ for(const p of candidates){
+  const item=document.createElement('button');item.type='button';item.className='hub-taste-card';item.dataset.hubProduct=String(p.id);
+  const img=document.createElement('img');img.src=photos(p)[0];img.alt='';img.loading='lazy';img.decoding='async';
+  const info=document.createElement('span');info.className='hub-taste-text';
+  const name=document.createElement('strong');name.textContent=String(p.nomeComercial||p.nome||'Produto artesanal');
+  const price=document.createElement('span');price.className='hub-taste-price';
+  const value=window.CaseirinhoPromotions?.priceInfo?.(p,products())?.current||Number(p.precoEcommerce||p.preco);
+  price.textContent=Number(value).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+  const action=document.createElement('small');action.textContent='Ver produto →';
+  info.append(name,price,action);item.append(img,info);grid.append(item);
+ }
 }
 function renderCards(){
  const el=$('hubCards');if(!el)return;
