@@ -827,16 +827,48 @@ function nextRegularDateForMixed(start,mode){
  return start;
 }
 function seasonalDateBR(x){if(!x)return'—';const [y,m,d]=S(x).split('-');return d+'/'+m+'/'+y}
+// Uma falha/resultado vazio temporário da API nunca deve apagar a vitrine já conhecida.
+// O backup é apenas para consulta: campanhas de fallback não permitem checkout.
+const SEASONAL_LAST_GOOD_KEY='caseirinho-seasonal-last-good-v1';
+let seasonalLoadFailures=0,seasonalRetryTimer=null,seasonalFallback=false;
+function safeSeasonalSnapshot(){
+ const backup=readJson(SEASONAL_LAST_GOOD_KEY,null);
+ return backup&&Array.isArray(backup.campaigns)?backup.campaigns.filter(c=>c&&c.id):[];
+}
+function scheduleSeasonalRetry(){
+ if(seasonalRetryTimer||seasonalLoadFailures>5)return;
+ seasonalRetryTimer=setTimeout(()=>{
+  seasonalRetryTimer=null;
+  loadSeasonalCampaigns();
+ },Math.min(30000,5000*seasonalLoadFailures));
+}
 async function loadSeasonalCampaigns(){
  if(STORE!=='caseirinho')return;
  try{
   const r=await api('/api/v1/public/store/'+encodeURIComponent(STORE)+'/seasonal-campaigns');
-  seasonalCampaigns=A(r.campaigns);
-  const saved=readJson(SEASON_KEY,{});
-  if(cart.length&&saved.campaignId&&seasonalCampaign(saved.campaignId))seasonalCampaignId=saved.campaignId;
-  if(!seasonalCampaign(seasonalSelected))seasonalSelected=seasonalCampaigns.find(c=>c.status==='ABERTA')?.id||seasonalCampaigns[0]?.id||'';
-  reconcileCartProducts();renderSeasonalCampaigns();renderSeasonalCheckout();
- }catch(err){console.warn('[Caseirinho sazonal] campanhas não disponíveis',err.message)}
+  if(r?.ok!==true||!Array.isArray(r.campaigns))throw Error('Resposta inválida do catálogo de encomendas');
+  if(!r.campaigns.length&&safeSeasonalSnapshot().length)throw Error('Servidor retornou campanhas vazias; mantendo última vitrine conhecida');
+  seasonalCampaigns=r.campaigns;
+  seasonalFallback=false;
+  seasonalLoadFailures=0;
+  if(seasonalRetryTimer){clearTimeout(seasonalRetryTimer);seasonalRetryTimer=null;}
+  if(seasonalCampaigns.length)writeJson(SEASONAL_LAST_GOOD_KEY,{campaigns:seasonalCampaigns,savedAt:Date.now()});
+ }catch(err){
+  console.warn('[Caseirinho sazonal] falha ao carregar; vitrine protegida',err.message);
+  seasonalLoadFailures++;
+  const backup=seasonalCampaigns.length?seasonalCampaigns:safeSeasonalSnapshot();
+  seasonalCampaigns=backup.map(c=>({...c,status:'FECHADA'}));
+  seasonalFallback=seasonalCampaigns.length>0;
+  scheduleSeasonalRetry();
+ }
+ const saved=readJson(SEASON_KEY,{});
+ if(cart.length&&saved.campaignId&&seasonalCampaign(saved.campaignId))seasonalCampaignId=saved.campaignId;
+ if(!seasonalCampaign(seasonalSelected))seasonalSelected=seasonalCampaigns.find(c=>c.status==='ABERTA')?.id||seasonalCampaigns[0]?.id||'';
+ reconcileCartProducts();renderSeasonalCampaigns();renderSeasonalCheckout();
+ if(seasonalFallback){
+  const notice=E('seasonalBannerNotice');
+  if(notice)notice.textContent='⚠️ Cardápio temporariamente em consulta. Reconectando para liberar pedidos com valores atualizados.';
+ }
 }
 function renderSeasonalCampaigns(){
  const enabled=seasonalCampaigns.length>0;
