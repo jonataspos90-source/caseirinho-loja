@@ -1,4 +1,4 @@
-const CACHE='caseirinho-loja-v9.10.90-virtual-packs-20261116';
+const CACHE='caseirinho-loja-v9.10.91-static-perf-20261119';
 const PROMOTIONJS='./ecommerce-promotions-v910.js';
 const PROMOTIONJS_TAG='<script src="./ecommerce-promotions-v910.js?v=910180" defer></'+'script>';
 const HOTFIX931='./store-hotfix-v9-3-1.js';
@@ -88,5 +88,46 @@ async function cachedAsset(req){return (await caches.match(req))||(await caches.
 async function cacheNetworkResponse(req,response){if(!response?.ok)return;const cache=await caches.open(CACHE);await cache.put(req,response.clone());const canonical=canonicalUrl(req);if(canonical!==req.url)await cache.put(canonical,response.clone())}
 self.addEventListener('install',event=>{event.waitUntil((async()=>{const cache=await caches.open(CACHE);await Promise.allSettled(['./','./index.html','./styles.css','./app.js','./customer-identification.js','./caseirinho-home-premium.js','./caseirinho-offers-showcase.css'].map(async url=>{const response=await fetch(url,{cache:'reload'});if(response.ok)await cache.put(url,response.clone())}));await self.skipWaiting()})())});
 self.addEventListener('activate',event=>{event.waitUntil((async()=>{const keys=await caches.keys();await Promise.all(keys.filter(k=>k.startsWith('caseirinho-loja-')&&k!==CACHE).map(k=>caches.delete(k)));await self.clients.claim()})())});
-self.addEventListener('fetch',event=>{const req=event.request;if(req.method!=='GET')return;const url=new URL(req.url);if(url.origin!==self.location.origin)return;if(req.mode==='navigate'){event.respondWith((async()=>{try{const net=await fetch(req,{cache:'no-store'});const out=await injectHotfix(net);if(out.ok)(await caches.open(CACHE)).put('./index.html',out.clone()).catch(()=>{});return out}catch(_){const cached=(await caches.match('./index.html'))||Response.error();return injectHotfix(cached)}})());return}event.respondWith((async()=>{try{const net=await fetch(req,{cache:'no-store'});cacheNetworkResponse(req,net).catch(()=>{});return net}catch(_){return (await cachedAsset(req))||Response.error()}})())});
+// Asset estático versionado: cache exato primeiro e verificação assíncrona em segundo plano.
+// O documento principal segue online-first; a API é externa e nunca fica neste cache.
+self.addEventListener('fetch',event=>{
+ const req=event.request;
+ if(req.method!=='GET')return;
+ const url=new URL(req.url);
+ if(url.origin!==self.location.origin)return;
+ if(req.mode==='navigate'){
+  event.respondWith((async()=>{
+   try{
+    const net=await fetch(req,{cache:'no-store'});
+    const out=await injectHotfix(net);
+    if(out.ok)(await caches.open(CACHE)).put('./index.html',out.clone()).catch(()=>{});
+    return out;
+   }catch(_){
+    const cached=(await caches.match('./index.html'))||Response.error();
+    return injectHotfix(cached);
+   }
+  })());
+  return;
+ }
+ const staticAsset=/\.(?:js|css|png|jpe?g|svg|webp|ico|woff2?|webmanifest)$/i.test(url.pathname);
+ if(staticAsset){
+  event.respondWith((async()=>{
+   const cache=await caches.open(CACHE);
+   // Query strings diferentes representam versões diferentes: nunca usar cópia antiga de outra versão.
+   const cached=await cache.match(req);
+   const fresh=fetch(req).then(async response=>{
+    if(response.ok)await cache.put(req,response.clone());
+    return response;
+   });
+   if(cached){event.waitUntil(fresh.catch(()=>{}));return cached;}
+   return fresh.catch(async()=>url.search?(await cache.match(req))||Response.error():(await cachedAsset(req))||Response.error());
+  })());
+  return;
+ }
+ // Arquivos não estáticos continuam consultados na rede, sem esconder alterações.
+ event.respondWith((async()=>{
+  try{const net=await fetch(req,{cache:'no-store'});return net;}
+  catch(_){return Response.error();}
+ })());
+});
 

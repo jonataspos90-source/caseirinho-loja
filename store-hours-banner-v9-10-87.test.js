@@ -42,7 +42,7 @@ test('loja carrega faixa antes do app, mantém pedidos durante fechamento e atua
  assert.ok(html.indexOf('store-hours-banner-v9-10-87.js')<html.indexOf('app.js?v='));
  assert.match(html,/store-hours-banner-v9-10-87\.css/);
  assert.match(sw,/store-hours-banner-v9-10-87\.js/);
- assert.match(sw,/caseirinho-loja-v9\.10\.90-virtual-packs/);
+ assert.match(sw,/caseirinho-loja-v9\.10\.91-static-perf-20261119/);
  assert.match(app,/CaseirinhoHoursBanner\?\.getStatus/);
  assert.match(app,/CaseirinhoHoursBanner\?\.refresh/);
  assert.match(code,/pedidos continuam abertos/i);
