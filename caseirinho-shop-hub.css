@@ -1,0 +1,56 @@
+/* Caseirinho Loja — identidade comercial, navegação curta, setores sem rolagem interminável */
+body.caseirinho-hub-enabled{--hub-green:#0d503a;--hub-ink:#153b2b;--hub-cream:#fffaf4}
+body.caseirinho-hub-enabled .top{position:sticky;top:0;z-index:90;box-shadow:0 3px 16px #23120d12}
+.hub-tabs{position:sticky;top:var(--hub-top-height,72px);z-index:88;background:#fffaf5;border-bottom:1px solid #efe3d6;display:flex;gap:8px;overflow-x:auto;scrollbar-width:thin;padding:11px max(16px,calc((100vw - 1220px)/2));box-shadow:0 7px 15px #2a301007}
+.hub-tabs button{border:1px solid #e6d8c9;border-radius:100px;padding:10px 17px;background:#fff;color:#523b3e;white-space:nowrap;font-weight:800;font-size:13px;cursor:pointer;transition:background .16s,color .16s,transform .16s;min-height:43px}
+.hub-tabs button:hover{transform:translateY(-1px);background:#f4eee5}
+.hub-tabs button.is-active{background:#0d503a;border-color:#0d503a;color:#fff;box-shadow:0 4px 13px #0a392722}
+.hub-tabs button:focus-visible,.hub-card:focus-visible,.hub-start-shopping:focus-visible{outline:3px solid #e5a938;outline-offset:3px}
+.hub-tabs button[hidden],.hub-card[hidden]{display:none!important}
+.caseirinho-shop-hub{background:radial-gradient(ellipse at 20% 8%,#fbefd8 0,transparent 39%),#fffaf4;padding:26px 16px 44px;min-height:68vh}
+.hub-container{max-width:1210px;margin:auto}
+.hub-hero{background:linear-gradient(115deg,#073f30 0%,#11674d 61%,#1c7854 100%);border-radius:26px;color:#fff;padding:clamp(25px,5vw,60px);position:relative;overflow:hidden;box-shadow:0 20px 50px #06402725}
+.hub-hero:after{content:"🍝";position:absolute;font-size:clamp(115px,19vw,260px);right:4%;top:50%;transform:translateY(-50%) rotate(-16deg);opacity:.17;pointer-events:none}
+.hub-hero>*{position:relative;z-index:2}
+.hub-eyebrow{font-weight:900;letter-spacing:.11em;font-size:11px;color:#f7d792}
+.hub-hero h1{max-width:740px;font-size:clamp(31px,5vw,58px);line-height:1.06;letter-spacing:-.04em;margin:14px 0 15px;color:#fff}
+.hub-hero p{max-width:550px;font-size:clamp(14px,1.65vw,19px);line-height:1.55;color:#eaf5ed;margin:0 0 24px}
+.hub-start-shopping{border:0;background:#ffedb5;color:#154632;border-radius:14px;padding:13px 22px;font-size:15px;font-weight:900;cursor:pointer;min-height:48px}
+.hub-section-title{display:flex;justify-content:space-between;margin:32px 0 17px}
+.hub-section-title h2{font-size:clamp(23px,3vw,32px);color:#123e2e;margin:0 0 6px;letter-spacing:-.035em}
+.hub-section-title p{font-size:14px;color:#716d61;margin:0}
+.hub-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:15px}
+.hub-card{min-width:0;border:0;position:relative;isolation:isolate;overflow:hidden;border-radius:22px;min-height:275px;text-align:left;display:flex;align-items:end;padding:19px;cursor:pointer;color:#fff;background:#17553e;box-shadow:0 8px 24px #17291922;transition:transform .18s,box-shadow .18s}
+.hub-card:hover{transform:translateY(-4px);box-shadow:0 20px 38px #17291931}
+.hub-card.hub-gold{background:#8b521e}.hub-card.hub-dark{background:#17171b}.hub-card.hub-berry{background:#691f44}
+.hub-photo,.hub-card-shade{position:absolute;inset:0;z-index:-1}
+.hub-photo{background-size:cover;background-position:center;transform:scale(1);transition:transform .4s}
+.hub-card:hover .hub-photo{transform:scale(1.05)}
+.hub-card-shade{background:linear-gradient(180deg,#0a150b0b 0%,#12131464 35%,#08160ce8 100%)}
+.hub-card.hub-gold .hub-card-shade{background:linear-gradient(180deg,#28130214 0%,#56310b75 45%,#38220bf0 100%)}
+.hub-card.hub-dark .hub-card-shade{background:linear-gradient(180deg,#14131413 0%,#16131c88 48%,#080709f2 100%)}
+.hub-card.hub-berry .hub-card-shade{background:linear-gradient(180deg,#25112005 0%,#6a1b4399 40%,#2c0e23ef 100%)}
+.hub-card-copy{display:flex;flex-direction:column;gap:6px;position:relative;z-index:1;width:100%}
+.hub-kicker{font-size:10px;letter-spacing:.08em;color:#ffe39d;font-weight:900}
+.hub-card-copy strong{font-size:clamp(19px,2vw,26px);line-height:1.12;letter-spacing:-.03em;color:#fff}
+.hub-card-copy small{font-size:12px;line-height:1.4;color:#f1f6f0;font-weight:500}
+.hub-card-action{align-self:flex-start;background:#fffcf1;color:#164e3a;padding:7px 11px;border-radius:9px;margin-top:10px;font-size:12px;font-weight:900}
+.hub-emoji{position:absolute;right:12px;top:12px;font-size:37px;filter:drop-shadow(0 4px 7px #0004);pointer-events:none}
+.hub-photo.has-photo~.hub-emoji{opacity:.8}
+.hub-trust{display:flex;flex-wrap:wrap;justify-content:center;gap:15px;margin:24px 0 0;color:#52715e;font-size:13px;font-weight:750}
+.hub-trust span{padding:10px 15px;border:1px solid #e5eadb;border-radius:50px;background:#fff}
+.hub-empty{max-width:1140px;margin:25px auto;padding:30px;background:#fff;border:1px solid #e5eadc;color:#5e695e;border-radius:18px;text-align:center}
+.hub-empty[hidden]{display:none!important}
+body.caseirinho-hub-enabled #caseirinhoShopHub,body.caseirinho-hub-enabled .hero-party,body.caseirinho-hub-enabled #offersSection,body.caseirinho-hub-enabled #catalogSection,body.caseirinho-hub-enabled #seasonalBanner,body.caseirinho-hub-enabled #seasonalSection{display:none!important}
+body.caseirinho-hub-enabled[data-hub-view=inicio] #caseirinhoShopHub{display:block!important}
+body.caseirinho-hub-enabled[data-hub-view=cardapio] #catalogSection{display:block!important;padding-top:24px}
+body.caseirinho-hub-enabled[data-hub-view=ofertas] #offersSection:not([hidden]),body.caseirinho-hub-enabled[data-hub-view=blackfriday] #offersSection:not([hidden]){display:block!important;min-height:55vh;padding-top:24px}
+body.caseirinho-hub-enabled[data-hub-view=encomendas] #seasonalBanner:not([hidden]){display:block!important}
+body.caseirinho-hub-enabled[data-hub-view=encomendas] #seasonalSection:not([hidden]){display:block!important;padding-top:18px;min-height:45vh}
+body.caseirinho-hub-enabled[data-hub-view=ofertas] #featured>[data-hub-blackfriday=yes],body.caseirinho-hub-enabled[data-hub-view=blackfriday] #featured>[data-hub-blackfriday=no]{display:none!important}
+body.caseirinho-hub-enabled #featured>.promo-pack-card,body.caseirinho-hub-enabled #featured>.product-card{scroll-margin-top:160px}
+body.caseirinho-hub-enabled #catalogSection .category-row{position:sticky;top:calc(var(--hub-top-height,72px) + 61px);z-index:55;background:#fffaf4;padding:10px 0;border-bottom:1px solid #f0e5d9}
+body.caseirinho-hub-enabled .catalog-category-break{scroll-margin-top:185px}
+@media(max-width:900px){.hub-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.hub-card{min-height:250px}.hub-tabs{top:var(--hub-top-height,60px)}}
+@media(max-width:600px){.caseirinho-shop-hub{padding:16px 12px 30px}.hub-hero{padding:24px 20px;border-radius:19px}.hub-hero:after{right:-15%;opacity:.11}.hub-cards{gap:10px}.hub-card{min-height:228px;padding:13px;border-radius:16px}.hub-card-copy strong{font-size:19px}.hub-card-copy small{font-size:11px}.hub-card-action{font-size:11px;padding:7px}.hub-kicker{font-size:9px}.hub-emoji{font-size:26px}.hub-trust{gap:6px;font-size:11px}.hub-trust span{padding:8px 9px}.hub-tabs{padding:8px 12px;gap:6px;top:var(--hub-top-height,55px)}.hub-tabs button{padding:8px 11px;font-size:12px;min-height:39px}body.caseirinho-hub-enabled #catalogSection .category-row{top:calc(var(--hub-top-height,55px) + 54px)}}
+@media(prefers-reduced-motion:reduce){.hub-card,.hub-photo,.hub-tabs button{transition:none!important}}
