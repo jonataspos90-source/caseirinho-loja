@@ -48,6 +48,10 @@ function shell(){
  '<section class="hub-taste" id="hubTaste" hidden><div class="hub-section-title"><div><h2>Descubra nossos sabores</h2><p>Algumas delícias do cardápio para você conhecer.</p></div><button class="hub-more" type="button" data-hub-target="cardapio">Ver cardápio completo →</button></div><div class="hub-taste-grid" id="hubTasteGrid"></div></section>'+ 
  '<div class="hub-trust"><span>🍝 Produção artesanal</span><span>💚 Feito com carinho</span><span>🛒 Compra segura</span></div><button type="button" class="hub-reviews-link" id="hubReviewsLink">⭐ Veja as avaliações de nossos clientes</button></div>';
  main.insertBefore(home,main.firstChild);
+ // O aviso de sincronização e o botão "Tentar novamente" não podem ficar dentro
+ // do banner oculto; eles são essenciais quando a API do catálogo falha.
+ const statusLine=$('catalogStatusLine');
+ if(statusLine){home.after(statusLine);statusLine.classList.add('hub-catalog-status')}
  const nav=document.createElement('nav');nav.id='caseirinhoHubTabs';nav.className='hub-tabs';
  nav.setAttribute('aria-label','Navegação por setores da loja');
  nav.innerHTML=tabs.map(key=>'<button type="button" data-hub-target="'+key+'" aria-pressed="false">'+(key==='inicio'?'⌂ ':key==='cardapio'?'🍝 ':key==='ofertas'?'🔥 ':key==='blackfriday'?'🖤 ':'🎄 ')+names[key]+'</button>').join('');
