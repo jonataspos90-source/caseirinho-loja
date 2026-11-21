@@ -25,4 +25,6 @@ jobs:
             sleep 1
           done
       - name: Testar fluxo visual de compra sem pedidos reais
-        run: node caseirinho-browser-smoke-20261119.cjs
+        run: |
+          node caseirinho-browser-smoke-20261119.cjs
+          node caseirinho-pix-browser-20261121.cjs
