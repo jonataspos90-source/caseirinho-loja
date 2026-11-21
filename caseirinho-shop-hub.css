@@ -75,3 +75,7 @@ body.caseirinho-hub-enabled .bottom-nav #navReviews,body.caseirinho-hub-enabled 
 .hub-taste-price{color:#126747;font-weight:900;font-size:18px}
 .hub-taste-text small{font-weight:800;color:#7b1c45}
 @media(max-width:700px){.hub-taste-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.hub-taste-card img{height:126px}.hub-taste-text{padding:10px}.hub-taste .hub-section-title{gap:8px}.hub-more{font-size:12px;text-align:right}}
+
+/* Reforço da marca oficial: mesma imagem já usada no cabeçalho, acesso e PWA. */
+.hub-official-logo{display:block;width:94px;height:94px;object-fit:contain;margin-bottom:14px;border-radius:23px;box-shadow:0 8px 18px #041c1633;background:#f8efe4}
+@media(max-width:600px){.hub-official-logo{width:72px;height:72px;margin-bottom:10px;border-radius:18px}}
