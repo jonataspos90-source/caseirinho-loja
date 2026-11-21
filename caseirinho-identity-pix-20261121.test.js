@@ -23,7 +23,7 @@ test('recibo PIX usa somente QR, valor, código e recebedor emitidos pelo servid
 });
 test('recibo não trata copiar o código ou avisar pagamento como liquidação financeira',()=>{
  const pix=read('pix-payment-v9-3-7.js');
- assert.match(pix,/Pagamento continua pendente até a equipe conferir o extrato/);
+ assert.match(pix,/pagamento continua pendente até a equipe conferir o extrato/i);
  assert.match(pix,/data-pix-reported/);
  assert.match(pix,/INFORMADO_PELO_CLIENTE/);
  assert.doesNotMatch(pix,/paymentStatus\s*=\s*['"]PAID['"]/);
