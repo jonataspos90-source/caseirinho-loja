@@ -14,7 +14,7 @@ const S=v=>String(v??'');
 const N=v=>Number(v)||0;
 const A=v=>Array.isArray(v)?v:[];
 const norm=v=>S(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUpperCase().replace(/[\s-]+/g,'_');
-const esc=v=>S(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
+const esc=v=>S(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const money=v=>N(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const CHECKOUT_NOTE_HTML='<b>💠 Pix pelo CNPJ do Caseirinho</b><br>Depois que a loja aceitar seu pedido, o QR Code do CNPJ <b>69.195.483/0001-23</b> ficará disponível em <b>Meus pedidos</b>. Após pagar, avise pelo app; a equipe conferirá o extrato antes de confirmar.';
 
