@@ -42,7 +42,7 @@ function shell(){
  if($('caseirinhoShopHub'))return;
  const main=document.querySelector('main');if(!main)return;
  const home=document.createElement('section');home.id='caseirinhoShopHub';home.className='caseirinho-shop-hub';
- home.innerHTML='<div class="hub-container"><div class="hub-hero"><span class="hub-eyebrow">💚 CASEIRINHO MASSAS ARTESANAIS</span><h1>Qual delícia vamos preparar para você?</h1><p>Encontre seus favoritos, descubra ofertas e faça encomendas especiais sem complicação.</p><button class="hub-start-shopping" type="button" data-hub-target="cardapio">Explorar cardápio <span aria-hidden="true">→</span></button></div>'+
+ home.innerHTML='<div class="hub-container"><div class="hub-hero"><img class="hub-official-logo" src="./icons/icon-192.png?v=clean-20261004" alt="Logo oficial Caseirinho Massas Artesanais" width="94" height="94"><span class="hub-eyebrow">💚 CASEIRINHO MASSAS ARTESANAIS</span><h1>Qual delícia vamos preparar para você?</h1><p>Encontre seus favoritos, descubra ofertas e faça encomendas especiais sem complicação.</p><button class="hub-start-shopping" type="button" data-hub-target="cardapio">Explorar cardápio <span aria-hidden="true">→</span></button></div>'+
  '<div class="hub-section-title"><div><h2>Escolha onde deseja comprar</h2><p>Cada opção tem seus próprios produtos e condições.</p></div></div>'+
  '<div class="hub-cards" id="hubCards"></div>'+
  '<section class="hub-taste" id="hubTaste" hidden><div class="hub-section-title"><div><h2>Descubra nossos sabores</h2><p>Algumas delícias do cardápio para você conhecer.</p></div><button class="hub-more" type="button" data-hub-target="cardapio">Ver cardápio completo →</button></div><div class="hub-taste-grid" id="hubTasteGrid"></div></section>'+ 
