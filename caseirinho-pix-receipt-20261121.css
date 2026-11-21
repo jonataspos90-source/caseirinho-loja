@@ -1,0 +1,30 @@
+/* Recibo PIX Caseirinho: clareza, prevenção de golpes e identidade oficial. */
+.pix937-overlay{padding:11px!important;align-items:center}
+.pix937-card{width:min(510px,98vw)!important;border-radius:18px!important;padding:0!important;background:#fff!important;box-shadow:0 25px 75px #062a2052!important}
+.pix937-head{padding:16px 18px;background:#fff;border-bottom:4px solid #2d6951;align-items:center!important}
+.pix937-brand-row{display:flex;align-items:center;gap:11px}
+.pix937-brand-row img{object-fit:contain;border-radius:13px;border:1px solid #e6d5c2;flex-shrink:0}
+.pix937-brand-row h2{font-size:23px!important;line-height:1.05!important;color:#165640!important;margin:4px 0}
+.pix937-brand-row span{font-size:11px;color:#716c60;font-weight:850}
+.pix937-brand-row small{font-size:11px;color:#7a857a}
+.pix937-close{border:0;background:#edf3ee!important;color:#1c4b36;font-size:19px}
+.pix937-warning{margin:17px 17px 0;border:1px solid #baa34d;background:#fff8d3;color:#726025;padding:12px 14px;border-radius:12px;font-size:12px;line-height:1.5}
+.pix937-warning strong{font-size:13px}
+.pix937-warning p{margin:5px 0 0}
+.pix937-almost{text-align:center;color:#262b29;font-size:23px;line-height:1.2;font-weight:600;margin:17px 24px 9px}
+.pix937-instructions{text-align:center;margin:0 24px 12px;color:#676b67;font-size:13px;line-height:1.5}
+.pix937-expiry{margin:0 19px 10px;text-align:center;color:#82572a;background:#fffbf0;border-radius:10px;padding:11px;font-size:12px}
+.pix937-value{font-size:33px!important;margin:7px 0 0!important;color:#125a43!important}
+.pix937-qr{width:min(220px,58vw)!important;border:5px solid #fff!important;border-radius:10px!important;box-shadow:0 2px 15px #0001!important;margin:3px auto 9px!important}
+.pix937-info{margin:10px 17px!important;font-size:12px!important;background:#f7faf8;border:1px solid #d8e7db!important;color:#425e4c}
+.pix937-card label{display:block;margin:0 17px;font-size:12px;color:#3e4b42}
+.pix937-code{margin:8px 0 0;min-height:72px!important;background:#fff;word-break:break-all;color:#344c3e}
+.pix937-steps{margin:17px 20px 13px;padding-left:23px;color:#5c665e;font-size:12px;line-height:1.65}
+.pix937-steps li{padding-left:3px;margin-bottom:4px}
+.pix937-bank-note{margin:0 17px 16px;border:1px solid #93ccde;background:#e5f6fc;color:#23596a;padding:12px;border-radius:9px;font-size:12px;line-height:1.5}
+.pix937-actions{margin:0 17px 0!important}
+.pix937-copy{background:#06765e!important;color:#fff;font-size:15px}
+.pix937-actions button{min-height:46px}
+.pix937-secondary{background:#eff5f1!important;color:#24604b!important}
+.pix937-security{padding:12px 21px 20px;line-height:1.55!important;color:#58665a!important}
+@media(max-width:480px){.pix937-card{max-height:96dvh!important}.pix937-head{padding:12px 13px}.pix937-almost{font-size:20px}.pix937-brand-row img{width:46px;height:46px}.pix937-warning{margin:12px 12px 0}.pix937-bank-note{margin-inline:12px}.pix937-actions{margin-inline:12px!important}.pix937-qr{width:min(200px,55vw)!important}}
