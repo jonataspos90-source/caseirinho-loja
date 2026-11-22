@@ -12,9 +12,35 @@ body.customer-identification-required>:not(#customerIdentityGate):not(script):no
 #customerIdentityForm input:focus{border-color:#7b1438;box-shadow:0 0 0 3px #7b143815}
 .identity-privacy{margin:18px 0;color:#71796f;font-size:12px;line-height:1.6}
 #customerIdentityForm .identity-consent{display:flex;align-items:flex-start;gap:10px;margin:0 0 20px;font-size:13px;line-height:1.5;font-weight:400;color:#515e54;cursor:pointer}
-#customerIdentityForm #identityConsent,#customerIdentityForm #identityRecover{flex:0 0 20px;width:20px;min-height:20px;height:20px;margin:0;accent-color:#7b1438;cursor:pointer}
+#customerIdentityForm input[type="checkbox"]{appearance:auto;-webkit-appearance:checkbox;display:block;box-sizing:border-box;flex:0 0 20px;width:20px;min-width:20px;max-width:20px;height:20px;min-height:20px;max-height:20px;margin:2px 0 0;padding:0;border-radius:4px;accent-color:#7b1438;cursor:pointer;box-shadow:none}
 .identity-consent a{color:#7b1438;text-decoration:underline}.identity-consent a:focus-visible{outline:2px solid #7b1438;outline-offset:2px}
 #identityContinue{width:100%;min-height:54px;border:0;border-radius:13px;background:#7b1438;color:#fff;font:inherit;font-weight:800;cursor:pointer}
 #identityContinue:hover{background:#63102d}#identityContinue:focus-visible{outline:3px solid #a1b990;outline-offset:3px}#identityContinue:disabled{opacity:.65;cursor:wait}
 #identityStatus{min-height:20px;margin:12px 0 0;color:#a62034;font-size:13px;line-height:1.5}
 @media(max-height:660px){#customerIdentityGate{align-items:flex-start}.identity-card{padding:22px}.identity-logo{width:64px;height:64px;margin-bottom:12px}}
+
+/* Layout responsivo da identificação e consentimentos */
+#customerIdentityGate{flex-direction:column;align-items:center;justify-content:flex-start;overscroll-behavior:contain}
+#customerIdentityGate .identity-card{flex:0 0 auto;margin-block:auto;max-width:100%}
+#customerIdentityForm .identity-consent{display:flex;align-items:flex-start;gap:10px;margin:0 0 12px;font-weight:400}
+#customerIdentityForm .identity-consent span{display:block;min-width:0;flex:1;overflow-wrap:break-word}
+#customerIdentityForm .identity-consent input[type="checkbox"]:focus-visible{outline:2px solid #7b1438;outline-offset:3px}
+@media(max-width:480px){
+  #customerIdentityGate{padding:12px 12px max(12px,env(safe-area-inset-bottom));padding-top:max(12px,env(safe-area-inset-top))}
+  #customerIdentityGate .identity-card{width:100%;padding:20px 18px;border-radius:19px}
+  #customerIdentityGate .identity-logo{width:66px;height:66px;margin-bottom:10px}
+  #customerIdentityGate .identity-eyebrow{font-size:11px;margin-bottom:6px;letter-spacing:.08em}
+  #customerIdentityGate #identityTitle{font-size:clamp(22px,6.3vw,27px);line-height:1.14;margin-bottom:8px}
+  #customerIdentityGate .identity-intro{font-size:13px;line-height:1.4;margin-bottom:15px}
+  #customerIdentityForm label:not(.identity-consent){margin:10px 0 5px;font-size:13px}
+  #customerIdentityForm input:not([type="checkbox"]){min-height:45px;padding:10px 12px;font-size:16px}
+  #customerIdentityGate .identity-privacy{font-size:11px;line-height:1.45;margin:12px 0}
+  #customerIdentityForm .identity-consent{font-size:12px;line-height:1.4;gap:9px;margin-bottom:12px}
+  #customerIdentityForm input[type="checkbox"]{flex-basis:19px;width:19px;min-width:19px;max-width:19px;height:19px;min-height:19px;max-height:19px}
+  #identityContinue{min-height:48px;font-size:15px}
+  #identityStatus{margin-top:8px}
+}
+@media(max-height:650px){
+  #customerIdentityGate .identity-card{margin-block:0}
+  #customerIdentityGate .identity-logo{width:54px;height:54px}
+}
