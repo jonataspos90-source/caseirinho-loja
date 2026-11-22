@@ -44,3 +44,56 @@ body.customer-identification-required>:not(#customerIdentityGate):not(script):no
   #customerIdentityGate .identity-card{margin-block:0}
   #customerIdentityGate .identity-logo{width:54px;height:54px}
 }
+
+/* 2026-11-22: no mobile, o formulário deve iniciar no topo e nunca centralizar acima da área visível. */
+@media (max-width:600px){
+  #customerIdentityGate{
+    display:block!important;
+    overflow-x:hidden!important;
+    overflow-y:auto!important;
+    -webkit-overflow-scrolling:touch;
+    box-sizing:border-box!important;
+    padding: max(16px,env(safe-area-inset-top)) 12px max(20px,env(safe-area-inset-bottom))!important;
+    scroll-padding-top:0!important;
+  }
+  #customerIdentityGate .identity-card{
+    display:block!important;
+    width:min(100%,430px)!important;
+    margin:0 auto!important;
+    padding:20px 18px 22px!important;
+    box-sizing:border-box!important;
+  }
+  #customerIdentityGate .identity-logo{
+    display:block!important;
+    width:84px!important;
+    height:auto!important;
+    max-width:100%!important;
+    max-height:none!important;
+    object-fit:contain!important;
+    margin:0 auto 12px!important;
+  }
+  #customerIdentityGate #identityTitle{font-size:clamp(22px,6.4vw,28px);line-height:1.18;margin-bottom:9px}
+  #customerIdentityGate .identity-intro{margin-bottom:14px;font-size:13px}
+  #customerIdentityGate #customerIdentityForm label:not(.identity-consent){margin-top:12px}
+  #customerIdentityGate #customerIdentityForm .identity-consent{display:flex!important;align-items:flex-start!important;gap:10px!important;margin:0 0 14px!important;line-height:1.45}
+  #customerIdentityGate #customerIdentityForm .identity-consent span{flex:1 1 auto!important;min-width:0!important}
+  #customerIdentityGate #customerIdentityForm input[type="checkbox"]{
+    display:block!important;
+    position:static!important;
+    appearance:auto!important;
+    -webkit-appearance:checkbox!important;
+    flex:0 0 20px!important;
+    box-sizing:border-box!important;
+    width:20px!important;
+    min-width:20px!important;
+    max-width:20px!important;
+    height:20px!important;
+    min-height:20px!important;
+    max-height:20px!important;
+    padding:0!important;
+    margin:2px 0 0!important;
+    border-radius:3px!important;
+    transform:none!important;
+    accent-color:#7b1438;
+  }
+}
