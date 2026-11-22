@@ -5,7 +5,7 @@ const $=id=>document.getElementById(id);
 const tabs=['inicio','cardapio','ofertas','blackfriday','encomendas','presentes'];
 const names={inicio:'Início',cardapio:'Cardápio',presentes:'Presentes',ofertas:'Ofertas',blackfriday:'Black Friday',encomendas:'Encomendas'};
 const BEAUTY_URL='https://beauty-app-api-production.up.railway.app/';
-let current='inicio',lastBF=false,customImages={};
+let current='inicio',lastBF=false,customImages={},seasonalJumpPending=false;
 let giftItems=[],giftStatus='loading',giftCheckedAt=0,giftLoading=false,giftOffset=0;
 const catalog=()=>window.CaseirinhoCurrentPublicCatalog?.()||{};
 const products=()=>Array.isArray(catalog().produtos)?catalog().produtos:[];
@@ -69,6 +69,15 @@ function shell(){
  $('hubReviewsLink')?.addEventListener('click',()=>$('navReviews')?.click());
  document.addEventListener('click',e=>{const next=e.target.closest?.('[data-hub-gift-next]');if(!next||!giftItems.length)return;giftOffset=(giftOffset+3)%giftItems.length;renderGiftProducts()});
  document.addEventListener('click',e=>{
+  const retry=e.target.closest?.('[data-hub-seasonal-retry]');
+  if(!retry)return;
+  retry.disabled=true;retry.textContent='Atualizando encomendas...';
+  Promise.resolve(window.CaseirinhoSeasonalBridge?.refreshCampaigns?.()).catch(console.warn).finally(()=>{
+    retry.disabled=false;retry.textContent='🔄 Tentar novamente';
+    syncTabs();
+  });
+ });
+ document.addEventListener('click',e=>{
   const button=e.target.closest?.('[data-hub-target]');
   if(!button)return;
   e.preventDefault();open(button.dataset.hubTarget);
@@ -95,7 +104,8 @@ function shell(){
  const featured=$('featured'),seasonal=$('seasonalBanner');
  if(featured)new MutationObserver(()=>{decorateOffers();syncTabs();updateCards()}).observe(featured,{childList:true});
  const renderedCatalog=$('products');if(renderedCatalog)new MutationObserver(()=>{updateCards();renderTaste()}).observe(renderedCatalog,{childList:true});
- if(seasonal)new MutationObserver(()=>{syncTabs();updateCards()}).observe(seasonal,{attributes:true,attributeFilter:['hidden']});
+ if(seasonal)new MutationObserver(()=>{syncTabs();updateCards();revealSeasonalProducts()}).observe(seasonal,{attributes:true,attributeFilter:['hidden']});
+ window.addEventListener('caseirinho:seasonal-updated',()=>{syncTabs();revealSeasonalProducts()});
  if($('seasonalPhoto'))new MutationObserver(updateCards).observe($('seasonalPhoto'),{attributes:true,attributeFilter:['src']});
  renderCards();renderTaste();decorateOffers();syncTabs();open('inicio',false);
  const header=document.querySelector('.top');const syncHeader=()=>document.documentElement.style.setProperty('--hub-top-height',Math.ceil(header?.getBoundingClientRect().height||60)+'px');
@@ -238,8 +248,21 @@ function decorateOffers(){
   card.dataset.hubBlackfriday=isBF?'yes':'no';
  });
 }
+function revealSeasonalProducts(){
+ if(!seasonalJumpPending||current!=='encomendas'||$('seasonalSection')?.hidden)return;
+ seasonalJumpPending=false;
+ requestAnimationFrame(()=>$('seasonalSection')?.scrollIntoView({behavior:'smooth',block:'start'}));
+}
 function syncTabs(){
- const emptySeason=$('hubSeasonalEmpty');if(emptySeason)emptySeason.hidden=current!=='encomendas'||!$('seasonalSection')?.hidden;
+ const emptySeason=$('hubSeasonalEmpty');
+ if(emptySeason){
+  emptySeason.hidden=current!=='encomendas'||!$('seasonalSection')?.hidden;
+  const label=emptySeason.querySelector('[data-hub-seasonal-message]');
+  const state=window.CaseirinhoSeasonalBridge?.campaignSummary?.();
+  if(label&&!emptySeason.hidden)label.textContent=state?.loading?
+   'Carregando os produtos de Encomendas de Natal...':
+   'O cardápio de encomendas ainda não carregou. Use o botão para tentar novamente.';
+ }
  const bf=activeBF();
  const featured=$('featured');
  if(bf!==lastBF){lastBF=bf;decorateOffers();updateCards();if(!bf&&current==='blackfriday')open('ofertas',false)}
@@ -265,13 +288,29 @@ function open(key,scroll=true){
   const selected=b.dataset.hubTarget===key;
   b.classList.toggle('is-active',selected);b.setAttribute('aria-pressed',String(selected));
  });
- if(key==='encomendas'&&$('seasonalSection')?.hidden){
-  let note=$('hubSeasonalEmpty');
-  if(!note){note=document.createElement('section');note.id='hubSeasonalEmpty';note.className='hub-empty hub-seasonal-empty';note.textContent='Estamos preparando o próximo cardápio de encomendas. Confira novamente em breve!';$('caseirinhoShopHub')?.after(note)}
-  note.hidden=false;
- }else if($('hubSeasonalEmpty'))$('hubSeasonalEmpty').hidden=true;
+ if(key==='encomendas'){
+  seasonalJumpPending=scroll;
+  if($('seasonalSection')?.hidden){
+   let note=$('hubSeasonalEmpty');
+   if(!note){
+    note=document.createElement('section');note.id='hubSeasonalEmpty';note.className='hub-empty hub-seasonal-empty';
+    note.setAttribute('role','status');
+    note.innerHTML='<strong data-hub-seasonal-message>Carregando os produtos de Encomendas de Natal...</strong><button type="button" class="hub-seasonal-retry" data-hub-seasonal-retry>🔄 Tentar novamente</button>';
+    $('caseirinhoShopHub')?.after(note);
+   }
+   note.hidden=false;
+  }
+  const bridge=window.CaseirinhoSeasonalBridge;
+  if(!bridge?.campaignSummary?.().loading)Promise.resolve(bridge?.refreshCampaigns?.()).catch(console.warn);
+ }else{
+  seasonalJumpPending=false;
+  if($('hubSeasonalEmpty'))$('hubSeasonalEmpty').hidden=true;
+ }
  syncTabs();
- if(scroll)window.scrollTo({top:0,behavior:'smooth'});
+ if(scroll){
+  if(key==='encomendas'&&!$('seasonalSection')?.hidden)revealSeasonalProducts();
+  else window.scrollTo({top:0,behavior:'smooth'});
+ }
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',shell,{once:true});else shell();
 })();
