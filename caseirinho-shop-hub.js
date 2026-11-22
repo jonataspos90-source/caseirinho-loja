@@ -251,7 +251,11 @@ function decorateOffers(){
 function revealSeasonalProducts(){
  if(!seasonalJumpPending||current!=='encomendas'||$('seasonalSection')?.hidden)return;
  seasonalJumpPending=false;
- requestAnimationFrame(()=>$('seasonalSection')?.scrollIntoView({behavior:'smooth',block:'start'}));
+ requestAnimationFrame(()=>{
+  const filters=$('seasonalCategoryFilter');
+  const target=filters&&filters.children.length?filters:$('seasonalSection');
+  target?.scrollIntoView({behavior:'smooth',block:'start'});
+ });
 }
 function syncTabs(){
  const emptySeason=$('hubSeasonalEmpty');
