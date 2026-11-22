@@ -81,7 +81,8 @@ body.caseirinho-hub-enabled .bottom-nav #navReviews,body.caseirinho-hub-enabled 
 @media(max-width:600px){.hub-official-logo{width:72px;height:72px;margin-bottom:10px;border-radius:18px}}
 
 /* Encomendas: os produtos precisam ficar acessíveis logo ao abrir o setor. */
-body.caseirinho-hub-enabled[data-hub-view=encomendas] #seasonalSection{
+body.caseirinho-hub-enabled[data-hub-view=encomendas] #seasonalSection,
+body.caseirinho-hub-enabled[data-hub-view=encomendas] #seasonalCategoryFilter{
  scroll-margin-top:calc(var(--hub-top-height,72px) + 75px)
 }
 .hub-seasonal-empty{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap}
