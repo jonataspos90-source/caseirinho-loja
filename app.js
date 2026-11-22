@@ -602,6 +602,8 @@ function renderCatalogEntries(entries,{showPacks=false}={}){
   const packGroups=new Map(),entryPack=new Map();
   for(const [index,entry] of entries.entries()){
     for(const p of entry.variants){
+      // Na vigência da Black Friday, o produto aparece como oferta avulsa e não fica escondido no card do Pack.
+      if(blackFridayDetails(p))continue;
       const d=promoApi()?.linkedPack?.(p,catalog.produtos)||p?.packVirtual||p?.ecommerce?.packVirtual||{};
       if(d.ativo!==true||d.tipo!=='LEVE_X_PAGUE_Y')continue;
       const raw=d.produtoIds||d.produtosIds||d.itensProdutoIds||d.produtos;
