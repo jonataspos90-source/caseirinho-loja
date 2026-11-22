@@ -42,9 +42,10 @@
     if(promo(p).ativo===true&&blackFridayLive(p)&&v>0&&b>v)return v;
     return null;
   }
+  const blackFridayActive=p=>String(promo(p).tipo||'').toUpperCase()==='BLACK_FRIDAY'&&fixedPromo(p)!==null;
   function priceInfo(p,products=[]){
     const b=base(p),fixed=fixedPromo(p);if(fixed!==null)return{regular:b,current:fixed,conditional:false};
-    for(const trigger of products){const d=pack(trigger);if(d.ativo===true&&d.tipo==='COMPRA_X_LEVE_Y_POR_VALOR'&&String(d.produtoBeneficioId)===String(p?.id)){const v=n(d.precoBeneficio);if(v>0&&v<b)return{regular:b,current:b,benefitPrice:v,conditional:true,triggerProduct:trigger,deal:d}}}
+    for(const trigger of products){const d=pack(trigger);if(!blackFridayActive(trigger)&&d.ativo===true&&d.tipo==='COMPRA_X_LEVE_Y_POR_VALOR'&&String(d.produtoBeneficioId)===String(p?.id)){const v=n(d.precoBeneficio);if(v>0&&v<b)return{regular:b,current:b,benefitPrice:v,conditional:true,triggerProduct:trigger,deal:d}}}
     return{regular:b,current:b,conditional:false};
   }
   function isFeatured(p,products=[]){
@@ -53,6 +54,7 @@
     return products.some(trigger=>{const d=pack(trigger);return d.ativo===true&&d.tipo==='COMPRA_X_LEVE_Y_POR_VALOR'&&String(d.produtoBeneficioId)===String(p?.id)});
   }
   function offerText(p,products=[]){
+    if(blackFridayActive(p))return 'BLACK FRIDAY • preço especial por tempo limitado';
     const d=linkedPack(p,products);
     if(d.ativo===true&&d.tipo==='LEVE_X_PAGUE_Y'){
       const x=Math.floor(n(d.quantidadeLeve)),y=Math.floor(n(d.quantidadePague)),ids=packProductIds(p,d);
@@ -70,13 +72,17 @@
   function linePrice(productId,quantity,products=[],quantities=new Map()){
     const map=products instanceof Map?products:new Map(products.map(p=>[String(p.id),p]));
     const id=String(productId),p=map.get(id)||{},q=Math.max(0,n(quantity)),b=base(p),regular=round(b*q),options=[{total:regular,label:'',groupId:''}],f=fixedPromo(p),d=pack(p);
+    if(blackFridayActive(p)){
+      const total=round(f*q);
+      return{total,unitPrice:q?round(total/q):0,savings:round(Math.max(0,regular-total)),promotionLabel:'BLACK FRIDAY',promotionGroupId:`promo:${promo(p).id||id}`};
+    }
     if(f!==null)options.push({total:round(f*q),label:'Promoção',groupId:`promo:${promo(p).id||id}`});
     if(d.ativo===true&&d.tipo==='LEVE_X_PAGUE_Y'&&packProductIds(p,d).length===1){
       const x=Math.floor(n(d.quantidadeLeve)),y=Math.floor(n(d.quantidadePague));
       if(x>1&&y>0&&y<x){const sets=Math.floor(q/x),rest=q-sets*x;options.push({total:round((sets*y+rest)*b),label:`Leve ${x}, pague ${y}`,groupId:`pack:${packKey(d,[id],x,y)}`})}
     }
     for(const trigger of map.values()){
-      const x=pack(trigger);if(x.ativo!==true||x.tipo!=='COMPRA_X_LEVE_Y_POR_VALOR'||String(x.produtoBeneficioId)!==id)continue;
+      const x=pack(trigger);if(x.ativo!==true||x.tipo!=='COMPRA_X_LEVE_Y_POR_VALOR'||String(x.produtoBeneficioId)!==id||blackFridayActive(trigger))continue;
       const threshold=Math.floor(n(x.quantidadeGatilho)),triggerQty=n(quantities.get(String(trigger.id))),sameProduct=String(trigger.id)===id,sets=threshold>0?Math.floor(triggerQty/(threshold+(sameProduct?1:0))):0,v=n(x.precoBeneficio);
       if(sets>0&&v>=0&&v<b){const count=sameProduct?sets:Math.min(q,sets);options.push({total:round(count*v+(q-count)*b),label:`Pack ${trigger.nome||'virtual'}`,groupId:`pack:${x.packId||x.id||trigger.id}`})}
     }
@@ -91,10 +97,11 @@
     const rules=new Map();
     for(const product of map.values()){
       const d=pack(product);if(d.ativo!==true||d.tipo!=='LEVE_X_PAGUE_Y')continue;
-      const ids=packProductIds(product,d).filter(id=>map.has(id));
+      const allIds=packProductIds(product,d);
+      const ids=allIds.filter(id=>map.has(id)&&!blackFridayActive(map.get(id)));
       const x=Math.floor(n(d.quantidadeLeve)),y=Math.floor(n(d.quantidadePague));
-      if(ids.length<2||x<2||y<1||y>=x)continue;
-      const key=packKey(d,ids,x,y);
+      if(allIds.length<2||!ids.length||x<2||y<1||y>=x)continue;
+      const key=packKey(d,allIds,x,y);
       if(!rules.has(key))rules.set(key,{ids,x,y,key});
     }
     for(const rule of rules.values()){
