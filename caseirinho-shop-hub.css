@@ -105,6 +105,10 @@ body.caseirinho-hub-enabled .bottom-nav #navReviews,body.caseirinho-hub-enabled 
 .hub-gift-footer,.hub-gifts-bottom{display:flex;align-items:center;justify-content:space-between;gap:17px;margin-top:18px}
 .hub-gift-footer>small,.hub-gifts-bottom>span{color:#6f6070;font-size:11px;line-height:1.45;max-width:560px}
 .hub-gift-link{display:inline-flex;flex:0 0 auto;align-items:center;justify-content:center;gap:8px;padding:13px 16px;min-height:46px;border-radius:13px;background:#76285f;color:#fff;text-align:center;text-decoration:none;font-size:13px;line-height:1.3;font-weight:900;transition:background .15s,transform .15s}
+.hub-gift-rotate{display:inline-flex;align-items:center;justify-content:center;gap:6px;flex:0 0 auto;padding:10px 12px;min-height:42px;border:1px solid #d9b5cd;border-radius:11px;background:#fff9fd;color:#782958;font-size:12px;font-weight:900;cursor:pointer}
+.hub-gift-rotate:hover{background:#fbeef7}
+.hub-gift-rotate[hidden]{display:none!important}
+.hub-gift-rotate:focus-visible{outline:3px solid #c77baf;outline-offset:3px}
 .hub-gift-link:hover{background:#5e1c4b;transform:translateY(-2px)}
 .hub-gift-message{grid-column:1/-1;border:1px dashed #dfc6d5;border-radius:13px;margin:0;padding:22px 14px;text-align:center;color:#72546a;background:#fffdfd;font-size:13px}
 .hub-gifts-page{display:none;background:radial-gradient(ellipse at 15% 5%,#fff2fb 0,transparent 42%),#fff9fc;min-height:72vh;padding:30px 16px 60px}
@@ -128,6 +132,7 @@ body.caseirinho-hub-enabled[data-hub-view=presentes] #hubGiftsPage{display:block
  .hub-gift-product-name{font-size:13px}
  .hub-gift-price{font-size:17px}
  .hub-gift-footer,.hub-gifts-bottom{flex-direction:column;align-items:stretch;gap:12px}
+ .hub-gift-rotate{width:100%}
  .hub-gift-link{width:100%}
  .hub-gifts-page{padding:16px 12px 40px}
  .hub-gifts-hero{border-radius:17px}
