@@ -47,8 +47,9 @@ function shell(){
  home.innerHTML='<div class="hub-container"><div class="hub-hero"><img class="hub-official-logo" src="./icons/icon-192.png?v=clean-20261004" alt="Logo oficial Caseirinho Massas Artesanais" width="94" height="94"><span class="hub-eyebrow">💚 CASEIRINHO MASSAS ARTESANAIS</span><h1>Qual delícia vamos preparar para você?</h1><p>Encontre seus favoritos, descubra ofertas e faça encomendas especiais sem complicação.</p><button class="hub-start-shopping" type="button" data-hub-target="cardapio">Explorar cardápio <span aria-hidden="true">→</span></button></div>'+
  '<div class="hub-section-title"><div><h2>Escolha onde deseja comprar</h2><p>Cada opção tem seus próprios produtos e condições.</p></div></div>'+
  '<div class="hub-cards" id="hubCards"></div>'+
- '<aside class="hub-gift-banner" aria-labelledby="hubGiftTitle"><div class="hub-gift-top"><div class="hub-gift-icon" aria-hidden="true">🎁</div><div class="hub-gift-copy"><span class="hub-gift-eyebrow">NOVIDADE · PRESENTES & VARIEDADES</span><h2 id="hubGiftTitle">Esqueceu o presente? A gente também resolve!</h2><p>Conheça opções de beleza, acessórios e variedades da nossa outra loja.</p></div></div><div class="hub-gift-products" id="hubGiftPreview" aria-live="polite"></div><div class="hub-gift-footer"><small>Compra, estoque e pagamento independentes. Preços e disponibilidade confirmados na Beauty.</small><button type="button" class="hub-gift-rotate" data-hub-gift-next hidden>↻ Outras sugestões</button><a class="hub-gift-link" href="https://beauty-app-api-production.up.railway.app/" target="_blank" rel="noopener noreferrer">Ver todos os presentes <span aria-hidden="true">↗</span></a></div></aside>'+
+
  '<section class="hub-taste" id="hubTaste" hidden><div class="hub-section-title"><div><h2>Descubra nossos sabores</h2><p>Algumas delícias do cardápio para você conhecer.</p></div><button class="hub-more" type="button" data-hub-target="cardapio">Ver cardápio completo →</button></div><div class="hub-taste-grid" id="hubTasteGrid"></div></section>'+ 
+ '<aside class="hub-gift-banner" aria-labelledby="hubGiftTitle"><div class="hub-gift-top"><div class="hub-gift-icon" aria-hidden="true">🎁</div><div class="hub-gift-copy"><span class="hub-gift-eyebrow">NOVIDADE · CASEIRINHO INDICA</span><h2 id="hubGiftTitle">Presentes de última hora</h2><p>Uma seleção especial da nossa outra loja.</p></div></div><div class="hub-gift-products hub-gift-products-mini" id="hubGiftPreview" aria-live="polite"></div><div class="hub-gift-footer"><small>Compras feitas separadamente na loja de presentes.</small><button type="button" class="hub-gift-link hub-gift-link-internal" data-hub-target="presentes">Ver presentes <span aria-hidden="true">→</span></button></div></aside>'+
  '<div class="hub-trust"><span>🍝 Produção artesanal</span><span>💚 Feito com carinho</span><span>🛒 Compra segura</span></div><button type="button" class="hub-reviews-link" id="hubReviewsLink">⭐ Veja as avaliações de nossos clientes</button></div>';
  main.insertBefore(home,main.firstChild);
  const gifts=document.createElement('section');gifts.id='hubGiftsPage';gifts.className='hub-gifts-page';
@@ -161,13 +162,32 @@ function giftProductCard(p){
  const action=document.createElement('span');action.className='hub-gift-product-action';action.textContent='Ver na loja ↗';
  detail.append(availability,name,brand,price,action);link.append(frame,detail);return link;
 }
+function giftMiniCard(p){
+ const link=document.createElement('a');link.className='hub-gift-mini';link.href=BEAUTY_URL;
+ link.target='_blank';link.rel='noopener noreferrer';link.setAttribute('aria-label','Conferir '+String(p.name)+' na loja Beauty');
+ const frame=document.createElement('span');frame.className='hub-gift-mini-photo';
+ const src=giftImageUrl(p.image);
+ if(src){
+  const img=document.createElement('img');img.src=src;img.alt='';img.loading='lazy';img.decoding='async';
+  img.addEventListener('error',()=>frame.replaceChildren(giftPlaceholder(p.icon)),{once:true});
+  frame.append(img);
+ }else frame.append(giftPlaceholder(p.icon));
+ const info=document.createElement('span');info.className='hub-gift-mini-info';
+ const name=document.createElement('strong');name.textContent=String(p.name);
+ const price=document.createElement('b');price.textContent=giftPrice(p.price);
+ info.append(name,price);link.append(frame,info);return link;
+}
 function renderGiftProducts(){
  for(const id of ['hubGiftPreview','hubGiftPageItems']){
   const el=$(id);if(!el)continue;
   el.replaceChildren();
   if(giftStatus==='ready'&&giftItems.length){
-   const shown=giftItems.length<=3?giftItems:Array.from({length:3},(_,i)=>giftItems[(giftOffset+i)%giftItems.length]);
-   for(const item of shown)el.append(giftProductCard(item));
+   if(id==='hubGiftPreview'){
+    for(const item of giftItems.slice(0,2))el.append(giftMiniCard(item));
+   }else{
+    const shown=giftItems.length<=3?giftItems:Array.from({length:3},(_,i)=>giftItems[(giftOffset+i)%giftItems.length]);
+    for(const item of shown)el.append(giftProductCard(item));
+   }
   }else{
    const fallback=document.createElement('p');fallback.className='hub-gift-message';
    fallback.textContent=giftStatus==='loading'?'Consultando os presentes disponíveis...':
