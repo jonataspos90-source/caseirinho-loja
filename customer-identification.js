@@ -25,7 +25,7 @@
     const old=phoneDigits(saved.telefone)===phone?saved:{};
     // Reuse the existing pre-registration flow without dropping saved checkout data.
     const cliente={nome:name,telefone:phone,email:String(old.email||''),cpf:String(old.cpf||'')};
-    const lgpd={consent:true,consentAt:new Date().toISOString(),policyVersion:'1.0',purpose:'Identificação, cadastro, atendimento e processamento de pedidos no Caseirinho.'};
+    const lgpd={consent:true,consentAt:new Date().toISOString(),policyVersion:'1.0',purpose:'Identificação, cadastro, atendimento e processamento de pedidos no Caseirinho.',cartRecoveryConsent:E('identityCartRecoveryConsent')?.checked===true};
     const controller=new AbortController();
     const timer=setTimeout(()=>controller.abort(),15000);
     busy=true;button.disabled=true;button.textContent='Salvando seus dados…';
@@ -37,7 +37,7 @@
       });
       const result=await response.json();
       if(!response.ok||result?.ok!==true||!result.id){serverMessage=response.status>=400&&response.status<500?String(result.error||'Confira os dados informados e tente novamente.'):'';throw new Error('Não foi possível salvar seus dados.')}
-      const profile={...old,...cliente,updatedAt:new Date().toISOString()};
+      const profile={...old,...cliente,cartRecoveryConsent:lgpd.cartRecoveryConsent,updatedAt:new Date().toISOString()};
       try{localStorage.setItem(profileKey,JSON.stringify(profile))}catch(_){}
       if(phoneDigits(saved.telefone)!==phone){
         for(const id of ['cEmail','cCpf','cep','number','street','district','city','uf','comp'])if(E(id))E(id).value='';
