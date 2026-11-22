@@ -79,3 +79,17 @@ body.caseirinho-hub-enabled .bottom-nav #navReviews,body.caseirinho-hub-enabled 
 /* Reforço da marca oficial: mesma imagem já usada no cabeçalho, acesso e PWA. */
 .hub-official-logo{display:block;width:94px;height:94px;object-fit:contain;margin-bottom:14px;border-radius:23px;box-shadow:0 8px 18px #041c1633;background:#f8efe4}
 @media(max-width:600px){.hub-official-logo{width:72px;height:72px;margin-bottom:10px;border-radius:18px}}
+
+/* Indicação de outra loja do mesmo grupo, sem misturar carrinho ou pagamento. */
+.hub-gift-banner{display:flex;align-items:center;gap:20px;margin:24px 0 0;padding:23px 25px;background:linear-gradient(115deg,#fff6fa,#f8edfd 68%,#f5e6f0);border:1px solid #edcde3;border-radius:23px;box-shadow:0 8px 26px #632a6410;color:#432746}
+.hub-gift-icon{display:flex;align-items:center;justify-content:center;flex:0 0 72px;height:72px;border-radius:22px;background:#f3d2e9;font-size:38px}
+.hub-gift-copy{min-width:0;flex:1}
+.hub-gift-eyebrow{color:#963b79;font-size:10px;font-weight:900;letter-spacing:.12em}
+.hub-gift-copy h2{font-size:clamp(20px,2.3vw,29px);line-height:1.2;letter-spacing:-.025em;color:#59234f;margin:7px 0}
+.hub-gift-copy p{font-size:14px;line-height:1.55;color:#5c4759;margin:0 0 7px}
+.hub-gift-copy small{font-size:11px;line-height:1.45;color:#725e6c}
+.hub-gift-link{display:inline-flex;flex:0 0 auto;align-items:center;justify-content:center;gap:9px;max-width:230px;padding:13px 16px;border-radius:13px;background:#76285f;color:#fff;text-align:center;text-decoration:none;font-size:13px;line-height:1.3;font-weight:900;min-height:48px;transition:background .15s,transform .15s}
+.hub-gift-link:hover{background:#5e1c4b;transform:translateY(-2px)}
+.hub-gift-link:focus-visible{outline:3px solid #daa0c5;outline-offset:3px}
+@media(max-width:800px){.hub-gift-banner{flex-wrap:wrap;gap:13px}.hub-gift-icon{flex-basis:58px;height:58px;border-radius:18px;font-size:31px}.hub-gift-link{width:100%;max-width:none}}
+@media(max-width:430px){.hub-gift-banner{padding:18px 15px;border-radius:17px}.hub-gift-icon{flex-basis:46px;height:46px;font-size:25px}.hub-gift-copy h2{font-size:20px}.hub-gift-copy p{font-size:13px}.hub-gift-link{font-size:13px}}
