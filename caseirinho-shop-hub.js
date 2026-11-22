@@ -2,9 +2,11 @@
 (function(){
 'use strict';
 const $=id=>document.getElementById(id);
-const tabs=['inicio','cardapio','ofertas','blackfriday','encomendas'];
-const names={inicio:'Início',cardapio:'Cardápio',ofertas:'Ofertas',blackfriday:'Black Friday',encomendas:'Encomendas'};
+const tabs=['inicio','cardapio','presentes','ofertas','blackfriday','encomendas'];
+const names={inicio:'Início',cardapio:'Cardápio',presentes:'Presentes',ofertas:'Ofertas',blackfriday:'Black Friday',encomendas:'Encomendas'};
+const BEAUTY_URL='https://beauty-app-api-production.up.railway.app/';
 let current='inicio',lastBF=false,customImages={};
+let giftItems=[],giftStatus='loading',giftCheckedAt=0,giftLoading=false;
 const catalog=()=>window.CaseirinhoCurrentPublicCatalog?.()||{};
 const products=()=>Array.isArray(catalog().produtos)?catalog().produtos:[];
 const promo=p=>p?.promocao||p?.ecommerce?.promocao||{};
@@ -45,17 +47,20 @@ function shell(){
  home.innerHTML='<div class="hub-container"><div class="hub-hero"><img class="hub-official-logo" src="./icons/icon-192.png?v=clean-20261004" alt="Logo oficial Caseirinho Massas Artesanais" width="94" height="94"><span class="hub-eyebrow">💚 CASEIRINHO MASSAS ARTESANAIS</span><h1>Qual delícia vamos preparar para você?</h1><p>Encontre seus favoritos, descubra ofertas e faça encomendas especiais sem complicação.</p><button class="hub-start-shopping" type="button" data-hub-target="cardapio">Explorar cardápio <span aria-hidden="true">→</span></button></div>'+
  '<div class="hub-section-title"><div><h2>Escolha onde deseja comprar</h2><p>Cada opção tem seus próprios produtos e condições.</p></div></div>'+
  '<div class="hub-cards" id="hubCards"></div>'+
- '<aside class="hub-gift-banner" aria-labelledby="hubGiftTitle"><div class="hub-gift-icon" aria-hidden="true">🎁</div><div class="hub-gift-copy"><span class="hub-gift-eyebrow">UMA SURPRESA PARA VOCÊ</span><h2 id="hubGiftTitle">Precisou de presente de última hora? Também temos!</h2><p>Além das delícias do Caseirinho, temos nossa loja de presentes e variedades, com cosméticos, acessórios e muito mais para surpreender quem você gosta.</p><small>Compra e pagamento separados, diretamente na outra loja. Consulte a disponibilidade e as opções de entrega.</small></div><a class="hub-gift-link" href="https://beauty-app-api-production.up.railway.app/" target="_blank" rel="noopener noreferrer" aria-label="Conhecer nossa loja de presentes e variedades em uma nova aba">Conhecer a loja de presentes <span aria-hidden="true">↗</span></a></aside>'+
+ '<aside class="hub-gift-banner" aria-labelledby="hubGiftTitle"><div class="hub-gift-top"><div class="hub-gift-icon" aria-hidden="true">🎁</div><div class="hub-gift-copy"><span class="hub-gift-eyebrow">NOVIDADE · PRESENTES & VARIEDADES</span><h2 id="hubGiftTitle">Esqueceu o presente? A gente também resolve!</h2><p>Conheça opções de beleza, acessórios e variedades da nossa outra loja.</p></div></div><div class="hub-gift-products" id="hubGiftPreview" aria-live="polite"></div><div class="hub-gift-footer"><small>Compra, estoque e pagamento independentes. Preços e disponibilidade confirmados na Beauty.</small><a class="hub-gift-link" href="https://beauty-app-api-production.up.railway.app/" target="_blank" rel="noopener noreferrer">Ver todos os presentes <span aria-hidden="true">↗</span></a></div></aside>'+
  '<section class="hub-taste" id="hubTaste" hidden><div class="hub-section-title"><div><h2>Descubra nossos sabores</h2><p>Algumas delícias do cardápio para você conhecer.</p></div><button class="hub-more" type="button" data-hub-target="cardapio">Ver cardápio completo →</button></div><div class="hub-taste-grid" id="hubTasteGrid"></div></section>'+ 
  '<div class="hub-trust"><span>🍝 Produção artesanal</span><span>💚 Feito com carinho</span><span>🛒 Compra segura</span></div><button type="button" class="hub-reviews-link" id="hubReviewsLink">⭐ Veja as avaliações de nossos clientes</button></div>';
  main.insertBefore(home,main.firstChild);
+ const gifts=document.createElement('section');gifts.id='hubGiftsPage';gifts.className='hub-gifts-page';
+ gifts.innerHTML='<div class="hub-gifts-container"><div class="hub-gifts-hero"><span class="hub-gift-eyebrow">🎁 PRESENTES & VARIEDADES</span><h1>Ideias para presentear, em uma loja só</h1><p>Explore alguns produtos disponíveis na nossa loja de presentes. A compra é finalizada diretamente na Beauty, sem misturar com seu pedido do Caseirinho.</p></div><div class="hub-gift-products hub-gift-products-page" id="hubGiftPageItems" aria-live="polite"></div><div class="hub-gifts-bottom"><span>Produtos e valores consultados na Beauty. Disponibilidade pode mudar até a conclusão da compra.</span><a class="hub-gift-link" href="https://beauty-app-api-production.up.railway.app/" target="_blank" rel="noopener noreferrer">Abrir loja de presentes <span aria-hidden="true">↗</span></a></div></div>';
+ home.after(gifts);
  // O aviso de sincronização e o botão "Tentar novamente" não podem ficar dentro
  // do banner oculto; eles são essenciais quando a API do catálogo falha.
  const statusLine=$('catalogStatusLine');
  if(statusLine){home.after(statusLine);statusLine.classList.add('hub-catalog-status')}
  const nav=document.createElement('nav');nav.id='caseirinhoHubTabs';nav.className='hub-tabs';
  nav.setAttribute('aria-label','Navegação por setores da loja');
- nav.innerHTML=tabs.map(key=>'<button type="button" data-hub-target="'+key+'" aria-pressed="false">'+(key==='inicio'?'⌂ ':key==='cardapio'?'🍝 ':key==='ofertas'?'🔥 ':key==='blackfriday'?'🖤 ':'🎄 ')+names[key]+'</button>').join('');
+ nav.innerHTML=tabs.map(key=>'<button type="button" data-hub-target="'+key+'" aria-pressed="false">'+(key==='inicio'?'⌂ ':key==='cardapio'?'🍝 ':key==='presentes'?'🎁 ':key==='ofertas'?'🔥 ':key==='blackfriday'?'🖤 ':'🎄 ')+names[key]+'</button>').join('');
  document.querySelector('.top')?.insertAdjacentElement('afterend',nav);
  document.body.classList.add('caseirinho-hub-enabled');
  $('hubReviewsLink')?.addEventListener('click',()=>$('navReviews')?.click());
@@ -92,6 +97,8 @@ function shell(){
  const header=document.querySelector('.top');const syncHeader=()=>document.documentElement.style.setProperty('--hub-top-height',Math.ceil(header?.getBoundingClientRect().height||60)+'px');
  syncHeader();if(header&&window.ResizeObserver)new ResizeObserver(syncHeader).observe(header);
  loadHomeImages();
+ loadGiftProducts();
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&Date.now()-giftCheckedAt>120000)loadGiftProducts()});
  setInterval(syncTabs,60000);
 }
 async function loadHomeImages(){
@@ -106,6 +113,77 @@ async function loadHomeImages(){
   finally{clearTimeout(timeout)}
   if(result?.ok&&result.images&&typeof result.images==='object'){customImages=result.images;updateCards()}
  }catch(err){console.warn('[Caseirinho] Fotos personalizadas: usando imagens do catálogo',err.message)}
+}
+
+function giftImageUrl(value){
+ const src=String(value||'').trim();
+ return /^https:\/\/[a-z0-9.-]+\//i.test(src)?src:'';
+}
+const giftPrice=value=>Number(value).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+function selectGiftItems(data){
+ if(!data||data.ok!==true||!Array.isArray(data.products))throw Error('Catálogo Beauty inválido');
+ const allowed=data.products.filter(p=>p&&p.published===true&&p.purchaseAvailable===true&&p.showcaseOnly!==true
+  &&Number.isFinite(Number(p.price))&&Number(p.price)>0&&Number(p.stock)>0
+  &&typeof p.name==='string'&&p.name.trim());
+ allowed.sort((a,b)=>Number(!!giftImageUrl(b.image))-Number(!!giftImageUrl(a.image)));
+ const unique=[],usedCat=new Set();
+ for(const item of allowed){const key=String(item.categoryId||'');
+  if(!usedCat.has(key)){unique.push(item);usedCat.add(key)}
+  if(unique.length===3)break;
+ }
+ for(const item of allowed){if(unique.length===3)break;if(!unique.includes(item))unique.push(item)}
+ return unique;
+}
+function giftPlaceholder(icon){
+ const place=document.createElement('span');place.className='hub-gift-photo-placeholder';
+ const emoji=document.createElement('span');emoji.setAttribute('aria-hidden','true');emoji.textContent=String(icon||'🎁').slice(0,8);
+ const caption=document.createElement('small');caption.textContent='Foto em breve';place.append(emoji,caption);return place;
+}
+function giftProductCard(p){
+ const link=document.createElement('a');link.className='hub-gift-product';link.href=BEAUTY_URL;
+ link.target='_blank';link.rel='noopener noreferrer';link.setAttribute('aria-label','Ver '+String(p.name)+' na loja de presentes (abre outra aba)');
+ const frame=document.createElement('div');frame.className='hub-gift-product-photo';
+ const src=giftImageUrl(p.image);
+ if(src){
+  const img=document.createElement('img');img.src=src;img.alt='';img.loading='lazy';img.decoding='async';
+  img.addEventListener('error',()=>frame.replaceChildren(giftPlaceholder(p.icon)),{once:true});frame.append(img);
+ }else frame.append(giftPlaceholder(p.icon));
+ const detail=document.createElement('div');detail.className='hub-gift-product-detail';
+ const availability=document.createElement('span');availability.className='hub-gift-available';availability.textContent='● Disponível na Beauty';
+ const name=document.createElement('strong');name.className='hub-gift-product-name';name.textContent=String(p.name);
+ const brand=document.createElement('small');brand.className='hub-gift-brand';brand.textContent=String(p.brand||p.description||'Presentes & variedades');
+ const price=document.createElement('b');price.className='hub-gift-price';price.textContent=giftPrice(p.price);
+ const action=document.createElement('span');action.className='hub-gift-product-action';action.textContent='Ver na loja ↗';
+ detail.append(availability,name,brand,price,action);link.append(frame,detail);return link;
+}
+function renderGiftProducts(){
+ for(const id of ['hubGiftPreview','hubGiftPageItems']){
+  const el=$(id);if(!el)continue;
+  el.replaceChildren();
+  if(giftStatus==='ready'&&giftItems.length){
+   for(const item of giftItems)el.append(giftProductCard(item));
+  }else{
+   const fallback=document.createElement('p');fallback.className='hub-gift-message';
+   fallback.textContent=giftStatus==='loading'?'Consultando os presentes disponíveis...':
+    giftStatus==='error'?'Não conseguimos consultar a vitrine agora. Abra a loja de presentes para conferir.':
+    'Os produtos disponíveis estão sendo atualizados. Confira o catálogo completo na Beauty.';
+   el.append(fallback);
+  }
+ }
+}
+async function loadGiftProducts(){
+ if(giftLoading)return;
+ giftLoading=true;giftCheckedAt=Date.now();giftStatus='loading';renderGiftProducts();
+ const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),8000);
+ try{
+  const response=await fetch(BEAUTY_URL+'api/public/catalog?_v='+Date.now(),{cache:'no-store',credentials:'omit',mode:'cors',signal:controller.signal});
+  if(!response.ok)throw Error('Beauty '+response.status);
+  giftItems=selectGiftItems(await response.json());
+  giftStatus=giftItems.length?'ready':'empty';
+ }catch(error){
+  giftItems=[];giftStatus='error';
+  console.warn('[Caseirinho] Vitrine de presentes indisponível:',error.message);
+ }finally{clearTimeout(timeout);giftLoading=false;renderGiftProducts()}
 }
 function renderTaste(){
  const grid=$('hubTasteGrid'),holder=$('hubTaste');if(!grid||!holder)return;
@@ -175,6 +253,7 @@ function open(key,scroll=true){
  if(key==='blackfriday'&&!activeBF())key='ofertas';
  current=key;
  document.body.dataset.hubView=key;
+ if(key==='presentes'&&Date.now()-giftCheckedAt>90000)loadGiftProducts();
  document.querySelectorAll('#caseirinhoHubTabs [data-hub-target]').forEach(b=>{
   const selected=b.dataset.hubTarget===key;
   b.classList.toggle('is-active',selected);b.setAttribute('aria-pressed',String(selected));
