@@ -1,4 +1,4 @@
-const CACHE='caseirinho-loja-v9.10.102-presentes-20261122';
+const CACHE='caseirinho-loja-v9.10.103-beauty-live-20261122';
 const PROMOTIONJS='./ecommerce-promotions-v910.js';
 const PROMOTIONJS_TAG='<script src="./ecommerce-promotions-v910.js?v=910181" defer></'+'script>';
 const HOTFIX931='./store-hotfix-v9-3-1.js';
