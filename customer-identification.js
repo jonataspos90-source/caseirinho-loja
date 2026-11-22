@@ -62,7 +62,10 @@
     const p=readProfile();E('identityName').value=String(p.nome||'');E('identityPhone').value=formatPhone(p.telefone||'');
     E('identityPhone').addEventListener('blur',()=>{E('identityPhone').value=formatPhone(E('identityPhone').value)});
     form.addEventListener('submit',submit);
-    E('identityName').focus();
+    // Não focar automaticamente no primeiro campo: no celular, o foco rolava
+    // a tela de identificação e escondia o topo do logotipo.
+    const gate=E('customerIdentityGate');
+    if(gate){gate.scrollTop=0;requestAnimationFrame(()=>{gate.scrollTop=0;});}
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
 })();
