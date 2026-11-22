@@ -80,6 +80,19 @@ body.caseirinho-hub-enabled .bottom-nav #navReviews,body.caseirinho-hub-enabled 
 .hub-official-logo{display:block;width:94px;height:94px;object-fit:contain;margin-bottom:14px;border-radius:23px;box-shadow:0 8px 18px #041c1633;background:#f8efe4}
 @media(max-width:600px){.hub-official-logo{width:72px;height:72px;margin-bottom:10px;border-radius:18px}}
 
+/* Encomendas: os produtos precisam ficar acessíveis logo ao abrir o setor. */
+body.caseirinho-hub-enabled[data-hub-view=encomendas] #seasonalSection{
+ scroll-margin-top:calc(var(--hub-top-height,72px) + 75px)
+}
+.hub-seasonal-empty{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap}
+.hub-seasonal-empty strong{font-size:13px;color:#285b40}
+.hub-seasonal-retry{
+ background:#12513a;color:white;border:0;border-radius:11px;
+ min-height:41px;padding:10px 14px;font-weight:850;font-size:12px
+}
+.hub-seasonal-retry:disabled{opacity:.65;cursor:progress}
+.hub-seasonal-retry:focus-visible{outline:3px solid #dabf72;outline-offset:2px}
+
 /* Presentes como último setor, um detalhe arco-íris sem disputar com o Caseirinho. */
 #caseirinhoHubTabs [data-hub-target="presentes"]{
  order:99;position:relative;border-color:#e5dfca;background:#fffdfa;color:#385844
