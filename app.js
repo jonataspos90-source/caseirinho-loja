@@ -865,7 +865,11 @@ async function loadSeasonalCampaigns(){
  try{
   const r=await api('/api/v1/public/store/'+encodeURIComponent(STORE)+'/seasonal-campaigns');
   if(r?.ok!==true||!Array.isArray(r.campaigns))throw Error('Resposta inválida do catálogo de encomendas');
-  if(!r.campaigns.length&&safeSeasonalSnapshot().length)throw Error('Servidor retornou campanhas vazias; mantendo última vitrine conhecida');
+  const savedCampaigns=safeSeasonalSnapshot();
+  if(!r.campaigns.length&&savedCampaigns.length)throw Error('Servidor retornou campanhas vazias; mantendo última vitrine conhecida');
+  // Protege também quando uma resposta temporária traz a campanha, mas sem os produtos.
+  if(r.campaigns.length&&r.campaigns.every(c=>!A(c.products).length)&&savedCampaigns.some(c=>A(c.products).length))
+    throw Error('Servidor retornou produtos de encomendas vazios; mantendo última vitrine conhecida');
   seasonalCampaigns=r.campaigns;
   seasonalFallback=false;
   seasonalLoadFailures=0;
@@ -883,6 +887,10 @@ async function loadSeasonalCampaigns(){
  if(cart.length&&saved.campaignId&&seasonalCampaign(saved.campaignId))seasonalCampaignId=saved.campaignId;
  if(!seasonalCampaign(seasonalSelected))seasonalSelected=seasonalCampaigns.find(c=>c.status==='ABERTA')?.id||seasonalCampaigns[0]?.id||'';
  reconcileCartProducts();renderSeasonalCampaigns();renderSeasonalCheckout();
+ window.dispatchEvent(new CustomEvent('caseirinho:seasonal-updated',{detail:{
+  count:seasonalCampaigns.length,products:seasonalCampaigns.reduce((total,c)=>total+A(c.products).length,0),
+  fallback:seasonalFallback
+ }}));
  if(seasonalFallback){
   const notice=E('seasonalBannerNotice');
   if(notice)notice.textContent='⚠️ Cardápio temporariamente em consulta. Reconectando para liberar pedidos com valores atualizados.';
@@ -2632,11 +2640,14 @@ function start(){
   E('retryCatalog')?.addEventListener('click',()=>loadCatalog(false));
   watchPackPriceRows();
   renderCart();
+  // Encomendas não dependem da consulta do cardápio geral; carregar já na abertura.
+  loadSeasonalCampaigns().catch(err=>console.warn('[Caseirinho] Encomendas:',err));
   loadCatalog().then(()=>{
     // O marcador passa a incluir a versão retornada pela API; evite usar só a data.
     checkCatalogVersion();
     refreshBlackFridayBoundary();
-    loadSeasonalCampaigns();
+    // Se a consulta sazonal falhou enquanto carregávamos o catálogo, tentar novamente.
+    if(!seasonalCampaigns.length&&!seasonalLoadBusy)loadSeasonalCampaigns().catch(console.warn);
     loadMercadoPagoConfig().catch(console.warn);
   });
   installPwa();
@@ -2665,7 +2676,11 @@ window.CaseirinhoSeasonalBridge={
  E,quickAdd,modeChanged,renderSeasonalCheckout,toast,
  getCart:()=>cart,getSelectedCampaignId:()=>seasonalSelected,getActiveCampaignId:()=>seasonalCampaignId,
  setActiveCampaignId:id=>{seasonalCampaignId=id;writeJson(SEASON_KEY,{campaignId:id});},
- renderCampaigns:()=>renderSeasonalCampaigns()
+ renderCampaigns:()=>renderSeasonalCampaigns(),
+ refreshCampaigns:()=>loadSeasonalCampaigns(),
+ campaignSummary:()=>({count:seasonalCampaigns.length,
+   products:seasonalCampaigns.reduce((total,c)=>total+A(c.products).length,0),
+   loading:seasonalLoadBusy,fallback:seasonalFallback})
 };
 window.CaseirinhoCustomerHistory={recover:recoverOrdersForm,sync:async()=>{await ensureHistorySession();return syncCustomerHistory()}};
 if(document.readyState==='complete')start();else document.addEventListener('DOMContentLoaded',start,{once:true});
