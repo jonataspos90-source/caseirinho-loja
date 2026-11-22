@@ -1,6 +1,6 @@
-const CACHE='caseirinho-loja-v9.10.99-official-brand-pix-20261121';
+const CACHE='caseirinho-loja-v9.10.100-blackfriday-pack-priority-20261122';
 const PROMOTIONJS='./ecommerce-promotions-v910.js';
-const PROMOTIONJS_TAG='<script src="./ecommerce-promotions-v910.js?v=910180" defer></'+'script>';
+const PROMOTIONJS_TAG='<script src="./ecommerce-promotions-v910.js?v=910181" defer></'+'script>';
 const HOTFIX931='./store-hotfix-v9-3-1.js';
 const HOTFIX932='./store-hotfix-v9-3-2.js';
 const HOTFIX933='./store-hotfix-v9-3-3.js';
@@ -74,7 +74,7 @@ function injectBeforeApp(html,needle,tag){if(html.includes(needle))return html;c
 function stripOldCardScripts(html){return html.split(/<script[^>]*product-cards-mobile-v9-4-(?:8|9)\.js[^>]*><\/script>/gi).join('')}
 function stripOldDeliveryScripts(html){return html.split(/<script[^>]*delivery-moto-v9-5-3\.js[^>]*><\/script>/gi).join('')}
 function injectHotfix(response){if(!response)return response;const ct=response.headers.get('content-type')||'';if(!ct.includes('text/html'))return response;return response.text().then(html=>{html=stripOldCardScripts(html);html=stripOldDeliveryScripts(html);
-  html=html.replace(/(ecommerce-promotions-v910\.js\?v=)\d+/g,(_,prefix)=>prefix+'910180');
+  html=html.replace(/(ecommerce-promotions-v910\.js\?v=)\d+/g,(_,prefix)=>prefix+'910181');
   // Respeita a versão publicada no HTML: o PWA nunca regride scripts atuais para versões antigas.
   html=html.replace(/(commerce-engine-v9-3-0\.js\?v=)[^"'\s<>]+/g,(_,prefix)=>prefix+'20261028-native-checkout');
   html=html.replace(/(customer-identification\.(?:js|css)\?v=)[^"'\s<>]+/g,(_,prefix)=>prefix+'20261102-simple');
